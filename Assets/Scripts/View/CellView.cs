@@ -6,10 +6,21 @@ namespace ChessGame
     public class CellView : MonoBehaviour
     {
         [SerializeField] private SpriteRenderer mainRenderer;
-        [SerializeField] private Color highlightColor = new Color(0f, 1f, 0f, 0.5f);
+        [SerializeField] private Color moveHighlightColor = new Color(0f, 1f, 0f, 0.5f);
+        [SerializeField] private Color selectedHighlightColor = new Color(1f, 1f, 0f, 0.5f);
+        [SerializeField] private Color attackHighlightColor = new Color(1f, 0f, 0f, 0.5f);
 
         private Cell _cell;
-        private bool _isHighlighted = false;
+        private HighlightType _highlightType = HighlightType.None;
+
+        // 高亮类型枚举
+        public enum HighlightType
+        {
+            None,
+            Move,
+            Selected,
+            Attack
+        }
 
         // 单元格点击事件
         public delegate void CellClickedHandler(CellView cellView);
@@ -41,15 +52,30 @@ namespace ChessGame
             Debug.Log($"CellView Initialized: {cell.Position}");
         }
 
-        // 切换高亮状态
-        public void ToggleHighlight(bool isHighlighted)
+        // 设置高亮类型
+        public void SetHighlight(HighlightType type)
         {
-            _isHighlighted = isHighlighted;
+            _highlightType = type;
 
             if (mainRenderer != null)
             {
-                mainRenderer.color = _isHighlighted ? highlightColor : Color.white;
-                Debug.Log($"CellView {(_isHighlighted ? "高亮" : "取消高亮")}: {_cell?.Position}");
+                switch (_highlightType)
+                {
+                    case HighlightType.None:
+                        mainRenderer.color = Color.white;
+                        break;
+                    case HighlightType.Move:
+                        mainRenderer.color = moveHighlightColor;
+                        break;
+                    case HighlightType.Selected:
+                        mainRenderer.color = selectedHighlightColor;
+                        break;
+                    case HighlightType.Attack:
+                        mainRenderer.color = attackHighlightColor;
+                        break;
+                }
+                
+                Debug.Log($"CellView 高亮类型 {_highlightType}: {_cell?.Position}");
             }
         }
 
@@ -69,6 +95,12 @@ namespace ChessGame
                 Debug.Log($"触发OnCellClicked事件: {_cell.Position}");
                 OnCellClicked(this);
             }
+        }
+        
+        // 为了兼容现有代码，保留原来的ToggleHighlight方法
+        public void ToggleHighlight(bool isHighlighted)
+        {
+            SetHighlight(isHighlighted ? HighlightType.Move : HighlightType.None);
         }
     }
 }

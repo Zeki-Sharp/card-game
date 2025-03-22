@@ -173,5 +173,24 @@ namespace ChessGame
                 }
             }
         }
+        
+        // 设置可攻击状态
+        public void SetAttackable(bool attackable)
+        {
+            // 可以添加可攻击效果，例如红色边框
+            if (frameRenderer != null)
+            {
+                if (attackable)
+                {
+                    // 可攻击效果，例如红色边框
+                    frameRenderer.color = Color.red;
+                }
+                else
+                {
+                    // 恢复正常颜色
+                    UpdateVisuals();
+                }
+            }
+        }
     }
 } 

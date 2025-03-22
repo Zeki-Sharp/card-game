@@ -35,8 +35,14 @@ namespace ChessGame.FSM
                 Debug.LogWarning("找不到卡牌视图");
             }
             
+            // 高亮选中棋子的位置
+            StateMachine.CardManager.HighlightSelectedPosition(selectedCard);
+            
             // 高亮可移动的格子
             StateMachine.CardManager.HighlightMovablePositions(selectedCard);
+            
+            // 高亮可攻击的敌方棋子
+            StateMachine.CardManager.HighlightAttackableCards(selectedCard);
         }
         
         public override void Exit()
@@ -91,7 +97,7 @@ namespace ChessGame.FSM
             }
             
             // 如果点击的是敌方卡牌，且在攻击范围内
-            if (targetCard != null && targetCard.OwnerId != 0 && StateMachine.CardManager.CanAttack(position))
+            if (targetCard != null && targetCard.OwnerId != selectedCard.OwnerId && StateMachine.CardManager.CanAttack(position))
             {
                 Debug.Log($"攻击敌方卡牌: {targetCard.Data.Name}");
                 StateMachine.CardManager.SetTargetPosition(position);
@@ -99,7 +105,7 @@ namespace ChessGame.FSM
                 CompleteState(CardState.Attacking);
             }
             // 如果点击的是己方其他卡牌
-            else if (targetCard != null && targetCard.OwnerId == 0 && !targetCard.HasActed)
+            else if (targetCard != null && targetCard.OwnerId == selectedCard.OwnerId && !targetCard.HasActed)
             {
                 Debug.Log($"选择新卡牌: {targetCard.Data.Name}");
                 // 选择新卡牌

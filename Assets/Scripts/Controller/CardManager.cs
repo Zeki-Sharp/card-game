@@ -188,8 +188,8 @@ namespace ChessGame
                 return;
             }
             
-            // 创建卡牌模型
-            Card card = new Card(cardData, position);
+            // 创建卡牌模型，使用CardData中的阵营属性
+            Card card = new Card(cardData, position, cardData.Faction);
             _cards[position] = card;
             
             // 创建卡牌视图
@@ -273,6 +273,7 @@ namespace ChessGame
             foreach (var cardView in _cardViews.Values)
             {
                 cardView.SetSelected(false);
+                cardView.SetAttackable(false);
             }
             
             // 清除格子高亮
@@ -283,9 +284,132 @@ namespace ChessGame
                     CellView cellView = board.GetCellView(x, y);
                     if (cellView != null)
                     {
-                        cellView.ToggleHighlight(false);
+                        cellView.SetHighlight(CellView.HighlightType.None);
                     }
                 }
+            }
+        }
+        
+        // 高亮选中的棋子位置
+        public void HighlightSelectedPosition(Card card)
+        {
+            Vector2Int position = card.Position;
+            CellView cellView = GetCellView(position.x, position.y);
+            if (cellView != null)
+            {
+                cellView.SetHighlight(CellView.HighlightType.Selected);
+            }
+        }
+        
+        // 高亮可移动的格子
+        public void HighlightMovablePositions(Card card)
+        {
+            Vector2Int position = card.Position;
+            
+            for (int x = position.x - moveRange; x <= position.x + moveRange; x++)
+            {
+                for (int y = position.y - moveRange; y <= position.y + moveRange; y++)
+                {
+                    // 检查是否在棋盘范围内
+                    if (x >= 0 && x < BoardWidth && 
+                        y >= 0 && y < BoardHeight)
+                    {
+                        // 计算曼哈顿距离
+                        int distance = Mathf.Abs(x - position.x) + Mathf.Abs(y - position.y);
+                        if (distance <= moveRange)
+                        {
+                            // 检查目标位置是否已有卡牌
+                            Vector2Int targetPos = new Vector2Int(x, y);
+                            if (!HasCard(targetPos))
+                            {
+                                // 高亮可移动的格子
+                                CellView cellView = GetCellView(x, y);
+                                if (cellView != null)
+                                {
+                                    cellView.SetHighlight(CellView.HighlightType.Move);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 高亮可攻击的敌方棋子
+        public void HighlightAttackableCards(Card card)
+        {
+            Vector2Int position = card.Position;
+            
+            for (int x = position.x - attackRange; x <= position.x + attackRange; x++)
+            {
+                for (int y = position.y - attackRange; y <= position.y + attackRange; y++)
+                {
+                    // 检查是否在棋盘范围内
+                    if (x >= 0 && x < BoardWidth && 
+                        y >= 0 && y < BoardHeight)
+                    {
+                        // 计算曼哈顿距离
+                        int distance = Mathf.Abs(x - position.x) + Mathf.Abs(y - position.y);
+                        if (distance <= attackRange)
+                        {
+                            // 检查目标位置是否有敌方卡牌
+                            Vector2Int targetPos = new Vector2Int(x, y);
+                            Card targetCard = GetCard(targetPos);
+                            if (targetCard != null && targetCard.OwnerId != card.OwnerId)
+                            {
+                                // 高亮可攻击的敌方棋子所在地块
+                                CellView cellView = GetCellView(targetPos.x, targetPos.y);
+                                if (cellView != null)
+                                {
+                                    cellView.SetHighlight(CellView.HighlightType.Attack);
+                                }
+                                
+                                // 同时高亮敌方棋子
+                                CardView cardView = GetCardView(targetPos);
+                                if (cardView != null)
+                                {
+                                    cardView.SetAttackable(true);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 检查状态机
+        public void CheckStateMachine()
+        {
+            if (_stateMachine == null)
+            {
+                Debug.LogWarning("状态机未初始化，尝试重新初始化");
+                try
+                {
+                    _stateMachine = new CardStateMachine(this);
+                    Debug.Log("状态机重新初始化成功，当前状态：" + _stateMachine.GetCurrentStateType().ToString());
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError($"状态机重新初始化失败: {e.Message}\n{e.StackTrace}");
+                }
+            }
+            else
+            {
+                Debug.Log("状态机已初始化，当前状态：" + _stateMachine.GetCurrentStateType().ToString());
+            }
+        }
+        
+        // 辅助方法：随机打乱列表
+        private void ShuffleList<T>(List<T> list)
+        {
+            int n = list.Count;
+            while (n > 1)
+            {
+                n--;
+                int k = Random.Range(0, n + 1);
+                T value = list[k];
+                list[k] = list[n];
+                list[n] = value;
             }
         }
         
@@ -321,16 +445,6 @@ namespace ChessGame
             // 计算曼哈顿距离
             int distance = Mathf.Abs(position.x - pos.x) + Mathf.Abs(position.y - pos.y);
             return distance <= attackRange;
-        }
-        
-        // 移动选中的卡牌到指定位置
-        public void MoveSelectedCard(Vector2Int position)
-        {
-            if (!_selectedPosition.HasValue || !CanMoveTo(position))
-                return;
-                
-            _targetPosition = position;
-            ExecuteMove();
         }
         
         // 执行移动
@@ -500,7 +614,7 @@ namespace ChessGame
             
             if (_stateMachine == null)
             {
-                Debug.LogError("状态机未初始化，尝试重新初始化");
+                Debug.LogWarning("状态机未初始化，尝试重新初始化");
                 try
                 {
                     _stateMachine = new CardStateMachine(this);
@@ -523,76 +637,6 @@ namespace ChessGame
             {
                 Debug.Log($"位置 {position} 没有卡牌，调用HandleCellClick");
                 _stateMachine.HandleCellClick(position);
-            }
-        }
-        
-        // 高亮可移动的格子
-        public void HighlightMovablePositions(Card card)
-        {
-            Vector2Int position = card.Position;
-            
-            for (int x = position.x - moveRange; x <= position.x + moveRange; x++)
-            {
-                for (int y = position.y - moveRange; y <= position.y + moveRange; y++)
-                {
-                    // 检查是否在棋盘范围内
-                    if (x >= 0 && x < BoardWidth && 
-                        y >= 0 && y < BoardHeight)
-                    {
-                        // 计算曼哈顿距离
-                        int distance = Mathf.Abs(x - position.x) + Mathf.Abs(y - position.y);
-                        if (distance <= moveRange)
-                        {
-                            // 检查目标位置是否已有卡牌
-                            Vector2Int targetPos = new Vector2Int(x, y);
-                            if (!HasCard(targetPos))
-                            {
-                                // 高亮可移动的格子
-                                CellView cellView = GetCellView(x, y);
-                                if (cellView != null)
-                                {
-                                    cellView.ToggleHighlight(true);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        // 检查状态机
-        public void CheckStateMachine()
-        {
-            if (_stateMachine == null)
-            {
-                Debug.LogWarning("状态机未初始化，尝试重新初始化");
-                try
-                {
-                    _stateMachine = new CardStateMachine(this);
-                    Debug.Log("状态机重新初始化成功，当前状态：" + _stateMachine.GetCurrentStateType().ToString());
-                }
-                catch (System.Exception e)
-                {
-                    Debug.LogError($"状态机重新初始化失败: {e.Message}\n{e.StackTrace}");
-                }
-            }
-            else
-            {
-                Debug.Log("状态机已初始化，当前状态：" + _stateMachine.GetCurrentStateType().ToString());
-            }
-        }
-        
-        // 辅助方法：随机打乱列表
-        private void ShuffleList<T>(List<T> list)
-        {
-            int n = list.Count;
-            while (n > 1)
-            {
-                n--;
-                int k = Random.Range(0, n + 1);
-                T value = list[k];
-                list[k] = list[n];
-                list[n] = value;
             }
         }
     }
