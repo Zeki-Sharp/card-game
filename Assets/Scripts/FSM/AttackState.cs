@@ -13,9 +13,10 @@ namespace ChessGame.FSM
             
             // 执行攻击
             bool success = StateMachine.CardManager.ExecuteAttack();
+            
             Debug.Log($"攻击执行结果: {(success ? "成功" : "失败")}");
             
-            // 通知状态机攻击已完成，应该切换到空闲状态
+            // 无论成功与否，都切换回空闲状态
             CompleteState(CardState.Idle);
         }
         

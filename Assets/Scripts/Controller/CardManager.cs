@@ -12,6 +12,7 @@ namespace ChessGame
         [SerializeField] private CardDataProvider cardDataProvider;
         [SerializeField] private int moveRange = 1; // 移动范围
         [SerializeField] private int attackRange = 1; // 攻击范围
+        [SerializeField] private TurnManager turnManager;
         
         // 所有卡牌的字典，键为位置，值为卡牌
         private Dictionary<Vector2Int, Card> _cards = new Dictionary<Vector2Int, Card>();
@@ -47,6 +48,9 @@ namespace ChessGame
                 // 初始化状态机
                 _stateMachine = new CardStateMachine(this);
                 Debug.Log("状态机初始化成功，当前状态：" + _stateMachine.GetCurrentStateType().ToString());
+
+                if (turnManager == null)
+                    turnManager = FindObjectOfType<TurnManager>();
             }
             catch (System.Exception e)
             {
@@ -218,15 +222,27 @@ namespace ChessGame
         // 选中卡牌
         public void SelectCard(Vector2Int position)
         {
+            Debug.Log($"CardManager.SelectCard: 位置 {position}");
+            
             if (!_cards.ContainsKey(position))
+            {
+                Debug.LogWarning($"位置 {position} 没有卡牌，无法选择");
                 return;
-                
+            }
+            
             _selectedPosition = position;
+            
+            // 获取卡牌视图并高亮
+            if (_cardViews.ContainsKey(position))
+            {
+                _cardViews[position].SetSelected(true);
+            }
         }
         
         // 设置目标位置
         public void SetTargetPosition(Vector2Int position)
         {
+            Debug.Log($"CardManager.SetTargetPosition: 位置 {position}");
             _targetPosition = position;
         }
         
@@ -458,14 +474,37 @@ namespace ChessGame
                 return false;
             }
             
-            Debug.Log($"移动卡牌: 从 {_selectedPosition.Value} 到 {_targetPosition.Value}");
-            bool success = MoveCard(_selectedPosition.Value, _targetPosition.Value);
+            Vector2Int fromPos = _selectedPosition.Value;
+            Vector2Int toPos = _targetPosition.Value;
+            
+            Debug.Log($"移动卡牌: 从 {fromPos} 到 {toPos}");
+            
+            // 获取移动的卡牌
+            Card card = GetCard(fromPos);
+            if (card == null)
+            {
+                Debug.LogWarning("无法执行移动：起始位置没有卡牌");
+                return false;
+            }
+            
+            bool success = MoveCard(fromPos, toPos);
             
             // 清除选择和目标
             _selectedPosition = null;
             _targetPosition = null;
             
             Debug.Log($"移动执行完成: {(success ? "成功" : "失败")}");
+            
+            // 如果是玩家回合且移动成功，结束玩家回合
+            if (success && turnManager != null && turnManager.IsPlayerTurn())
+            {
+                if (card.OwnerId == 0) // 确保是玩家的卡牌
+                {
+                    Debug.Log("玩家移动完成，结束玩家回合");
+                    turnManager.EndPlayerTurn();
+                }
+            }
+            
             return success;
         }
         
@@ -480,14 +519,37 @@ namespace ChessGame
                 return false;
             }
             
-            Debug.Log($"攻击: 从 {_selectedPosition.Value} 到 {_targetPosition.Value}");
-            bool success = CardAttack(_selectedPosition.Value, _targetPosition.Value);
+            Vector2Int attackerPos = _selectedPosition.Value;
+            Vector2Int targetPos = _targetPosition.Value;
+            
+            Debug.Log($"攻击: 从 {attackerPos} 到 {targetPos}");
+            
+            // 获取攻击的卡牌
+            Card attackerCard = GetCard(attackerPos);
+            if (attackerCard == null)
+            {
+                Debug.LogWarning("无法执行攻击：攻击者位置没有卡牌");
+                return false;
+            }
+            
+            bool success = CardAttack(attackerPos, targetPos);
             
             // 清除选择和目标
             _selectedPosition = null;
             _targetPosition = null;
             
             Debug.Log($"攻击执行完成: {(success ? "成功" : "失败")}");
+            
+            // 如果是玩家回合且攻击成功，结束玩家回合
+            if (success && turnManager != null && turnManager.IsPlayerTurn())
+            {
+                if (attackerCard.OwnerId == 0) // 确保是玩家的卡牌
+                {
+                    Debug.Log("玩家攻击完成，结束玩家回合");
+                    turnManager.EndPlayerTurn();
+                }
+            }
+            
             return success;
         }
         
@@ -638,6 +700,34 @@ namespace ChessGame
                 Debug.Log($"位置 {position} 没有卡牌，调用HandleCellClick");
                 _stateMachine.HandleCellClick(position);
             }
+        }
+        
+        // 获取TurnManager
+        public TurnManager GetTurnManager()
+        {
+            return turnManager;
+        }
+        
+        // 检查是否有玩家卡牌
+        public bool HasPlayerCards()
+        {
+            foreach (var card in _cards.Values)
+            {
+                if (card.OwnerId == 0)
+                    return true;
+            }
+            return false;
+        }
+        
+        // 检查是否有敌方卡牌
+        public bool HasEnemyCards()
+        {
+            foreach (var card in _cards.Values)
+            {
+                if (card.OwnerId == 1)
+                    return true;
+            }
+            return false;
         }
     }
 } 

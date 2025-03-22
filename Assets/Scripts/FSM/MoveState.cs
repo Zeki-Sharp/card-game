@@ -13,9 +13,10 @@ namespace ChessGame.FSM
             
             // 执行移动
             bool success = StateMachine.CardManager.ExecuteMove();
+            
             Debug.Log($"移动执行结果: {(success ? "成功" : "失败")}");
             
-            // 通知状态机移动已完成，应该切换到空闲状态
+            // 无论成功与否，都切换回空闲状态
             CompleteState(CardState.Idle);
         }
         
