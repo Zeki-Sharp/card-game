@@ -3,11 +3,23 @@
   "WorkspaceRootPath": "D:\\C_sharp_scripts\\card game\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|d:\\c_sharp_scripts\\card game\\assets\\scripts\\controller\\gamecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\controller\\gamecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|d:\\c_sharp_scripts\\card game\\assets\\scripts\\view\\cellview.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\view\\cellview.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|d:\\c_sharp_scripts\\card game\\assets\\scripts\\view\\cardview.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\view\\cardview.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|d:\\c_sharp_scripts\\card game\\assets\\scripts\\controller\\cardmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\controller\\cardmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|d:\\c_sharp_scripts\\card game\\assets\\scripts\\fsm\\selectedstate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|D:\\C_sharp_scripts\\card game\\assets\\scripts\\fsm\\selectedstate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\fsm\\selectedstate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
@@ -23,19 +35,58 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "GameController.cs",
+              "DocumentMoniker": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\Controller\\GameController.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\Controller\\GameController.cs",
+              "ToolTip": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\Controller\\GameController.cs",
+              "RelativeToolTip": "Assets\\Scripts\\Controller\\GameController.cs",
+              "ViewState": "AgIAAD0AAAAAAAAAAAASwE8AAAAqAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-22T12:14:53.437Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "CardView.cs",
+              "DocumentMoniker": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\View\\CardView.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\View\\CardView.cs",
+              "ToolTip": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\View\\CardView.cs",
+              "RelativeToolTip": "Assets\\Scripts\\View\\CardView.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-22T12:12:07.091Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "CellView.cs",
+              "DocumentMoniker": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\View\\CellView.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\View\\CellView.cs",
+              "ToolTip": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\View\\CellView.cs",
+              "RelativeToolTip": "Assets\\Scripts\\View\\CellView.cs",
+              "ViewState": "AgIAACcAAAAAAAAAAAAkwD0AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-22T12:11:07.858Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
               "Title": "CardManager.cs",
               "DocumentMoniker": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\Controller\\CardManager.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\Controller\\CardManager.cs",
               "ToolTip": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\Controller\\CardManager.cs",
               "RelativeToolTip": "Assets\\Scripts\\Controller\\CardManager.cs",
-              "ViewState": "AgIAANMBAAAAAAAAAAAQwEkCAAAnAAAAAAAAAA==",
+              "ViewState": "AgIAANsBAAAAAAAAAAAQwDUCAAACAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-03-22T11:55:58.77Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 4,
               "Title": "SelectedState.cs",
               "DocumentMoniker": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\FSM\\SelectedState.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\FSM\\SelectedState.cs",
@@ -43,8 +94,7 @@
               "RelativeToolTip": "Assets\\Scripts\\FSM\\SelectedState.cs",
               "ViewState": "AgIAAAUAAAAAAAAAAAAxwCEAAAA5AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-22T11:54:24.789Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-03-22T11:54:24.789Z"
             }
           ]
         }

@@ -6,7 +6,7 @@ namespace ChessGame.FSM
     // 卡牌状态基类
     public abstract class CardStateBase : ICardState
     {
-        protected CardStateMachine StateMachine;
+        protected CardStateMachine StateMachine { get; private set; }
         
         public event Action<CardState> StateCompleted;
         

@@ -294,7 +294,7 @@ MonoBehaviour:
   cardPrefab: {fileID: 4574850051752094561, guid: a754ac1801a2f504fb802f34cfd7e6e3, type: 3}
   board: {fileID: 619939636}
   cardImages: []
-  chessFactory: {fileID: 11400000, guid: f9afef7ef87bf534d855a455d2cb041f, type: 2}
+  cardDataProvider: {fileID: 1404373183}
   moveRange: 1
   attackRange: 1
 --- !u!4 &908457768
@@ -322,6 +322,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1404373182}
   - component: {fileID: 1404373181}
+  - component: {fileID: 1404373183}
   m_Layer: 0
   m_Name: GameController
   m_TagString: Untagged
@@ -343,7 +344,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   board: {fileID: 619939636}
   cardManager: {fileID: 908457767}
-  initialCardCount: 3
+  initialCardCount: 24
 --- !u!4 &1404373182
 Transform:
   m_ObjectHideFlags: 0
@@ -359,6 +360,23 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1404373183
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1404373180}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8679a99636fc174f832b236415f3153, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  csvResourcePath: Cards/CardData
+  cardSprites:
+  - {fileID: 21300000, guid: 235cbfb99a36d02489b9bd6597158d62, type: 3}
+  - {fileID: 21300000, guid: fee3e9ecdc6793442b85e995ed74b256, type: 3}
+  - {fileID: 21300000, guid: 61b175449e61d014b8aca1e6f584eea9, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -9,7 +9,7 @@ namespace ChessGame
         [SerializeField] private GameObject cardPrefab;
         [SerializeField] private Board board;
         [SerializeField] private List<Sprite> cardImages = new List<Sprite>();
-        [SerializeField] private ChessFactory chessFactory;
+        [SerializeField] private CardDataProvider cardDataProvider;
         [SerializeField] private int moveRange = 1; // 移动范围
         [SerializeField] private int attackRange = 1; // 攻击范围
         
@@ -89,9 +89,21 @@ namespace ChessGame
             }
         }
         
-        // 随机生成卡牌
+        // 生成卡牌
         public void SpawnRandomCards(int count)
         {
+            Debug.Log($"尝试生成卡牌，最大数量: {count}");
+            
+            if (cardDataProvider == null)
+            {
+                cardDataProvider = FindObjectOfType<CardDataProvider>();
+                if (cardDataProvider == null)
+                {
+                    Debug.LogError("找不到CardDataProvider组件");
+                    return;
+                }
+            }
+            
             // 获取所有空白格子
             List<Vector2Int> emptyPositions = GetEmptyPositions();
             
@@ -101,32 +113,31 @@ namespace ChessGame
                 return;
             }
             
-            // 使用工厂生成卡牌数据
-            List<CardData> cardDatas = new List<CardData>();
-            if (chessFactory != null)
+            // 获取所有卡牌数据，保持CSV中的原始顺序
+            List<CardData> allCardDatas = cardDataProvider.GetAllCardData();
+            
+            if (allCardDatas == null || allCardDatas.Count == 0)
             {
-                cardDatas = chessFactory.GenerateRandomCardDatas(count);
-            }
-            else
-            {
-                // 使用原有的随机生成方式作为备选
-                for (int i = 0; i < count; i++)
-                {
-                    cardDatas.Add(CreateRandomCardData());
-                }
+                Debug.LogError("没有可用的卡牌数据");
+                return;
             }
             
-            // 随机生成指定数量的卡牌
-            for (int i = 0; i < cardDatas.Count && emptyPositions.Count > 0; i++)
+            // 确定实际可以生成的卡牌数量
+            int actualCount = Mathf.Min(count, emptyPositions.Count, allCardDatas.Count);
+            
+            Debug.Log($"CSV中有 {allCardDatas.Count} 张卡牌，空白格子有 {emptyPositions.Count} 个，将生成 {actualCount} 张卡牌");
+            
+            // 随机打乱空白格子
+            ShuffleList(emptyPositions);
+            
+            // 生成卡牌，使用CSV中的原始顺序
+            for (int i = 0; i < actualCount; i++)
             {
-                // 随机选择一个空白格子
-                int randomIndex = Random.Range(0, emptyPositions.Count);
-                Vector2Int position = emptyPositions[randomIndex];
-                emptyPositions.RemoveAt(randomIndex);
-                
-                // 创建卡牌并放置在棋盘上
-                SpawnCard(cardDatas[i], position);
+                Vector2Int position = emptyPositions[i];
+                SpawnCard(allCardDatas[i], position);
             }
+            
+            Debug.Log($"成功生成了 {actualCount} 张卡牌");
         }
         
         // 获取所有空白格子
@@ -568,6 +579,20 @@ namespace ChessGame
             else
             {
                 Debug.Log("状态机已初始化，当前状态：" + _stateMachine.GetCurrentStateType().ToString());
+            }
+        }
+        
+        // 辅助方法：随机打乱列表
+        private void ShuffleList<T>(List<T> list)
+        {
+            int n = list.Count;
+            while (n > 1)
+            {
+                n--;
+                int k = Random.Range(0, n + 1);
+                T value = list[k];
+                list[k] = list[n];
+                list[n] = value;
             }
         }
     }
