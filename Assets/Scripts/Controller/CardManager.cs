@@ -113,7 +113,7 @@ namespace ChessGame
                 return;
             }
             
-            // 获取所有卡牌数据，保持CSV中的原始顺序
+            // 获取所有卡牌数据
             List<CardData> allCardDatas = cardDataProvider.GetAllCardData();
             
             if (allCardDatas == null || allCardDatas.Count == 0)
@@ -125,12 +125,12 @@ namespace ChessGame
             // 确定实际可以生成的卡牌数量
             int actualCount = Mathf.Min(count, emptyPositions.Count, allCardDatas.Count);
             
-            Debug.Log($"CSV中有 {allCardDatas.Count} 张卡牌，空白格子有 {emptyPositions.Count} 个，将生成 {actualCount} 张卡牌");
+            Debug.Log($"卡牌集合中有 {allCardDatas.Count} 张卡牌，空白格子有 {emptyPositions.Count} 个，将生成 {actualCount} 张卡牌");
             
             // 随机打乱空白格子
             ShuffleList(emptyPositions);
             
-            // 生成卡牌，使用CSV中的原始顺序
+            // 生成卡牌，使用集合中的原始顺序
             for (int i = 0; i < actualCount; i++)
             {
                 Vector2Int position = emptyPositions[i];
@@ -565,7 +565,7 @@ namespace ChessGame
         {
             if (_stateMachine == null)
             {
-                Debug.LogError("状态机未初始化，尝试重新初始化");
+                Debug.LogWarning("状态机未初始化，尝试重新初始化");
                 try
                 {
                     _stateMachine = new CardStateMachine(this);
