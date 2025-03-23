@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
-using ChessGame.FSM;  // 使用FSM命名空间
+using ChessGame.FSM;
+using Unity.Mathematics;  // 使用FSM命名空间
 
 namespace ChessGame
 {
@@ -167,16 +168,16 @@ namespace ChessGame
         // 创建随机卡牌数据
         private CardData CreateRandomCardData()
         {
-            int id = Random.Range(1000, 9999);
+            int id = UnityEngine.Random.Range(1000, 9999);
             string name = "Card_" + id;
-            int attack = Random.Range(1, 6);
-            int health = Random.Range(1, 10);
+            int attack = UnityEngine.Random.Range(1, 6);
+            int health = UnityEngine.Random.Range(1, 10);
             
             // 随机选择一张图片
             Sprite image = null;
             if (cardImages.Count > 0)
             {
-                image = cardImages[Random.Range(0, cardImages.Count)];
+                image = cardImages[UnityEngine.Random.Range(0, cardImages.Count)];
             }
             
             return new CardData(id, name, attack, health, image);
@@ -203,8 +204,9 @@ namespace ChessGame
                 // 使用单元格的实际位置，并稍微调整Z坐标使卡牌显示在单元格上方
                 Vector3 cardPosition = cellView.transform.position;
                 cardPosition.z = -0.1f; // 调整Z坐标，使卡牌显示在单元格上方
-                
-                GameObject cardObject = Instantiate(cardPrefab, cardPosition, Quaternion.identity);
+                Quaternion rotation = Quaternion.Euler(-60, 0, 0);
+
+                GameObject cardObject = Instantiate(cardPrefab, cardPosition, rotation);
                 cardObject.name = $"Card_{cardData.Name}_{position.x}_{position.y}";
                 
                 // 设置卡牌层，使其可以被单独检测
@@ -422,7 +424,7 @@ namespace ChessGame
             while (n > 1)
             {
                 n--;
-                int k = Random.Range(0, n + 1);
+                int k = UnityEngine.Random.Range(0, n + 1);
                 T value = list[k];
                 list[k] = list[n];
                 list[n] = value;
