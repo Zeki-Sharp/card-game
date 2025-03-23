@@ -43,7 +43,7 @@ namespace ChessGame
                 // 翻转为正面
                 target.FlipToFaceUp();
                 
-                // 对背面卡牌造成伤害
+                // 对背面卡牌造成伤害，攻击方不受伤
                 target.Data.Health -= this.Data.Attack;
                 
                 // 如果血量小于等于0，设置为1（背面卡牌不会直接死亡）
@@ -54,8 +54,9 @@ namespace ChessGame
             }
             else
             {
-                // 正常对正面卡牌造成伤害
+                // 双方都是正面卡牌，双方都受伤
                 target.Data.Health -= this.Data.Attack;
+                this.Data.Health -= target.Data.Attack;
             }
             
             // 标记为已行动

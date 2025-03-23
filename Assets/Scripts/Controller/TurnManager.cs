@@ -74,6 +74,13 @@ namespace ChessGame
         {
             Debug.Log("TurnManager.EndPlayerTurn: 结束玩家回合");
             
+            // 确保所有玩家卡牌都标记为已行动，防止在敌方回合点击
+            CardManager cardManager = FindObjectOfType<CardManager>();
+            if (cardManager != null)
+            {
+                cardManager.MarkAllPlayerCardsAsActed();
+            }
+            
             // 延迟一段时间后开始AI回合
             StartCoroutine(StartEnemyTurnDelayed());
         }

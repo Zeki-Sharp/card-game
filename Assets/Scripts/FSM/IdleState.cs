@@ -60,6 +60,10 @@ namespace ChessGame.FSM
             {
                 Debug.Log("卡牌是背面状态，不能选择");
             }
+            else if (card != null && card.OwnerId == 0 && card.HasActed)
+            {
+                Debug.Log("卡牌已经行动过，不能选择");
+            }
             else
             {
                 Debug.Log("卡牌不可选择");

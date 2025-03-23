@@ -132,33 +132,9 @@ namespace ChessGame
             
             Debug.Log($"卡牌集合中有 {allCardDatas.Count} 张卡牌，空白格子有 {emptyPositions.Count} 个，将生成 {actualCount} 张卡牌");
             
-            // 随机打乱空白格子
+            // 随机打乱空白格子和卡牌数据
             ShuffleList(emptyPositions);
-            
-            // 分离玩家和敌方的位置
-            List<Vector2Int> playerPositions = new List<Vector2Int>();
-            List<Vector2Int> enemyPositions = new List<Vector2Int>();
-            
-            foreach (var pos in emptyPositions)
-            {
-                // 根据位置决定是玩家还是敌方区域
-                // 这里简单地用Y坐标来区分：下半部分是玩家区域，上半部分是敌方区域
-                if (pos.y < board.Height / 2)
-                {
-                    playerPositions.Add(pos);
-                }
-                else
-                {
-                    enemyPositions.Add(pos);
-                }
-            }
-            
-            // 确保每方至少有一个位置
-            if (playerPositions.Count == 0 || enemyPositions.Count == 0)
-            {
-                Debug.LogWarning("无法为双方分配位置");
-                return;
-            }
+            ShuffleList(allCardDatas);
             
             // 分离玩家和敌方的卡牌数据
             List<CardData> playerCards = new List<CardData>();
@@ -183,11 +159,14 @@ namespace ChessGame
                 return;
             }
             
+            // 计算每方应该生成的卡牌数量
+            int playerCardCount = Mathf.Min(playerCards.Count, actualCount / 2 + actualCount % 2);
+            int enemyCardCount = Mathf.Min(enemyCards.Count, actualCount / 2);
+            
             // 生成玩家卡牌
-            int playerCardCount = Mathf.Min(playerPositions.Count, playerCards.Count, actualCount / 2 + actualCount % 2);
-            for (int i = 0; i < playerCardCount; i++)
+            for (int i = 0; i < playerCardCount && i < emptyPositions.Count; i++)
             {
-                Vector2Int position = playerPositions[i];
+                Vector2Int position = emptyPositions[i];
                 CardData cardData = playerCards[i];
                 
                 // 第一张玩家卡牌是正面的，其余是背面的
@@ -196,10 +175,9 @@ namespace ChessGame
             }
             
             // 生成敌方卡牌
-            int enemyCardCount = Mathf.Min(enemyPositions.Count, enemyCards.Count, actualCount / 2);
-            for (int i = 0; i < enemyCardCount; i++)
+            for (int i = 0; i < enemyCardCount && i + playerCardCount < emptyPositions.Count; i++)
             {
-                Vector2Int position = enemyPositions[i];
+                Vector2Int position = emptyPositions[i + playerCardCount];
                 CardData cardData = enemyCards[i];
                 
                 // 第一张敌方卡牌是正面的，其余是背面的
@@ -705,15 +683,20 @@ namespace ChessGame
             // 检查目标是否是背面状态
             bool targetWasFaceDown = target.IsFaceDown;
             bool targetWillDie = false;
+            bool attackerWillDie = false;
             
-            // 如果目标是背面状态，记录攻击前的血量
+            // 记录攻击前的血量
             int targetHealthBefore = target.Data.Health;
+            int attackerHealthBefore = attacker.Data.Health;
             
             // 执行攻击
             if (attacker.Attack(target))
             {
                 // 检查目标是否会死亡（只有正面卡牌才会死亡）
                 targetWillDie = !targetWasFaceDown && target.Data.Health <= 0;
+                
+                // 检查攻击者是否会死亡（只有在攻击正面卡牌时才可能死亡）
+                attackerWillDie = !targetWasFaceDown && attacker.Data.Health <= 0;
                 
                 // 播放攻击动画
                 CardView attackerView = _cardViews[attackerPosition];
@@ -737,18 +720,30 @@ namespace ChessGame
                     else
                     {
                         targetView.PlayDamageAnimation();
+                        
+                        // 如果攻击者也受伤，播放受伤动画
+                        if (attackerHealthBefore > attacker.Data.Health)
+                        {
+                            attackerView.PlayDamageAnimation();
+                        }
                     }
                     
                     // 更新目标卡牌视图
                     targetView.UpdateVisuals();
                     
-                    // 更新攻击者卡牌视图（标记为已行动）
+                    // 更新攻击者卡牌视图
                     attackerView.UpdateVisuals();
                     
-                    // 检查目标是否死亡（只有正面卡牌才会死亡）
+                    // 检查目标是否死亡
                     if (targetWillDie)
                     {
                         RemoveCard(targetPosition);
+                    }
+                    
+                    // 检查攻击者是否死亡
+                    if (attackerWillDie)
+                    {
+                        RemoveCard(attackerPosition);
                     }
                 }
                 
@@ -870,6 +865,24 @@ namespace ChessGame
                     CardView cardView = _cardViews[position];
                     cardView.PlayFlipAnimation();
                 }
+            }
+        }
+
+        // 标记所有玩家卡牌为已行动
+        public void MarkAllPlayerCardsAsActed()
+        {
+            foreach (var card in _cards.Values)
+            {
+                if (card.OwnerId == 0) // 玩家卡牌
+                {
+                    card.HasActed = true;
+                }
+            }
+            
+            // 更新所有卡牌视图
+            foreach (var cardView in _cardViews.Values)
+            {
+                cardView.UpdateVisuals();
             }
         }
     }
