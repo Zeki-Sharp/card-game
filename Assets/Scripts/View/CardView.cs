@@ -278,11 +278,13 @@ namespace ChessGame
                 {
                     // 选中效果，例如黄色边框
                     frameRenderer.color = Color.yellow;
+                    Debug.Log($"CardView.SetSelected: 卡牌 {_card.Data.Name} 设置为选中状态");
                 }
                 else
                 {
                     // 恢复正常颜色
                     UpdateVisuals();
+                    Debug.Log($"CardView.SetSelected: 卡牌 {_card.Data.Name} 取消选中状态");
                 }
             }
         }

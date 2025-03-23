@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System;
+using System.Collections.Generic;
 
 namespace ChessGame
 {
@@ -23,6 +24,9 @@ namespace ChessGame
         
         // 当前回合属性
         public TurnState CurrentTurn => _currentTurn;
+        
+        // 添加一个标志，表示是否正在切换回合
+        private bool _isSwitchingTurn = false;
         
         private void Awake()
         {
@@ -106,7 +110,9 @@ namespace ChessGame
             if (_aiController != null)
             {
                 Debug.Log("TurnManager.StartEnemyTurn: 调用AI执行行动");
-                _aiController.ExecuteAITurn();
+                
+                // 使用Invoke延迟调用，确保UI更新完成
+                Invoke("CallAIExecuteTurn", 0.1f);
             }
             else
             {
@@ -115,12 +121,54 @@ namespace ChessGame
             }
         }
         
+        // 添加一个新方法来调用AI执行回合
+        private void CallAIExecuteTurn()
+        {
+            if (_aiController != null)
+            {
+                _aiController.ExecuteAITurn();
+            }
+        }
+        
         // 结束敌方回合
         public void EndEnemyTurn()
         {
+            // 如果已经在切换回合，则不再重复执行
+            if (_isSwitchingTurn)
+            {
+                Debug.LogWarning("TurnManager.EndEnemyTurn: 已经在切换回合，忽略重复调用");
+                return;
+            }
+            
+            Debug.Log("TurnManager.EndEnemyTurn被调用");
             Debug.Log("结束敌方回合");
             
-            // 开始新的玩家回合
+            _isSwitchingTurn = true;
+            
+            // 重置所有敌方卡牌的行动状态
+            if (_cardManager != null)
+            {
+                Debug.Log("重置所有敌方卡牌的行动状态");
+                Dictionary<Vector2Int, Card> allCards = _cardManager.GetAllCards();
+                foreach (var cardPair in allCards)
+                {
+                    Card card = cardPair.Value;
+                    if (card.OwnerId == 1) // 敌方卡牌
+                    {
+                        card.HasActed = false;
+                        Debug.Log($"重置敌方卡牌行动状态: 位置 {card.Position}");
+                    }
+                }
+            }
+            
+            // 使用Invoke延迟调用，确保当前帧处理完成
+            Invoke("StartPlayerTurnDelayed", 0.1f);
+        }
+        
+        // 添加一个新方法来延迟开始玩家回合
+        private void StartPlayerTurnDelayed()
+        {
+            _isSwitchingTurn = false;
             StartPlayerTurn();
         }
         

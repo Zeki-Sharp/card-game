@@ -10,6 +10,10 @@ namespace ChessGame
         
         private CardManager _cardManager;
         private TurnManager _turnManager;
+        private bool hasActed = false;
+        
+        // 添加一个标志，表示AI是否正在执行回合
+        private bool _isExecutingTurn = false;
         
         private void Awake()
         {
@@ -26,7 +30,16 @@ namespace ChessGame
         // 执行AI回合
         public void ExecuteAITurn()
         {
+            // 如果已经在执行回合，则不再重复执行
+            if (_isExecutingTurn)
+            {
+                Debug.LogWarning("AI已经在执行回合，忽略重复调用");
+                return;
+            }
+            
             Debug.Log("AI开始执行回合");
+            _isExecutingTurn = true;
+            hasActed = false; // 重置hasActed变量
             StartCoroutine(ExecuteAITurnCoroutine());
         }
         
@@ -57,20 +70,36 @@ namespace ChessGame
             // 等待一小段时间
             yield return new WaitForSeconds(actionDelay);
             
+            
             // 尝试攻击附近的玩家卡牌或背面卡牌
             bool attacked = TryAttackNearbyPlayerCard(selectedCard);
+            Debug.Log($"AI攻击结果: {(attacked ? "成功" : "失败")}");
             
-            // 如果没有攻击，尝试移动
-            if (!attacked)
+            if (attacked)
             {
-                TryMoveRandomly(selectedCard);
+                hasActed = true;
             }
+            else
+            {
+                // 如果没有攻击，尝试移动
+                bool moved = TryMoveRandomly(selectedCard);
+                Debug.Log($"AI移动结果: {(moved ? "成功" : "失败")}");
+                
+                if (moved)
+                {
+                    hasActed = true;
+                }
+            }
+            
+            // 无论是否行动成功，都标记该卡牌为已行动
+            selectedCard.HasActed = hasActed;
             
             // 等待一小段时间
             yield return new WaitForSeconds(actionDelay);
             
             // 结束AI回合
             Debug.Log("AI行动完成，结束敌方回合");
+            _isExecutingTurn = false; // 重置执行状态
             _turnManager.EndEnemyTurn();
         }
         
@@ -102,18 +131,30 @@ namespace ChessGame
             Vector2Int position = card.Position;
             int attackRange = _cardManager.AttackRange;
             
-            // 检查周围是否有可攻击的卡牌
+            Debug.Log($"AI尝试攻击，位置: {position}, 攻击范围: {attackRange}");
+            
+            // 获取可攻击的位置
             List<Vector2Int> attackablePositions = new List<Vector2Int>();
             
-            for (int x = position.x - attackRange; x <= position.x + attackRange; x++)
+            // 检查周围的格子
+            for (int dx = -attackRange; dx <= attackRange; dx++)
             {
-                for (int y = position.y - attackRange; y <= position.y + attackRange; y++)
+                for (int dy = -attackRange; dy <= attackRange; dy++)
                 {
-                    if (x >= 0 && x < _cardManager.BoardWidth && y >= 0 && y < _cardManager.BoardHeight)
+                    // 跳过原位置
+                    if (dx == 0 && dy == 0) continue;
+                    
+                    // 计算曼哈顿距离
+                    int manhattanDistance = Mathf.Abs(dx) + Mathf.Abs(dy);
+                    Debug.Log($"检查位置偏移: ({dx}, {dy}), 曼哈顿距离: {manhattanDistance}, 攻击范围: {attackRange}");
+                    
+                    if (manhattanDistance <= attackRange)
                     {
-                        // 计算曼哈顿距离
-                        int distance = Mathf.Abs(x - position.x) + Mathf.Abs(y - position.y);
-                        if (distance <= attackRange)
+                        int x = position.x + dx;
+                        int y = position.y + dy;
+                        
+                        // 检查是否在棋盘范围内
+                        if (x >= 0 && x < _cardManager.BoardWidth && y >= 0 && y < _cardManager.BoardHeight)
                         {
                             Vector2Int targetPos = new Vector2Int(x, y);
                             Card targetCard = _cardManager.GetCard(targetPos);
@@ -122,11 +163,14 @@ namespace ChessGame
                             if (targetCard != null && (targetCard.OwnerId == 0 || targetCard.IsFaceDown))
                             {
                                 attackablePositions.Add(targetPos);
+                                Debug.Log($"找到可攻击位置: {targetPos}, 目标卡牌: {targetCard.Data.Name}, 所有者: {targetCard.OwnerId}, 是否背面: {targetCard.IsFaceDown}");
                             }
                         }
                     }
                 }
             }
+            
+            Debug.Log($"找到 {attackablePositions.Count} 个可攻击位置");
             
             // 如果有可攻击的目标，随机选择一个进行攻击
             if (attackablePositions.Count > 0)
@@ -135,10 +179,12 @@ namespace ChessGame
                 Debug.Log($"AI攻击卡牌，位置: {targetPosition}");
                 
                 // 设置目标位置并执行攻击
+                _cardManager.SelectCard(card.Position);
                 _cardManager.SetTargetPosition(targetPosition);
-                _cardManager.ExecuteAttack();
+                bool result = _cardManager.ExecuteAttack();
+                Debug.Log($"攻击执行结果: {result}");
                 
-                return true;
+                return result;
             }
             
             return false;
@@ -148,30 +194,42 @@ namespace ChessGame
         private bool TryMoveRandomly(Card card)
         {
             Vector2Int position = card.Position;
-            int moveRange = _cardManager.MoveRange;
+            int moveRange = _cardManager.MoveRange; // 使用CardManager中定义的移动范围
+            
+            Debug.Log($"AI尝试移动，位置: {position}, 移动范围: {moveRange}");
             
             // 获取可移动的位置
             List<Vector2Int> movablePositions = new List<Vector2Int>();
             
-            for (int x = position.x - moveRange; x <= position.x + moveRange; x++)
+            // 检查周围的格子
+            for (int dx = -moveRange; dx <= moveRange; dx++)
             {
-                for (int y = position.y - moveRange; y <= position.y + moveRange; y++)
+                for (int dy = -moveRange; dy <= moveRange; dy++)
                 {
-                    if (x >= 0 && x < _cardManager.BoardWidth && y >= 0 && y < _cardManager.BoardHeight)
+                    // 跳过原位置
+                    if (dx == 0 && dy == 0) continue;
+                    
+                    // 计算曼哈顿距离
+                    if (Mathf.Abs(dx) + Mathf.Abs(dy) <= moveRange)
                     {
-                        // 计算曼哈顿距离
-                        int distance = Mathf.Abs(x - position.x) + Mathf.Abs(y - position.y);
-                        if (distance <= moveRange)
+                        int x = position.x + dx;
+                        int y = position.y + dy;
+                        
+                        // 检查是否在棋盘范围内
+                        if (x >= 0 && x < _cardManager.BoardWidth && y >= 0 && y < _cardManager.BoardHeight)
                         {
                             Vector2Int targetPos = new Vector2Int(x, y);
                             if (!_cardManager.HasCard(targetPos))
                             {
                                 movablePositions.Add(targetPos);
+                                Debug.Log($"找到可移动位置: {targetPos}");
                             }
                         }
                     }
                 }
             }
+            
+            Debug.Log($"找到 {movablePositions.Count} 个可移动位置");
             
             // 如果有可移动的位置，随机选择一个进行移动
             if (movablePositions.Count > 0)
@@ -180,6 +238,7 @@ namespace ChessGame
                 Debug.Log($"AI移动卡牌，从 {position} 到 {targetPosition}");
                 
                 // 设置目标位置并执行移动
+                _cardManager.SelectCard(card.Position);
                 _cardManager.SetTargetPosition(targetPosition);
                 _cardManager.ExecuteMove();
                 
@@ -188,6 +247,16 @@ namespace ChessGame
             
             Debug.Log("AI没有可移动的位置");
             return false;
+        }
+
+        // 在AIController中添加SetTargetCard方法
+        private void SetTargetCard(Vector2Int position)
+        {
+            // 选中卡牌
+            _cardManager.SelectCard(position);
+            
+            // 设置目标位置
+            _cardManager.SetTargetPosition(position);
         }
     }
 } 

@@ -35,21 +35,25 @@ namespace ChessGame.FSM
                 Debug.LogWarning("找不到卡牌视图");
             }
             
-            // 高亮选中棋子的位置
-            StateMachine.CardManager.HighlightSelectedPosition(selectedCard);
-            
-            // 高亮可移动的格子
-            StateMachine.CardManager.HighlightMovablePositions(selectedCard);
-            
-            // 高亮可攻击的敌方棋子
-            StateMachine.CardManager.HighlightAttackableCards(selectedCard);
+            // 高亮逻辑已移至CardHighlightService，通过事件触发
         }
         
         public override void Exit()
         {
             Debug.Log("退出选中状态");
-            // 清除高亮
-            StateMachine.CardManager.ClearAllHighlights();
+            
+            // 清除卡牌选中状态
+            Card selectedCard = StateMachine.CardManager.GetSelectedCard();
+            if (selectedCard != null)
+            {
+                CardView cardView = StateMachine.CardManager.GetCardView(selectedCard.Position);
+                if (cardView != null)
+                {
+                    cardView.SetSelected(false);
+                }
+            }
+            
+            // 高亮清除逻辑已移至CardHighlightService，通过事件触发
         }
         
         public override void HandleCellClick(Vector2Int position)

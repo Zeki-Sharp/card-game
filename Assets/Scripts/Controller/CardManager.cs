@@ -36,6 +36,11 @@ namespace ChessGame
         public event Action<Vector2Int> OnCardRemoved;
         public event Action<Vector2Int, bool> OnCardFlipped;
         public event Action<Vector2Int, int, bool> OnCardAdded;
+        public event Action<Vector2Int> OnCardSelected;
+        public event Action OnCardDeselected;
+        public event Action<Vector2Int, Vector2Int> OnCardMoved;
+        public event Action<Vector2Int, Vector2Int> OnCardAttacked;
+        public event Action<Card> OnCardDamaged;
         
         private void Awake()
         {
@@ -266,38 +271,24 @@ namespace ChessGame
             // 获取卡牌视图并高亮
             if (_cardViews.ContainsKey(position))
             {
-                _cardViews[position].SetSelected(true);
+                CardView cardView = _cardViews[position];
+                Debug.Log($"找到卡牌视图: {cardView.name}");
             }
-        }
-        
-        // 设置目标位置
-        public void SetTargetPosition(Vector2Int position)
-        {
-            Debug.Log($"CardManager.SetTargetPosition: 位置 {position}");
-            _targetPosition = position;
+            else
+            {
+                Debug.LogWarning($"位置 {position} 没有对应的卡牌视图");
+            }
+            
+            // 触发选中事件
+            Debug.Log($"触发OnCardSelected事件，位置: {position}");
+            OnCardSelected?.Invoke(position);
         }
         
         // 获取选中的卡牌
         public Card GetSelectedCard()
         {
-            if (_selectedPosition.HasValue && _cards.ContainsKey(_selectedPosition.Value))
-                return _cards[_selectedPosition.Value];
-            return null;
-        }
-        
-        // 获取指定位置的卡牌
-        public Card GetCard(Vector2Int position)
-        {
-            if (_cards.ContainsKey(position))
-                return _cards[position];
-            return null;
-        }
-        
-        // 获取指定位置的卡牌视图
-        public CardView GetCardView(Vector2Int position)
-        {
-            if (_cardViews.ContainsKey(position))
-                return _cardViews[position];
+            if (_selectedPosition.HasValue)
+                return GetCard(_selectedPosition.Value);
             return null;
         }
         
@@ -305,12 +296,6 @@ namespace ChessGame
         public CellView GetCellView(int x, int y)
         {
             return board.GetCellView(x, y);
-        }
-        
-        // 检查指定位置是否有卡牌
-        public bool HasCard(Vector2Int position)
-        {
-            return _cards.ContainsKey(position);
         }
         
         // 清除所有高亮
@@ -481,40 +466,6 @@ namespace ChessGame
                 list[k] = list[n];
                 list[n] = value;
             }
-        }
-        
-        // 检查是否可以移动到指定位置
-        public bool CanMoveTo(Vector2Int position)
-        {
-            if (!_selectedPosition.HasValue)
-                return false;
-                
-            // 检查目标位置是否已有卡牌
-            if (_cards.ContainsKey(position))
-                return false;
-                
-            Vector2Int pos = _selectedPosition.Value;
-            
-            // 计算曼哈顿距离
-            int distance = Mathf.Abs(position.x - pos.x) + Mathf.Abs(position.y - pos.y);
-            return distance <= moveRange;
-        }
-        
-        // 检查是否可以攻击指定位置
-        public bool CanAttack(Vector2Int position)
-        {
-            if (!_selectedPosition.HasValue)
-                return false;
-                
-            // 检查目标位置是否有卡牌
-            if (!_cards.ContainsKey(position))
-                return false;
-                
-            Vector2Int pos = _selectedPosition.Value;
-            
-            // 计算曼哈顿距离
-            int distance = Mathf.Abs(position.x - pos.x) + Mathf.Abs(position.y - pos.y);
-            return distance <= attackRange;
         }
         
         // 执行移动
@@ -901,6 +852,73 @@ namespace ChessGame
         public Dictionary<Vector2Int, Card> GetAllCards()
         {
             return new Dictionary<Vector2Int, Card>(_cards);
+        }
+
+        public void ClearSelectedPosition()
+        {
+            if (_selectedPosition.HasValue)
+            {
+                _selectedPosition = null;
+                OnCardDeselected?.Invoke();
+            }
+        }
+
+        public CardView GetCardView(Vector2Int position)
+        {
+            if (_cardViews.ContainsKey(position))
+                return _cardViews[position];
+            return null;
+        }
+
+        public bool HasCard(Vector2Int position)
+        {
+            return _cards.ContainsKey(position);
+        }
+
+        public Card GetCard(Vector2Int position)
+        {
+            if (_cards.ContainsKey(position))
+                return _cards[position];
+            return null;
+        }
+
+        public bool CanMoveTo(Vector2Int position)
+        {
+            if (!_selectedPosition.HasValue)
+                return false;
+                
+            Vector2Int from = _selectedPosition.Value;
+            
+            // 检查是否有卡牌在目标位置
+            if (_cards.ContainsKey(position))
+                return false;
+                
+            // 计算曼哈顿距离
+            int distance = Mathf.Abs(position.x - from.x) + Mathf.Abs(position.y - from.y);
+            
+            // 检查是否在移动范围内
+            return distance <= moveRange;
+        }
+
+        public bool CanAttack(Vector2Int position)
+        {
+            if (!_selectedPosition.HasValue)
+                return false;
+                
+            Vector2Int from = _selectedPosition.Value;
+            
+            // 计算曼哈顿距离
+            int distance = Mathf.Abs(position.x - from.x) + Mathf.Abs(position.y - from.y);
+            
+            // 检查是否在攻击范围内
+            return distance <= attackRange;
+        }
+
+        // 添加SetTargetPosition方法
+        public void SetTargetPosition(Vector2Int position)
+        {
+            Debug.Log($"CardManager.SetTargetPosition: 位置 {position}");
+            _targetPosition = position;
         }
     }
 } 
