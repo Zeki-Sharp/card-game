@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using ChessGame.FSM;
-using Unity.Mathematics;  // 使用FSM命名空间
+using System;
 
 namespace ChessGame
 {
@@ -32,6 +32,10 @@ namespace ChessGame
         public int BoardHeight => board != null ? board.Height : 0;
         public int MoveRange => moveRange;
         public int AttackRange => attackRange;
+
+        public event Action<Vector2Int> OnCardRemoved;
+        public event Action<Vector2Int, bool> OnCardFlipped;
+        public event Action<Vector2Int, int, bool> OnCardAdded;
         
         private void Awake()
         {
@@ -61,8 +65,6 @@ namespace ChessGame
         
         private void Start()
         {
-            if (board == null)
-                board = FindObjectOfType<Board>();
             
             // 加载卡牌图片资源
             if (cardImages.Count == 0)
@@ -208,24 +210,6 @@ namespace ChessGame
             return emptyPositions;
         }
         
-        // 创建随机卡牌数据
-        private CardData CreateRandomCardData()
-        {
-            int id = UnityEngine.Random.Range(1000, 9999);
-            string name = "Card_" + id;
-            int attack = UnityEngine.Random.Range(1, 6);
-            int health = UnityEngine.Random.Range(1, 10);
-            
-            // 随机选择一张图片
-            Sprite image = null;
-            if (cardImages.Count > 0)
-            {
-                image = cardImages[UnityEngine.Random.Range(0, cardImages.Count)];
-            }
-            
-            return new CardData(id, name, attack, health, image);
-        }
-        
         // 在指定位置生成卡牌
         public void SpawnCard(CardData cardData, Vector2Int position, bool isFaceDown = true)
         {
@@ -252,9 +236,6 @@ namespace ChessGame
                 GameObject cardObject = Instantiate(cardPrefab, cardPosition, rotation);
                 cardObject.name = $"Card_{cardData.Name}_{position.x}_{position.y}";
                 
-                // 设置卡牌层，使其可以被单独检测
-                cardObject.layer = LayerMask.NameToLayer("Card");
-                
                 CardView cardView = cardObject.GetComponent<CardView>();
                 if (cardView != null)
                 {
@@ -262,6 +243,11 @@ namespace ChessGame
                     _cardViews[position] = cardView;
                 }
             }
+            
+            // 触发卡牌添加事件
+            OnCardAdded?.Invoke(position, card.OwnerId, card.IsFaceDown);
+            
+            Debug.Log($"生成卡牌: {cardData.Name}, 位置: {position}, 阵营: {card.OwnerId}, 背面: {isFaceDown}");
         }
         
         // 选中卡牌
@@ -709,7 +695,8 @@ namespace ChessGame
                     // 如果目标从背面翻转为正面，播放翻转动画
                     if (targetWasFaceDown)
                     {
-                        targetView.PlayFlipAnimation();
+                        OnCardFlipped?.Invoke(targetPosition, false);  
+                        FlipCard(targetPosition);
                         
                         // 如果背面卡牌受到致命伤害，显示血量为1
                         if (targetHealthBefore - attacker.Data.Attack <= 0)
@@ -754,10 +741,12 @@ namespace ChessGame
         }
         
         // 移除卡牌
-        private void RemoveCard(Vector2Int position)
+        public void RemoveCard(Vector2Int position)
         {
             if (!_cards.ContainsKey(position))
                 return;
+            
+            Debug.Log($"移除卡牌，位置: {position}");
             
             // 移除卡牌模型
             _cards.Remove(position);
@@ -772,6 +761,9 @@ namespace ChessGame
                 }
                 _cardViews.Remove(position);
             }
+            
+            // 触发卡牌移除事件
+            OnCardRemoved?.Invoke(position);
         }
         
         // 重置所有卡牌的行动状态
@@ -849,22 +841,41 @@ namespace ChessGame
             return false;
         }
 
-        // 添加翻转卡牌方法
+        // 翻转卡牌
         public void FlipCard(Vector2Int position)
         {
             if (!_cards.ContainsKey(position))
+            {
+                Debug.LogWarning($"CardManager: 位置 {position} 没有卡牌，无法翻转");
                 return;
+            }
                 
             Card card = _cards[position];
-            if (card.IsFaceDown)
+            bool wasFaceDown = card.IsFaceDown;
+            
+            if (wasFaceDown)
             {
+                Debug.Log($"CardManager: 翻转卡牌，位置: {position}, 卡牌: {card.Data.Name}");
+                
+                // 翻转卡牌
                 card.FlipToFaceUp();
                 
+                // 更新视图
                 if (_cardViews.ContainsKey(position))
                 {
                     CardView cardView = _cardViews[position];
                     cardView.PlayFlipAnimation();
+                    cardView.UpdateVisuals(); // 确保视图更新
                 }
+                
+                // 触发卡牌翻面事件 - 确保参数正确
+                OnCardFlipped?.Invoke(position, false); // false表示不再是背面
+                
+                Debug.Log($"CardManager: 卡牌翻面完成，位置: {position}, 从背面翻到正面");
+            }
+            else
+            {
+                Debug.LogWarning($"CardManager: 位置 {position} 的卡牌已经是正面，无需翻转");
             }
         }
 
@@ -884,6 +895,12 @@ namespace ChessGame
             {
                 cardView.UpdateVisuals();
             }
+        }
+
+        // 获取所有卡牌
+        public Dictionary<Vector2Int, Card> GetAllCards()
+        {
+            return new Dictionary<Vector2Int, Card>(_cards);
         }
     }
 } 

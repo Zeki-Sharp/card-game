@@ -83,6 +83,7 @@ namespace ChessGame
             if (IsFaceDown)
             {
                 IsFaceDown = false;
+                Debug.Log($"卡牌翻转为正面，位置: {Position}, 所有者: {OwnerId}");
             }
         }
         

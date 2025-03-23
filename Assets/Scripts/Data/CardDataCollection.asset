@@ -15,37 +15,91 @@ MonoBehaviour:
   cards:
   - id: 0
     name: "\u517D\u4EBA"
-    attack: 2
-    health: 3
+    attack: 3
+    health: 4
+    image: {fileID: 21300000, guid: 235cbfb99a36d02489b9bd6597158d62, type: 3}
+    faction: 1
+  - id: 0
+    name: "\u517D\u4EBA"
+    attack: 3
+    health: 4
+    image: {fileID: 21300000, guid: 235cbfb99a36d02489b9bd6597158d62, type: 3}
+    faction: 1
+  - id: 0
+    name: "\u517D\u4EBA"
+    attack: 3
+    health: 4
     image: {fileID: 21300000, guid: 235cbfb99a36d02489b9bd6597158d62, type: 3}
     faction: 1
   - id: 1
+    name: "\u77EE\u4EBA"
+    attack: 1
+    health: 2
+    image: {fileID: 21300000, guid: 32628c159b53b4649a87e8998123f17e, type: 3}
+    faction: 1
+  - id: 1
+    name: "\u77EE\u4EBA"
+    attack: 1
+    health: 2
+    image: {fileID: 21300000, guid: 32628c159b53b4649a87e8998123f17e, type: 3}
+    faction: 1
+  - id: 1
+    name: "\u77EE\u4EBA"
+    attack: 1
+    health: 2
+    image: {fileID: 21300000, guid: 32628c159b53b4649a87e8998123f17e, type: 3}
+    faction: 1
+  - id: 1
+    name: "\u77EE\u4EBA"
+    attack: 1
+    health: 2
+    image: {fileID: 21300000, guid: 32628c159b53b4649a87e8998123f17e, type: 3}
+    faction: 1
+  - id: 1
+    name: "\u77EE\u4EBA"
+    attack: 1
+    health: 2
+    image: {fileID: 21300000, guid: 32628c159b53b4649a87e8998123f17e, type: 3}
+    faction: 1
+  - id: 1
+    name: "\u77EE\u4EBA"
+    attack: 1
+    health: 2
+    image: {fileID: 21300000, guid: 32628c159b53b4649a87e8998123f17e, type: 3}
+    faction: 1
+  - id: 2
     name: "\u6728\u7CBE\u7075"
-    attack: 3
-    health: 4
+    attack: 1
+    health: 2
     image: {fileID: 21300000, guid: fee3e9ecdc6793442b85e995ed74b256, type: 3}
     faction: 0
   - id: 2
-    name: "\u7CBE\u7075"
-    attack: 4
-    health: 5
-    image: {fileID: 21300000, guid: 61b175449e61d014b8aca1e6f584eea9, type: 3}
+    name: "\u6728\u7CBE\u7075"
+    attack: 1
+    health: 2
+    image: {fileID: 21300000, guid: fee3e9ecdc6793442b85e995ed74b256, type: 3}
+    faction: 0
+  - id: 2
+    name: "\u6728\u7CBE\u7075"
+    attack: 1
+    health: 2
+    image: {fileID: 21300000, guid: fee3e9ecdc6793442b85e995ed74b256, type: 3}
+    faction: 0
+  - id: 2
+    name: "\u6728\u7CBE\u7075"
+    attack: 1
+    health: 2
+    image: {fileID: 21300000, guid: fee3e9ecdc6793442b85e995ed74b256, type: 3}
+    faction: 0
+  - id: 2
+    name: "\u6728\u7CBE\u7075"
+    attack: 1
+    health: 2
+    image: {fileID: 21300000, guid: fee3e9ecdc6793442b85e995ed74b256, type: 3}
     faction: 0
   - id: 3
-    name: "\u77EE\u4EBA"
-    attack: 1
-    health: 2
-    image: {fileID: 21300000, guid: 32628c159b53b4649a87e8998123f17e, type: 3}
-    faction: 1
-  - id: 4
-    name: "\u77EE\u4EBA"
-    attack: 1
-    health: 2
-    image: {fileID: 21300000, guid: 32628c159b53b4649a87e8998123f17e, type: 3}
-    faction: 1
-  - id: 5
-    name: "\u77EE\u4EBA"
-    attack: 7
-    health: 8
-    image: {fileID: 21300000, guid: 32628c159b53b4649a87e8998123f17e, type: 3}
-    faction: 1
+    name: "\u7CBE\u7075"
+    attack: 3
+    health: 4
+    image: {fileID: 21300000, guid: 61b175449e61d014b8aca1e6f584eea9, type: 3}
+    faction: 0

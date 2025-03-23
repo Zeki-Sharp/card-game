@@ -124,7 +124,7 @@ namespace ChessGame
             return _card;
         }
         
-        // 播放翻转动画
+        // 播放翻面动画
         public void PlayFlipAnimation()
         {
             StartCoroutine(FlipAnimationCoroutine());
@@ -132,35 +132,57 @@ namespace ChessGame
         
         private IEnumerator FlipAnimationCoroutine()
         {
+            Debug.Log($"播放翻面动画: {gameObject.name}");
+            
             float duration = 0.5f;
             float elapsed = 0f;
             
-            // 第一阶段：缩小X轴直到看不见
-            Vector3 originalScale = transform.localScale;
-            Vector3 flatScale = new Vector3(0.01f, originalScale.y, originalScale.z);
+            // 保存原始图片
+            Sprite originalSprite = cardRenderer.sprite;
             
+            // 第一阶段：缩小X轴直到看不见
             while (elapsed < duration / 2)
             {
                 float t = elapsed / (duration / 2);
-                transform.localScale = Vector3.Lerp(originalScale, flatScale, t);
+                Vector3 scale = transform.localScale;
+                scale.x = Mathf.Lerp(1, 0, t);
+                transform.localScale = scale;
+                
                 elapsed += Time.deltaTime;
                 yield return null;
             }
             
-            // 更新卡牌视觉效果
-            UpdateVisuals();
+            // 切换到正面图片
+            cardRenderer.sprite = _frontSprite;
             
-            // 第二阶段：恢复X轴大小
+            // 显示攻击和生命值
+            if (attackBackRenderer != null) attackBackRenderer.enabled = true;
+            if (healthBackRenderer != null) healthBackRenderer.enabled = true;
+            if (attackText != null) attackText.enabled = true;
+            if (healthText != null) healthText.enabled = true;
+            
+            // 第二阶段：放大X轴直到正常大小
             elapsed = 0f;
             while (elapsed < duration / 2)
             {
                 float t = elapsed / (duration / 2);
-                transform.localScale = Vector3.Lerp(flatScale, originalScale, t);
+                Vector3 scale = transform.localScale;
+                scale.x = Mathf.Lerp(0, 1, t);
+                transform.localScale = scale;
+                
                 elapsed += Time.deltaTime;
                 yield return null;
             }
             
-            transform.localScale = originalScale;
+            // 确保恢复到正常大小
+            Vector3 finalScale = transform.localScale;
+            finalScale.x = 1;
+            transform.localScale = finalScale;
+            
+            // 更新卡牌视觉效果
+            UpdateVisuals();
+            
+            Debug.Log($"翻面动画完成: {gameObject.name}");
         }
         
         // 播放攻击动画

@@ -9,6 +9,7 @@ namespace ChessGame
         [SerializeField] private CardManager cardManager;
         [SerializeField] private TurnManager turnManager;
         [SerializeField] private AIController aiController;
+        [SerializeField] private GameStateManager gameStateManager;
         [SerializeField] private int initialCardCount = 3;
         
         // 游戏状态
@@ -57,6 +58,13 @@ namespace ChessGame
                 Debug.Log($"找到AIController: {(aiController != null ? "成功" : "失败")}");
             }
             
+            // 初始化GameStateManager
+            if (gameStateManager == null)
+            {
+                gameStateManager = FindObjectOfType<GameStateManager>();
+                Debug.Log($"找到GameStateManager: {(gameStateManager != null ? "成功" : "失败")}");
+            }
+            
             // 检查状态机是否初始化
             if (cardManager != null)
             {
@@ -85,18 +93,11 @@ namespace ChessGame
         
         private void Update()
         {
-            // 如果游戏结束，不处理输入
-            if (_isGameOver)
-                return;
-                
             // 处理鼠标点击
             HandleMouseClick();
             
             // 处理键盘输入
             HandleKeyboardInput();
-            
-            // 检查游戏是否结束
-            CheckGameOver();
         }
         
         // 处理鼠标点击
@@ -205,36 +206,6 @@ namespace ChessGame
             if (Input.GetKeyDown(KeyCode.Escape))
             {
                 TogglePause();
-            }
-        }
-        
-        // 检查游戏是否结束
-        private void CheckGameOver()
-        {
-            if (!_isGameInitialized)
-                return;
-                
-            // 检查是否有玩家卡牌
-            bool hasPlayerCards = cardManager.HasPlayerCards();
-            
-            // 检查是否有敌方卡牌
-            bool hasEnemyCards = cardManager.HasEnemyCards();
-            
-            // 如果一方没有卡牌，游戏结束
-            if (!hasPlayerCards || !hasEnemyCards)
-            {
-                _isGameOver = true;
-                
-                if (!hasPlayerCards)
-                {
-                    Debug.Log("游戏结束：玩家失败");
-                    // TODO: 显示失败界面
-                }
-                else
-                {
-                    Debug.Log("游戏结束：玩家胜利");
-                    // TODO: 显示胜利界面
-                }
             }
         }
         
