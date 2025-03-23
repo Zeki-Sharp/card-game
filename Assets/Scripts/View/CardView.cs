@@ -7,6 +7,8 @@ namespace ChessGame
     {
         [SerializeField] private SpriteRenderer cardRenderer;
         [SerializeField] private SpriteRenderer frameRenderer;
+        [SerializeField] private SpriteRenderer attackBackRenderer;
+        [SerializeField] private SpriteRenderer healthBackRenderer;
         [SerializeField] private TextMeshPro attackText;
         [SerializeField] private TextMeshPro healthText;
         [SerializeField] private Color playerColor = Color.blue;
@@ -69,7 +71,14 @@ namespace ChessGame
                     frameRenderer.color = actedColor;
                 }
             }
-        }
+
+            cardRenderer.sortingOrder = 100;
+            frameRenderer.sortingOrder = 101;
+            attackBackRenderer.sortingOrder = 102;
+            healthBackRenderer.sortingOrder = 102;
+            attackText.sortingOrder = 103;
+            healthText.sortingOrder = 103;
+        }   
         
         public Card GetCard()
         {

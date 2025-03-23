@@ -204,7 +204,7 @@ namespace ChessGame
                 // 使用单元格的实际位置，并稍微调整Z坐标使卡牌显示在单元格上方
                 Vector3 cardPosition = cellView.transform.position;
                 cardPosition.z = -0f; // 调整Z坐标，使卡牌显示在单元格上方
-                Quaternion rotation = Quaternion.Euler(-45, 0, 0);
+                Quaternion rotation = Quaternion.Euler(Camera.main.transform.rotation.eulerAngles.x, Camera.main.transform.rotation.eulerAngles.y, 0);
 
                 GameObject cardObject = Instantiate(cardPrefab, cardPosition, rotation);
                 cardObject.name = $"Card_{cardData.Name}_{position.x}_{position.y}";
