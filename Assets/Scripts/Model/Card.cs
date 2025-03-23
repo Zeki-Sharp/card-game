@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace ChessGame
 {
@@ -18,6 +19,10 @@ namespace ChessGame
         
         // 卡牌是否为背面状态
         public bool IsFaceDown { get; private set; }
+        
+        // 默认移动范围和攻击范围
+        public virtual int MoveRange { get; protected set; } = 1;
+        public virtual int AttackRange { get; protected set; } = 1;
 
         public Card(CardData data, Vector2Int position, int ownerId = 0, bool isFaceDown = true)
         {
@@ -26,6 +31,10 @@ namespace ChessGame
             OwnerId = ownerId;
             HasActed = false;
             IsFaceDown = isFaceDown;
+            
+            // 可以根据CardData中的属性设置不同的移动和攻击范围
+            // 例如：MoveRange = data.MoveRange;
+            // 例如：AttackRange = data.AttackRange;
         }
 
         // 卡牌攻击目标
@@ -91,6 +100,130 @@ namespace ChessGame
         public bool CanAct()
         {
             return !HasActed && !IsFaceDown;
+        }
+
+        // 判断是否可以移动到指定位置
+        public virtual bool CanMoveTo(Vector2Int targetPosition, Dictionary<Vector2Int, Card> allCards)
+        {
+            // 如果卡牌已经行动过或是背面状态，不能移动
+            if (HasActed || IsFaceDown)
+                return false;
+            
+            // 检查目标位置是否已有卡牌
+            if (allCards.ContainsKey(targetPosition))
+                return false;
+            
+            // 计算曼哈顿距离
+            int distance = Mathf.Abs(targetPosition.x - Position.x) + Mathf.Abs(targetPosition.y - Position.y);
+            
+            // 检查是否在移动范围内
+            return distance <= MoveRange && distance > 0; // 不能移动到自己的位置
+        }
+        
+        // 判断是否可以攻击指定位置
+        public virtual bool CanAttack(Vector2Int targetPosition, Dictionary<Vector2Int, Card> allCards)
+        {
+            // 如果卡牌已经行动过或是背面状态，不能攻击
+            if (HasActed || IsFaceDown)
+                return false;
+            
+            // 检查目标位置是否有卡牌
+            if (!allCards.ContainsKey(targetPosition))
+                return false;
+            
+            // 获取目标卡牌
+            Card targetCard = allCards[targetPosition];
+            
+            // 不能攻击己方正面卡牌
+            if (targetCard.OwnerId == OwnerId && !targetCard.IsFaceDown)
+                return false;
+            
+            // 计算曼哈顿距离
+            int distance = Mathf.Abs(targetPosition.x - Position.x) + Mathf.Abs(targetPosition.y - Position.y);
+            
+            // 检查是否在攻击范围内
+            return distance <= AttackRange && distance > 0; // 不能攻击自己
+        }
+        
+        // 获取可移动的位置列表
+        public virtual List<Vector2Int> GetMovablePositions(int boardWidth, int boardHeight, Dictionary<Vector2Int, Card> allCards)
+        {
+            List<Vector2Int> movablePositions = new List<Vector2Int>();
+            
+            // 如果卡牌已经行动过或是背面状态，不能移动
+            if (HasActed || IsFaceDown)
+                return movablePositions;
+            
+            // 检查周围的格子
+            for (int dx = -MoveRange; dx <= MoveRange; dx++)
+            {
+                for (int dy = -MoveRange; dy <= MoveRange; dy++)
+                {
+                    // 跳过原位置
+                    if (dx == 0 && dy == 0) continue;
+                    
+                    // 计算曼哈顿距离
+                    if (Mathf.Abs(dx) + Mathf.Abs(dy) <= MoveRange)
+                    {
+                        int x = Position.x + dx;
+                        int y = Position.y + dy;
+                        
+                        // 检查是否在棋盘范围内
+                        if (x >= 0 && x < boardWidth && y >= 0 && y < boardHeight)
+                        {
+                            Vector2Int targetPos = new Vector2Int(x, y);
+                            if (!allCards.ContainsKey(targetPos))
+                            {
+                                movablePositions.Add(targetPos);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return movablePositions;
+        }
+        
+        // 获取可攻击的位置列表
+        public virtual List<Vector2Int> GetAttackablePositions(int boardWidth, int boardHeight, Dictionary<Vector2Int, Card> allCards)
+        {
+            List<Vector2Int> attackablePositions = new List<Vector2Int>();
+            
+            // 如果卡牌已经行动过或是背面状态，不能攻击
+            if (HasActed || IsFaceDown)
+                return attackablePositions;
+            
+            // 检查周围的格子
+            for (int dx = -AttackRange; dx <= AttackRange; dx++)
+            {
+                for (int dy = -AttackRange; dy <= AttackRange; dy++)
+                {
+                    // 跳过原位置
+                    if (dx == 0 && dy == 0) continue;
+                    
+                    // 计算曼哈顿距离
+                    if (Mathf.Abs(dx) + Mathf.Abs(dy) <= AttackRange)
+                    {
+                        int x = Position.x + dx;
+                        int y = Position.y + dy;
+                        
+                        // 检查是否在棋盘范围内
+                        if (x >= 0 && x < boardWidth && y >= 0 && y < boardHeight)
+                        {
+                            Vector2Int targetPos = new Vector2Int(x, y);
+                            Card targetCard = allCards.ContainsKey(targetPos) ? allCards[targetPos] : null;
+                            
+                            // 可以攻击敌方卡牌或任何背面卡牌
+                            if (targetCard != null && (targetCard.OwnerId != OwnerId || targetCard.IsFaceDown))
+                            {
+                                attackablePositions.Add(targetPos);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return attackablePositions;
         }
     }
 } 

@@ -73,42 +73,21 @@ namespace ChessGame
             Card card = cardManager.GetCard(position);
             if (card == null || card.OwnerId != 0) return;
             
-            // 如果卡牌已经行动过或是背面状态，不显示可移动位置
-            if (card.HasActed || card.IsFaceDown)
-                return;
-                
-            // 如果不是玩家回合或不是玩家卡牌，不显示可移动位置
+            // 如果不是玩家回合，不显示可移动位置
             TurnManager turnManager = cardManager.GetTurnManager();
-            if (turnManager != null && (!turnManager.IsPlayerTurn() || card.OwnerId != 0))
+            if (turnManager != null && !turnManager.IsPlayerTurn())
                 return;
                 
-            int moveRange = cardManager.MoveRange;
+            // 获取可移动的位置
+            List<Vector2Int> movablePositions = card.GetMovablePositions(cardManager.BoardWidth, cardManager.BoardHeight, cardManager.GetAllCards());
             
             // 高亮可移动的格子
-            for (int x = position.x - moveRange; x <= position.x + moveRange; x++)
+            foreach (Vector2Int pos in movablePositions)
             {
-                for (int y = position.y - moveRange; y <= position.y + moveRange; y++)
+                CellView cellView = board.GetCellView(pos.x, pos.y);
+                if (cellView != null)
                 {
-                    // 检查是否在棋盘范围内
-                    if (x >= 0 && x < cardManager.BoardWidth && y >= 0 && y < cardManager.BoardHeight)
-                    {
-                        // 计算曼哈顿距离
-                        int distance = Mathf.Abs(x - position.x) + Mathf.Abs(y - position.y);
-                        if (distance <= moveRange && distance > 0)
-                        {
-                            Vector2Int targetPos = new Vector2Int(x, y);
-                            
-                            // 检查目标位置是否有卡牌
-                            if (!cardManager.HasCard(targetPos))
-                            {
-                                CellView cellView = board.GetCellView(x, y);
-                                if (cellView != null)
-                                {
-                                    cellView.SetHighlight(CellView.HighlightType.Move);
-                                }
-                            }
-                        }
-                    }
+                    cellView.SetHighlight(CellView.HighlightType.Move);
                 }
             }
         }
@@ -121,43 +100,21 @@ namespace ChessGame
             Card card = cardManager.GetCard(position);
             if (card == null || card.OwnerId != 0) return;
             
-            // 如果卡牌已经行动过或是背面状态，不显示可攻击卡牌
-            if (card.HasActed || card.IsFaceDown)
-                return;
-                
-            // 如果不是玩家回合或不是玩家卡牌，不显示可攻击卡牌
+            // 如果不是玩家回合，不显示可攻击卡牌
             TurnManager turnManager = cardManager.GetTurnManager();
-            if (turnManager != null && (!turnManager.IsPlayerTurn() || card.OwnerId != 0))
+            if (turnManager != null && !turnManager.IsPlayerTurn())
                 return;
                 
-            int attackRange = cardManager.AttackRange;
+            // 获取可攻击的位置
+            List<Vector2Int> attackablePositions = card.GetAttackablePositions(cardManager.BoardWidth, cardManager.BoardHeight, cardManager.GetAllCards());
             
-            // 高亮可攻击的卡牌
-            for (int x = position.x - attackRange; x <= position.x + attackRange; x++)
+            // 高亮可攻击的格子
+            foreach (Vector2Int pos in attackablePositions)
             {
-                for (int y = position.y - attackRange; y <= position.y + attackRange; y++)
+                CellView cellView = board.GetCellView(pos.x, pos.y);
+                if (cellView != null)
                 {
-                    // 检查是否在棋盘范围内
-                    if (x >= 0 && x < cardManager.BoardWidth && y >= 0 && y < cardManager.BoardHeight)
-                    {
-                        // 计算曼哈顿距离
-                        int distance = Mathf.Abs(x - position.x) + Mathf.Abs(y - position.y);
-                        if (distance <= attackRange && distance > 0)
-                        {
-                            Vector2Int targetPos = new Vector2Int(x, y);
-                            Card targetCard = cardManager.GetCard(targetPos);
-                            
-                            // 检查目标位置是否有卡牌，且不是己方卡牌
-                            if (targetCard != null && (targetCard.OwnerId != card.OwnerId || targetCard.IsFaceDown))
-                            {
-                                CellView cellView = board.GetCellView(x, y);
-                                if (cellView != null)
-                                {
-                                    cellView.SetHighlight(CellView.HighlightType.Attack);
-                                }
-                            }
-                        }
-                    }
+                    cellView.SetHighlight(CellView.HighlightType.Attack);
                 }
             }
         }

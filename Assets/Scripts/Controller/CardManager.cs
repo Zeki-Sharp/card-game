@@ -11,8 +11,6 @@ namespace ChessGame
         [SerializeField] private Board board;
         [SerializeField] private List<Sprite> cardImages = new List<Sprite>();
         [SerializeField] private CardDataProvider cardDataProvider;
-        [SerializeField] private int moveRange = 1; // 移动范围
-        [SerializeField] private int attackRange = 1; // 攻击范围
         [SerializeField] private TurnManager turnManager;
         
         // 所有卡牌的字典，键为位置，值为卡牌
@@ -30,8 +28,8 @@ namespace ChessGame
         // 公开属性
         public int BoardWidth => board != null ? board.Width : 0;
         public int BoardHeight => board != null ? board.Height : 0;
-        public int MoveRange => moveRange;
-        public int AttackRange => attackRange;
+        public int MoveRange => 1; // 默认值，实际应该从选中的卡牌获取
+        public int AttackRange => 1; // 默认值，实际应该从选中的卡牌获取
 
         public event Action<Vector2Int> OnCardRemoved;
         public event Action<Vector2Int, bool> OnCardFlipped;
@@ -336,33 +334,19 @@ namespace ChessGame
         // 高亮可移动的格子
         public void HighlightMovablePositions(Card card)
         {
-            if (card == null || card.IsFaceDown)
+            if (card == null)
                 return;
                 
-            Vector2Int position = card.Position;
+            // 获取可移动的位置
+            List<Vector2Int> movablePositions = card.GetMovablePositions(BoardWidth, BoardHeight, _cards);
             
-            for (int x = position.x - moveRange; x <= position.x + moveRange; x++)
+            // 高亮可移动的格子
+            foreach (Vector2Int pos in movablePositions)
             {
-                for (int y = position.y - moveRange; y <= position.y + moveRange; y++)
+                CellView cellView = GetCellView(pos.x, pos.y);
+                if (cellView != null)
                 {
-                    if (x >= 0 && x < board.Width && y >= 0 && y < board.Height)
-                    {
-                        // 计算曼哈顿距离
-                        int distance = Mathf.Abs(x - position.x) + Mathf.Abs(y - position.y);
-                        if (distance <= moveRange)
-                        {
-                            Vector2Int targetPos = new Vector2Int(x, y);
-                            if (!_cards.ContainsKey(targetPos))
-                            {
-                                // 高亮可移动的格子
-                                CellView cellView = board.GetCellView(x, y);
-                                if (cellView != null)
-                                {
-                                    cellView.SetHighlight(CellView.HighlightType.Move);
-                                }
-                            }
-                        }
-                    }
+                    cellView.SetHighlight(CellView.HighlightType.Move);
                 }
             }
         }
@@ -370,64 +354,19 @@ namespace ChessGame
         // 高亮可攻击的卡牌
         public void HighlightAttackableCards(Card card)
         {
-            if (card == null || card.IsFaceDown)
+            if (card == null)
                 return;
                 
-            Vector2Int position = card.Position;
+            // 获取可攻击的位置
+            List<Vector2Int> attackablePositions = card.GetAttackablePositions(BoardWidth, BoardHeight, _cards);
             
-            for (int x = position.x - attackRange; x <= position.x + attackRange; x++)
+            // 高亮可攻击的格子
+            foreach (Vector2Int pos in attackablePositions)
             {
-                for (int y = position.y - attackRange; y <= position.y + attackRange; y++)
+                CellView cellView = GetCellView(pos.x, pos.y);
+                if (cellView != null)
                 {
-                    if (x >= 0 && x < board.Width && y >= 0 && y < board.Height)
-                    {
-                        // 计算曼哈顿距离
-                        int distance = Mathf.Abs(x - position.x) + Mathf.Abs(y - position.y);
-                        if (distance <= attackRange)
-                        {
-                            Vector2Int targetPos = new Vector2Int(x, y);
-                            Card targetCard = GetCard(targetPos);
-                            
-                            // 检查目标位置是否有卡牌
-                            if (targetCard != null)
-                            {
-                                // 如果是背面卡牌，无论敌友都可以攻击
-                                if (targetCard.IsFaceDown)
-                                {
-                                    // 高亮可攻击的格子
-                                    CellView cellView = board.GetCellView(x, y);
-                                    if (cellView != null)
-                                    {
-                                        cellView.SetHighlight(CellView.HighlightType.Attack);
-                                    }
-                                    
-                                    // 高亮可攻击的卡牌
-                                    CardView cardView = GetCardView(targetPos);
-                                    if (cardView != null)
-                                    {
-                                        cardView.SetAttackable(true);
-                                    }
-                                }
-                                // 如果是正面卡牌，只能攻击敌方
-                                else if (targetCard.OwnerId != card.OwnerId)
-                                {
-                                    // 高亮可攻击的格子
-                                    CellView cellView = board.GetCellView(x, y);
-                                    if (cellView != null)
-                                    {
-                                        cellView.SetHighlight(CellView.HighlightType.Attack);
-                                    }
-                                    
-                                    // 高亮可攻击的卡牌
-                                    CardView cardView = GetCardView(targetPos);
-                                    if (cardView != null)
-                                    {
-                                        cardView.SetAttackable(true);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    cellView.SetHighlight(CellView.HighlightType.Attack);
                 }
             }
         }
@@ -887,17 +826,11 @@ namespace ChessGame
             if (!_selectedPosition.HasValue)
                 return false;
                 
-            Vector2Int from = _selectedPosition.Value;
-            
-            // 检查是否有卡牌在目标位置
-            if (_cards.ContainsKey(position))
+            Card selectedCard = GetCard(_selectedPosition.Value);
+            if (selectedCard == null)
                 return false;
                 
-            // 计算曼哈顿距离
-            int distance = Mathf.Abs(position.x - from.x) + Mathf.Abs(position.y - from.y);
-            
-            // 检查是否在移动范围内
-            return distance <= moveRange;
+            return selectedCard.CanMoveTo(position, _cards);
         }
 
         public bool CanAttack(Vector2Int position)
@@ -905,13 +838,11 @@ namespace ChessGame
             if (!_selectedPosition.HasValue)
                 return false;
                 
-            Vector2Int from = _selectedPosition.Value;
-            
-            // 计算曼哈顿距离
-            int distance = Mathf.Abs(position.x - from.x) + Mathf.Abs(position.y - from.y);
-            
-            // 检查是否在攻击范围内
-            return distance <= attackRange;
+            Card selectedCard = GetCard(_selectedPosition.Value);
+            if (selectedCard == null)
+                return false;
+                
+            return selectedCard.CanAttack(position, _cards);
         }
 
         // 添加SetTargetPosition方法

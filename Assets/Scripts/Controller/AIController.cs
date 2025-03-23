@@ -128,47 +128,10 @@ namespace ChessGame
         // 尝试攻击附近的玩家卡牌或背面卡牌
         private bool TryAttackNearbyPlayerCard(Card card)
         {
-            Vector2Int position = card.Position;
-            int attackRange = _cardManager.AttackRange;
-            
-            Debug.Log($"AI尝试攻击，位置: {position}, 攻击范围: {attackRange}");
+            Debug.Log($"AI尝试攻击，位置: {card.Position}, 攻击范围: {card.AttackRange}");
             
             // 获取可攻击的位置
-            List<Vector2Int> attackablePositions = new List<Vector2Int>();
-            
-            // 检查周围的格子
-            for (int dx = -attackRange; dx <= attackRange; dx++)
-            {
-                for (int dy = -attackRange; dy <= attackRange; dy++)
-                {
-                    // 跳过原位置
-                    if (dx == 0 && dy == 0) continue;
-                    
-                    // 计算曼哈顿距离
-                    int manhattanDistance = Mathf.Abs(dx) + Mathf.Abs(dy);
-                    Debug.Log($"检查位置偏移: ({dx}, {dy}), 曼哈顿距离: {manhattanDistance}, 攻击范围: {attackRange}");
-                    
-                    if (manhattanDistance <= attackRange)
-                    {
-                        int x = position.x + dx;
-                        int y = position.y + dy;
-                        
-                        // 检查是否在棋盘范围内
-                        if (x >= 0 && x < _cardManager.BoardWidth && y >= 0 && y < _cardManager.BoardHeight)
-                        {
-                            Vector2Int targetPos = new Vector2Int(x, y);
-                            Card targetCard = _cardManager.GetCard(targetPos);
-                            
-                            // 可以攻击玩家卡牌或任何背面卡牌
-                            if (targetCard != null && (targetCard.OwnerId == 0 || targetCard.IsFaceDown))
-                            {
-                                attackablePositions.Add(targetPos);
-                                Debug.Log($"找到可攻击位置: {targetPos}, 目标卡牌: {targetCard.Data.Name}, 所有者: {targetCard.OwnerId}, 是否背面: {targetCard.IsFaceDown}");
-                            }
-                        }
-                    }
-                }
-            }
+            List<Vector2Int> attackablePositions = card.GetAttackablePositions(_cardManager.BoardWidth, _cardManager.BoardHeight, _cardManager.GetAllCards());
             
             Debug.Log($"找到 {attackablePositions.Count} 个可攻击位置");
             
@@ -193,41 +156,10 @@ namespace ChessGame
         // 尝试随机移动
         private bool TryMoveRandomly(Card card)
         {
-            Vector2Int position = card.Position;
-            int moveRange = _cardManager.MoveRange; // 使用CardManager中定义的移动范围
-            
-            Debug.Log($"AI尝试移动，位置: {position}, 移动范围: {moveRange}");
+            Debug.Log($"AI尝试移动，位置: {card.Position}, 移动范围: {card.MoveRange}");
             
             // 获取可移动的位置
-            List<Vector2Int> movablePositions = new List<Vector2Int>();
-            
-            // 检查周围的格子
-            for (int dx = -moveRange; dx <= moveRange; dx++)
-            {
-                for (int dy = -moveRange; dy <= moveRange; dy++)
-                {
-                    // 跳过原位置
-                    if (dx == 0 && dy == 0) continue;
-                    
-                    // 计算曼哈顿距离
-                    if (Mathf.Abs(dx) + Mathf.Abs(dy) <= moveRange)
-                    {
-                        int x = position.x + dx;
-                        int y = position.y + dy;
-                        
-                        // 检查是否在棋盘范围内
-                        if (x >= 0 && x < _cardManager.BoardWidth && y >= 0 && y < _cardManager.BoardHeight)
-                        {
-                            Vector2Int targetPos = new Vector2Int(x, y);
-                            if (!_cardManager.HasCard(targetPos))
-                            {
-                                movablePositions.Add(targetPos);
-                                Debug.Log($"找到可移动位置: {targetPos}");
-                            }
-                        }
-                    }
-                }
-            }
+            List<Vector2Int> movablePositions = card.GetMovablePositions(_cardManager.BoardWidth, _cardManager.BoardHeight, _cardManager.GetAllCards());
             
             Debug.Log($"找到 {movablePositions.Count} 个可移动位置");
             
@@ -235,7 +167,7 @@ namespace ChessGame
             if (movablePositions.Count > 0)
             {
                 Vector2Int targetPosition = movablePositions[Random.Range(0, movablePositions.Count)];
-                Debug.Log($"AI移动卡牌，从 {position} 到 {targetPosition}");
+                Debug.Log($"AI移动卡牌，从 {card.Position} 到 {targetPosition}");
                 
                 // 设置目标位置并执行移动
                 _cardManager.SelectCard(card.Position);
