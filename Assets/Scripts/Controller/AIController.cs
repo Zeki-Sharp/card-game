@@ -86,7 +86,7 @@ namespace ChessGame
                     Vector2Int position = new Vector2Int(x, y);
                     Card card = _cardManager.GetCard(position);
                     
-                    if (card != null && card.OwnerId == 1 && !card.HasActed) // 敌方卡牌OwnerId为1
+                    if (card != null && card.OwnerId == 1 && !card.HasActed && !card.IsFaceDown) // 敌方卡牌OwnerId为1，且必须是正面的
                     {
                         enemyCards.Add(card);
                     }

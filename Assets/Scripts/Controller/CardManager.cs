@@ -135,14 +135,79 @@ namespace ChessGame
             // 随机打乱空白格子
             ShuffleList(emptyPositions);
             
-            // 生成卡牌，使用集合中的原始顺序
-            for (int i = 0; i < actualCount; i++)
+            // 分离玩家和敌方的位置
+            List<Vector2Int> playerPositions = new List<Vector2Int>();
+            List<Vector2Int> enemyPositions = new List<Vector2Int>();
+            
+            foreach (var pos in emptyPositions)
             {
-                Vector2Int position = emptyPositions[i];
-                SpawnCard(allCardDatas[i], position);
+                // 根据位置决定是玩家还是敌方区域
+                // 这里简单地用Y坐标来区分：下半部分是玩家区域，上半部分是敌方区域
+                if (pos.y < board.Height / 2)
+                {
+                    playerPositions.Add(pos);
+                }
+                else
+                {
+                    enemyPositions.Add(pos);
+                }
             }
             
-            Debug.Log($"成功生成了 {actualCount} 张卡牌");
+            // 确保每方至少有一个位置
+            if (playerPositions.Count == 0 || enemyPositions.Count == 0)
+            {
+                Debug.LogWarning("无法为双方分配位置");
+                return;
+            }
+            
+            // 分离玩家和敌方的卡牌数据
+            List<CardData> playerCards = new List<CardData>();
+            List<CardData> enemyCards = new List<CardData>();
+            
+            foreach (var cardData in allCardDatas)
+            {
+                if (cardData.Faction == 0)
+                {
+                    playerCards.Add(cardData);
+                }
+                else
+                {
+                    enemyCards.Add(cardData);
+                }
+            }
+            
+            // 确保每方至少有一张卡牌
+            if (playerCards.Count == 0 || enemyCards.Count == 0)
+            {
+                Debug.LogWarning("无法为双方分配卡牌");
+                return;
+            }
+            
+            // 生成玩家卡牌
+            int playerCardCount = Mathf.Min(playerPositions.Count, playerCards.Count, actualCount / 2 + actualCount % 2);
+            for (int i = 0; i < playerCardCount; i++)
+            {
+                Vector2Int position = playerPositions[i];
+                CardData cardData = playerCards[i];
+                
+                // 第一张玩家卡牌是正面的，其余是背面的
+                bool isFaceDown = i > 0;
+                SpawnCard(cardData, position, isFaceDown);
+            }
+            
+            // 生成敌方卡牌
+            int enemyCardCount = Mathf.Min(enemyPositions.Count, enemyCards.Count, actualCount / 2);
+            for (int i = 0; i < enemyCardCount; i++)
+            {
+                Vector2Int position = enemyPositions[i];
+                CardData cardData = enemyCards[i];
+                
+                // 第一张敌方卡牌是正面的，其余是背面的
+                bool isFaceDown = i > 0;
+                SpawnCard(cardData, position, isFaceDown);
+            }
+            
+            Debug.Log($"成功生成了 {playerCardCount + enemyCardCount} 张卡牌");
         }
         
         // 获取所有空白格子
@@ -184,7 +249,7 @@ namespace ChessGame
         }
         
         // 在指定位置生成卡牌
-        public void SpawnCard(CardData cardData, Vector2Int position)
+        public void SpawnCard(CardData cardData, Vector2Int position, bool isFaceDown = true)
         {
             // 检查位置是否已有卡牌
             if (_cards.ContainsKey(position))
@@ -194,7 +259,7 @@ namespace ChessGame
             }
             
             // 创建卡牌模型，使用CardData中的阵营属性
-            Card card = new Card(cardData, position, cardData.Faction);
+            Card card = new Card(cardData, position, cardData.Faction, isFaceDown);
             _cards[position] = card;
             
             // 创建卡牌视图
@@ -322,26 +387,26 @@ namespace ChessGame
         // 高亮可移动的格子
         public void HighlightMovablePositions(Card card)
         {
+            if (card == null || card.IsFaceDown)
+                return;
+                
             Vector2Int position = card.Position;
             
             for (int x = position.x - moveRange; x <= position.x + moveRange; x++)
             {
                 for (int y = position.y - moveRange; y <= position.y + moveRange; y++)
                 {
-                    // 检查是否在棋盘范围内
-                    if (x >= 0 && x < BoardWidth && 
-                        y >= 0 && y < BoardHeight)
+                    if (x >= 0 && x < board.Width && y >= 0 && y < board.Height)
                     {
                         // 计算曼哈顿距离
                         int distance = Mathf.Abs(x - position.x) + Mathf.Abs(y - position.y);
                         if (distance <= moveRange)
                         {
-                            // 检查目标位置是否已有卡牌
                             Vector2Int targetPos = new Vector2Int(x, y);
-                            if (!HasCard(targetPos))
+                            if (!_cards.ContainsKey(targetPos))
                             {
                                 // 高亮可移动的格子
-                                CellView cellView = GetCellView(x, y);
+                                CellView cellView = board.GetCellView(x, y);
                                 if (cellView != null)
                                 {
                                     cellView.SetHighlight(CellView.HighlightType.Move);
@@ -356,33 +421,35 @@ namespace ChessGame
         // 高亮可攻击的敌方棋子
         public void HighlightAttackableCards(Card card)
         {
+            if (card == null || card.IsFaceDown)
+                return;
+                
             Vector2Int position = card.Position;
             
             for (int x = position.x - attackRange; x <= position.x + attackRange; x++)
             {
                 for (int y = position.y - attackRange; y <= position.y + attackRange; y++)
                 {
-                    // 检查是否在棋盘范围内
-                    if (x >= 0 && x < BoardWidth && 
-                        y >= 0 && y < BoardHeight)
+                    if (x >= 0 && x < board.Width && y >= 0 && y < board.Height)
                     {
                         // 计算曼哈顿距离
                         int distance = Mathf.Abs(x - position.x) + Mathf.Abs(y - position.y);
                         if (distance <= attackRange)
                         {
-                            // 检查目标位置是否有敌方卡牌
                             Vector2Int targetPos = new Vector2Int(x, y);
                             Card targetCard = GetCard(targetPos);
+                            
+                            // 检查目标位置是否有敌方卡牌
                             if (targetCard != null && targetCard.OwnerId != card.OwnerId)
                             {
-                                // 高亮可攻击的敌方棋子所在地块
-                                CellView cellView = GetCellView(targetPos.x, targetPos.y);
+                                // 高亮可攻击的格子
+                                CellView cellView = board.GetCellView(x, y);
                                 if (cellView != null)
                                 {
                                     cellView.SetHighlight(CellView.HighlightType.Attack);
                                 }
                                 
-                                // 同时高亮敌方棋子
+                                // 高亮可攻击的卡牌
                                 CardView cardView = GetCardView(targetPos);
                                 if (cardView != null)
                                 {
@@ -607,6 +674,16 @@ namespace ChessGame
             Card attacker = _cards[attackerPosition];
             Card target = _cards[targetPosition];
             
+            // 如果攻击者是背面状态，不能攻击
+            if (attacker.IsFaceDown)
+            {
+                Debug.LogWarning("背面状态的卡牌不能攻击");
+                return false;
+            }
+            
+            // 检查目标是否是背面状态
+            bool targetWasFaceDown = target.IsFaceDown;
+            
             // 执行攻击
             if (attacker.Attack(target))
             {
@@ -617,7 +694,16 @@ namespace ChessGame
                 if (attackerView != null && targetView != null)
                 {
                     attackerView.PlayAttackAnimation(targetView.transform.position);
-                    targetView.PlayDamageAnimation();
+                    
+                    // 如果目标从背面翻转为正面，播放翻转动画
+                    if (targetWasFaceDown && !target.IsFaceDown)
+                    {
+                        targetView.PlayFlipAnimation();
+                    }
+                    else
+                    {
+                        targetView.PlayDamageAnimation();
+                    }
                     
                     // 更新目标卡牌视图
                     targetView.UpdateVisuals();
@@ -730,6 +816,25 @@ namespace ChessGame
                     return true;
             }
             return false;
+        }
+
+        // 添加翻转卡牌方法
+        public void FlipCard(Vector2Int position)
+        {
+            if (!_cards.ContainsKey(position))
+                return;
+                
+            Card card = _cards[position];
+            if (card.IsFaceDown)
+            {
+                card.FlipToFaceUp();
+                
+                if (_cardViews.ContainsKey(position))
+                {
+                    CardView cardView = _cardViews[position];
+                    cardView.PlayFlipAnimation();
+                }
+            }
         }
     }
 } 

@@ -15,13 +15,17 @@ namespace ChessGame
         
         // 卡牌是否已经行动过
         public bool HasActed { get; set; }
+        
+        // 卡牌是否为背面状态
+        public bool IsFaceDown { get; private set; }
 
-        public Card(CardData data, Vector2Int position, int ownerId = 0)
+        public Card(CardData data, Vector2Int position, int ownerId = 0, bool isFaceDown = true)
         {
             Data = data.Clone(); // 创建数据副本，避免共享引用
             Position = position;
             OwnerId = ownerId;
             HasActed = false;
+            IsFaceDown = isFaceDown;
         }
 
         // 卡牌攻击目标
@@ -29,8 +33,18 @@ namespace ChessGame
         {
             if (target == null) return false;
             
+            // 如果卡牌是背面状态，不能主动攻击
+            if (IsFaceDown)
+                return false;
+                
             // 目标受到伤害
             target.Data.Health -= this.Data.Attack;
+            
+            // 如果目标是背面状态，翻转为正面
+            if (target.IsFaceDown)
+            {
+                target.FlipToFaceUp();
+            }
             
             // 标记为已行动
             HasActed = true;
@@ -48,6 +62,21 @@ namespace ChessGame
         public void ResetAction()
         {
             HasActed = false;
+        }
+        
+        // 翻转卡牌为正面
+        public void FlipToFaceUp()
+        {
+            if (IsFaceDown)
+            {
+                IsFaceDown = false;
+            }
+        }
+        
+        // 检查卡牌是否可以行动
+        public bool CanAct()
+        {
+            return !HasActed && !IsFaceDown;
         }
     }
 } 

@@ -589,7 +589,7 @@ MonoBehaviour:
   cardDataProvider: {fileID: 1404373183}
   moveRange: 1
   attackRange: 1
-  turnManager: {fileID: 0}
+  turnManager: {fileID: 861603162}
 --- !u!4 &908457768
 Transform:
   m_ObjectHideFlags: 0
@@ -967,8 +967,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   board: {fileID: 619939636}
   cardManager: {fileID: 908457767}
-  turnManager: {fileID: 0}
-  aiController: {fileID: 0}
+  turnManager: {fileID: 861603162}
+  aiController: {fileID: 770383906}
   initialCardCount: 24
 --- !u!4 &1404373182
 Transform:

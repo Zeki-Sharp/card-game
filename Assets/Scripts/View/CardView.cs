@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using System.Collections;
 
 namespace ChessGame
 {
@@ -14,9 +15,11 @@ namespace ChessGame
         [SerializeField] private Color playerColor = Color.blue;
         [SerializeField] private Color enemyColor = Color.red;
         [SerializeField] private Color actedColor = new Color(0.5f, 0.5f, 0.5f, 1f);
+        [SerializeField] private Sprite cardBackSprite; // 卡牌背面图片
         
         private Card _card;
         private bool _isSelected = false;
+        private Sprite _frontSprite; // 保存正面图片
         
         private void Awake()
         {
@@ -31,11 +34,28 @@ namespace ChessGame
             // 调整碰撞体大小
             collider.size = new Vector3(0.9f, 0.2f, 0.9f); // 调整大小使其适合卡牌
             collider.center = new Vector3(0f, 0.1f, 0f); // 稍微抬高中心点
+            
+            // 如果没有设置卡背图片，尝试从Resources加载
+            if (cardBackSprite == null)
+            {
+                cardBackSprite = Resources.Load<Sprite>("CardBack");
+                if (cardBackSprite == null)
+                {
+                    Debug.LogWarning("未找到卡背图片，请确保Resources文件夹中有CardBack图片");
+                }
+            }
         }
         
         public void Initialize(Card card)
         {
             _card = card;
+            
+            // 保存正面图片
+            if (card.Data.Image != null)
+            {
+                _frontSprite = card.Data.Image;
+            }
+            
             UpdateVisuals();
         }
         
@@ -44,20 +64,39 @@ namespace ChessGame
             if (_card == null) return;
             
             // 更新卡牌图片
-            if (cardRenderer != null && _card.Data.Image != null)
+            if (cardRenderer != null)
             {
-                cardRenderer.sprite = _card.Data.Image;
-            }
-            
-            // 更新攻击力和生命值文本
-            if (attackText != null)
-            {
-                attackText.text = _card.Data.Attack.ToString();
-            }
-            
-            if (healthText != null)
-            {
-                healthText.text = _card.Data.Health.ToString();
+                // 根据卡牌状态显示正面或背面
+                if (_card.IsFaceDown && cardBackSprite != null)
+                {
+                    cardRenderer.sprite = cardBackSprite;
+                    
+                    // 隐藏攻击力和生命值
+                    if (attackText != null) attackText.gameObject.SetActive(false);
+                    if (healthText != null) healthText.gameObject.SetActive(false);
+                    if (attackBackRenderer != null) attackBackRenderer.gameObject.SetActive(false);
+                    if (healthBackRenderer != null) healthBackRenderer.gameObject.SetActive(false);
+                }
+                else
+                {
+                    cardRenderer.sprite = _frontSprite;
+                    
+                    // 显示攻击力和生命值
+                    if (attackText != null)
+                    {
+                        attackText.gameObject.SetActive(true);
+                        attackText.text = _card.Data.Attack.ToString();
+                    }
+                    
+                    if (healthText != null)
+                    {
+                        healthText.gameObject.SetActive(true);
+                        healthText.text = _card.Data.Health.ToString();
+                    }
+                    
+                    if (attackBackRenderer != null) attackBackRenderer.gameObject.SetActive(true);
+                    if (healthBackRenderer != null) healthBackRenderer.gameObject.SetActive(true);
+                }
             }
             
             // 根据所属玩家设置边框颜色
@@ -65,8 +104,8 @@ namespace ChessGame
             {
                 frameRenderer.color = _card.OwnerId == 0 ? playerColor : enemyColor;
                 
-                // 如果已行动，降低亮度
-                if (_card.HasActed)
+                // 如果已行动或是背面状态，降低亮度
+                if (_card.HasActed || _card.IsFaceDown)
                 {
                     frameRenderer.color = actedColor;
                 }
@@ -74,15 +113,54 @@ namespace ChessGame
 
             cardRenderer.sortingOrder = 100;
             frameRenderer.sortingOrder = 101;
-            attackBackRenderer.sortingOrder = 102;
-            healthBackRenderer.sortingOrder = 102;
-            attackText.sortingOrder = 103;
-            healthText.sortingOrder = 103;
+            if (attackBackRenderer != null) attackBackRenderer.sortingOrder = 102;
+            if (healthBackRenderer != null) healthBackRenderer.sortingOrder = 102;
+            if (attackText != null) attackText.sortingOrder = 103;
+            if (healthText != null) healthText.sortingOrder = 103;
         }   
         
         public Card GetCard()
         {
             return _card;
+        }
+        
+        // 播放翻转动画
+        public void PlayFlipAnimation()
+        {
+            StartCoroutine(FlipAnimationCoroutine());
+        }
+        
+        private IEnumerator FlipAnimationCoroutine()
+        {
+            float duration = 0.5f;
+            float elapsed = 0f;
+            
+            // 第一阶段：缩小X轴直到看不见
+            Vector3 originalScale = transform.localScale;
+            Vector3 flatScale = new Vector3(0.01f, originalScale.y, originalScale.z);
+            
+            while (elapsed < duration / 2)
+            {
+                float t = elapsed / (duration / 2);
+                transform.localScale = Vector3.Lerp(originalScale, flatScale, t);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            // 更新卡牌视觉效果
+            UpdateVisuals();
+            
+            // 第二阶段：恢复X轴大小
+            elapsed = 0f;
+            while (elapsed < duration / 2)
+            {
+                float t = elapsed / (duration / 2);
+                transform.localScale = Vector3.Lerp(flatScale, originalScale, t);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            transform.localScale = originalScale;
         }
         
         // 播放攻击动画

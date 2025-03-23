@@ -34,7 +34,7 @@ namespace ChessGame.FSM
             Card card = StateMachine.CardManager.GetCard(position);
             if (card != null)
             {
-                Debug.Log($"点击的卡牌: {card.Data.Name}, OwnerId: {card.OwnerId}, HasActed: {card.HasActed}");
+                Debug.Log($"点击的卡牌: {card.Data.Name}, OwnerId: {card.OwnerId}, HasActed: {card.HasActed}, IsFaceDown: {card.IsFaceDown}");
             }
             
             // 获取TurnManager
@@ -47,14 +47,18 @@ namespace ChessGame.FSM
                 return;
             }
             
-            // 只有在玩家回合才能选择玩家的卡牌
-            if (card != null && card.OwnerId == 0 && !card.HasActed)
+            // 只有在玩家回合才能选择玩家的正面卡牌
+            if (card != null && card.OwnerId == 0 && !card.HasActed && !card.IsFaceDown)
             {
                 Debug.Log($"选中卡牌: {card.Data.Name}");
                 // 选中卡牌
                 StateMachine.CardManager.SelectCard(position);
                 // 通知状态机切换到选中状态
                 CompleteState(CardState.Selected);
+            }
+            else if (card != null && card.OwnerId == 0 && card.IsFaceDown)
+            {
+                Debug.Log("卡牌是背面状态，不能选择");
             }
             else
             {
