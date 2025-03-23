@@ -418,7 +418,7 @@ namespace ChessGame
             }
         }
         
-        // 高亮可攻击的敌方棋子
+        // 高亮可攻击的卡牌
         public void HighlightAttackableCards(Card card)
         {
             if (card == null || card.IsFaceDown)
@@ -439,21 +439,42 @@ namespace ChessGame
                             Vector2Int targetPos = new Vector2Int(x, y);
                             Card targetCard = GetCard(targetPos);
                             
-                            // 检查目标位置是否有敌方卡牌
-                            if (targetCard != null && targetCard.OwnerId != card.OwnerId)
+                            // 检查目标位置是否有卡牌
+                            if (targetCard != null)
                             {
-                                // 高亮可攻击的格子
-                                CellView cellView = board.GetCellView(x, y);
-                                if (cellView != null)
+                                // 如果是背面卡牌，无论敌友都可以攻击
+                                if (targetCard.IsFaceDown)
                                 {
-                                    cellView.SetHighlight(CellView.HighlightType.Attack);
+                                    // 高亮可攻击的格子
+                                    CellView cellView = board.GetCellView(x, y);
+                                    if (cellView != null)
+                                    {
+                                        cellView.SetHighlight(CellView.HighlightType.Attack);
+                                    }
+                                    
+                                    // 高亮可攻击的卡牌
+                                    CardView cardView = GetCardView(targetPos);
+                                    if (cardView != null)
+                                    {
+                                        cardView.SetAttackable(true);
+                                    }
                                 }
-                                
-                                // 高亮可攻击的卡牌
-                                CardView cardView = GetCardView(targetPos);
-                                if (cardView != null)
+                                // 如果是正面卡牌，只能攻击敌方
+                                else if (targetCard.OwnerId != card.OwnerId)
                                 {
-                                    cardView.SetAttackable(true);
+                                    // 高亮可攻击的格子
+                                    CellView cellView = board.GetCellView(x, y);
+                                    if (cellView != null)
+                                    {
+                                        cellView.SetHighlight(CellView.HighlightType.Attack);
+                                    }
+                                    
+                                    // 高亮可攻击的卡牌
+                                    CardView cardView = GetCardView(targetPos);
+                                    if (cardView != null)
+                                    {
+                                        cardView.SetAttackable(true);
+                                    }
                                 }
                             }
                         }
@@ -662,7 +683,7 @@ namespace ChessGame
             return true;
         }
         
-        // 卡牌攻击
+        // 执行卡牌攻击
         private bool CardAttack(Vector2Int attackerPosition, Vector2Int targetPosition)
         {
             if (!_cards.ContainsKey(attackerPosition) || !_cards.ContainsKey(targetPosition))
@@ -683,10 +704,17 @@ namespace ChessGame
             
             // 检查目标是否是背面状态
             bool targetWasFaceDown = target.IsFaceDown;
+            bool targetWillDie = false;
+            
+            // 如果目标是背面状态，记录攻击前的血量
+            int targetHealthBefore = target.Data.Health;
             
             // 执行攻击
             if (attacker.Attack(target))
             {
+                // 检查目标是否会死亡（只有正面卡牌才会死亡）
+                targetWillDie = !targetWasFaceDown && target.Data.Health <= 0;
+                
                 // 播放攻击动画
                 CardView attackerView = _cardViews[attackerPosition];
                 CardView targetView = _cardViews[targetPosition];
@@ -696,9 +724,15 @@ namespace ChessGame
                     attackerView.PlayAttackAnimation(targetView.transform.position);
                     
                     // 如果目标从背面翻转为正面，播放翻转动画
-                    if (targetWasFaceDown && !target.IsFaceDown)
+                    if (targetWasFaceDown)
                     {
                         targetView.PlayFlipAnimation();
+                        
+                        // 如果背面卡牌受到致命伤害，显示血量为1
+                        if (targetHealthBefore - attacker.Data.Attack <= 0)
+                        {
+                            Debug.Log("背面卡牌受到致命伤害，血量设为1");
+                        }
                     }
                     else
                     {
@@ -711,15 +745,17 @@ namespace ChessGame
                     // 更新攻击者卡牌视图（标记为已行动）
                     attackerView.UpdateVisuals();
                     
-                    // 检查目标是否死亡
-                    if (!target.IsAlive())
+                    // 检查目标是否死亡（只有正面卡牌才会死亡）
+                    if (targetWillDie)
                     {
                         RemoveCard(targetPosition);
                     }
                 }
+                
+                return true;
             }
             
-            return true;
+            return false;
         }
         
         // 移除卡牌

@@ -37,13 +37,25 @@ namespace ChessGame
             if (IsFaceDown)
                 return false;
                 
-            // 目标受到伤害
-            target.Data.Health -= this.Data.Attack;
-            
-            // 如果目标是背面状态，翻转为正面
+            // 如果目标是背面状态
             if (target.IsFaceDown)
             {
+                // 翻转为正面
                 target.FlipToFaceUp();
+                
+                // 对背面卡牌造成伤害
+                target.Data.Health -= this.Data.Attack;
+                
+                // 如果血量小于等于0，设置为1（背面卡牌不会直接死亡）
+                if (target.Data.Health <= 0)
+                {
+                    target.Data.Health = 1;
+                }
+            }
+            else
+            {
+                // 正常对正面卡牌造成伤害
+                target.Data.Health -= this.Data.Attack;
             }
             
             // 标记为已行动

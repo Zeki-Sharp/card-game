@@ -57,7 +57,7 @@ namespace ChessGame
             // 等待一小段时间
             yield return new WaitForSeconds(actionDelay);
             
-            // 尝试攻击附近的玩家卡牌
+            // 尝试攻击附近的玩家卡牌或背面卡牌
             bool attacked = TryAttackNearbyPlayerCard(selectedCard);
             
             // 如果没有攻击，尝试移动
@@ -96,13 +96,13 @@ namespace ChessGame
             return enemyCards;
         }
         
-        // 尝试攻击附近的玩家卡牌
+        // 尝试攻击附近的玩家卡牌或背面卡牌
         private bool TryAttackNearbyPlayerCard(Card card)
         {
             Vector2Int position = card.Position;
             int attackRange = _cardManager.AttackRange;
             
-            // 检查周围是否有可攻击的玩家卡牌
+            // 检查周围是否有可攻击的卡牌
             List<Vector2Int> attackablePositions = new List<Vector2Int>();
             
             for (int x = position.x - attackRange; x <= position.x + attackRange; x++)
@@ -118,7 +118,8 @@ namespace ChessGame
                             Vector2Int targetPos = new Vector2Int(x, y);
                             Card targetCard = _cardManager.GetCard(targetPos);
                             
-                            if (targetCard != null && targetCard.OwnerId == 0) // 玩家卡牌OwnerId为0
+                            // 可以攻击玩家卡牌或任何背面卡牌
+                            if (targetCard != null && (targetCard.OwnerId == 0 || targetCard.IsFaceDown))
                             {
                                 attackablePositions.Add(targetPos);
                             }
@@ -131,7 +132,7 @@ namespace ChessGame
             if (attackablePositions.Count > 0)
             {
                 Vector2Int targetPosition = attackablePositions[Random.Range(0, attackablePositions.Count)];
-                Debug.Log($"AI攻击玩家卡牌，位置: {targetPosition}");
+                Debug.Log($"AI攻击卡牌，位置: {targetPosition}");
                 
                 // 设置目标位置并执行攻击
                 _cardManager.SetTargetPosition(targetPosition);

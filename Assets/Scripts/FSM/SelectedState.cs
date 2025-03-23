@@ -96,8 +96,16 @@ namespace ChessGame.FSM
                 return;
             }
             
+            // 如果点击的是背面卡牌，且在攻击范围内
+            if (targetCard != null && targetCard.IsFaceDown && StateMachine.CardManager.CanAttack(position))
+            {
+                Debug.Log($"攻击背面卡牌");
+                StateMachine.CardManager.SetTargetPosition(position);
+                Debug.Log("切换到攻击状态");
+                CompleteState(CardState.Attacking);
+            }
             // 如果点击的是敌方卡牌，且在攻击范围内
-            if (targetCard != null && targetCard.OwnerId != selectedCard.OwnerId && StateMachine.CardManager.CanAttack(position))
+            else if (targetCard != null && !targetCard.IsFaceDown && targetCard.OwnerId != selectedCard.OwnerId && StateMachine.CardManager.CanAttack(position))
             {
                 Debug.Log($"攻击敌方卡牌: {targetCard.Data.Name}");
                 StateMachine.CardManager.SetTargetPosition(position);
@@ -105,7 +113,7 @@ namespace ChessGame.FSM
                 CompleteState(CardState.Attacking);
             }
             // 如果点击的是己方其他卡牌
-            else if (targetCard != null && targetCard.OwnerId == selectedCard.OwnerId && !targetCard.HasActed)
+            else if (targetCard != null && !targetCard.IsFaceDown && targetCard.OwnerId == selectedCard.OwnerId && !targetCard.HasActed)
             {
                 Debug.Log($"选择新卡牌: {targetCard.Data.Name}");
                 // 选择新卡牌
