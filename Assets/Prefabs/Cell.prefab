@@ -10,8 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 5177856969149232182}
   - component: {fileID: 3613336395620669460}
-  - component: {fileID: 5111174809624893944}
   - component: {fileID: 1761262368708189980}
+  - component: {fileID: -9066785427781030859}
   m_Layer: 6
   m_Name: Cell
   m_TagString: Untagged
@@ -86,51 +86,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!61 &5111174809624893944
-BoxCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8913417713483600062}
-  m_Enabled: 1
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
-  m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1, y: 1}
-    newSize: {x: 1, y: 1}
-    adaptiveTilingThreshold: 0.5
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  serializedVersion: 2
-  m_Size: {x: 1, y: 1}
-  m_EdgeRadius: 0
 --- !u!114 &1761262368708189980
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -144,4 +99,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mainRenderer: {fileID: 0}
-  highlightColor: {r: 0, g: 1, b: 0, a: 0.5}
+  moveHighlightColor: {r: 0, g: 1, b: 0, a: 0.5}
+  selectedHighlightColor: {r: 1, g: 1, b: 0, a: 0.5}
+  attackHighlightColor: {r: 1, g: 0, b: 0, a: 0.5}
+--- !u!65 &-9066785427781030859
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8913417713483600062}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 0.024389338}
+  m_Center: {x: 0, y: 0, z: 0.002089696}

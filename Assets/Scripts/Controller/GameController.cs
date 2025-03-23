@@ -104,12 +104,13 @@ namespace ChessGame
         {
             if (Input.GetMouseButtonDown(0))
             {
-                Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-                mousePos.z = 0;
-                Debug.Log($"鼠标点击位置: {mousePos}");
+                // 从摄像机发射射线到鼠标位置
+                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                Debug.DrawRay(ray.origin, ray.direction * 100f, Color.red, 1f); // 添加射线可视化
                 
-                // 检测所有碰撞体
-                RaycastHit2D[] hits = Physics2D.RaycastAll(mousePos, Vector2.zero);
+                Debug.Log($"发射射线: 起点={ray.origin}, 方向={ray.direction}");
+                
+                RaycastHit[] hits = Physics.RaycastAll(ray, 100f);
                 Debug.Log($"检测到 {hits.Length} 个碰撞体");
                 
                 // 首先尝试找到Card
@@ -118,7 +119,7 @@ namespace ChessGame
                 
                 foreach (var hit in hits)
                 {
-                    Debug.Log($"碰撞体: {hit.collider.gameObject.name}, 层级: {LayerMask.LayerToName(hit.collider.gameObject.layer)}");
+                    Debug.Log($"碰撞体: {hit.collider.gameObject.name}, 距离: {hit.distance}");
                     
                     // 优先检查是否点击到了卡牌
                     if (cardView == null)

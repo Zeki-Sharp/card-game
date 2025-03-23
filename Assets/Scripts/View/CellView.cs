@@ -34,15 +34,16 @@ namespace ChessGame
             Debug.Log($"CellView Awake: {gameObject.name}");
 
             // 确保有碰撞体
-            BoxCollider2D collider = GetComponent<BoxCollider2D>();
+            BoxCollider collider = GetComponent<BoxCollider>();
             if (collider == null)
             {
-                Debug.LogWarning("CellView没有BoxCollider2D组件，添加一个");
-                collider = gameObject.AddComponent<BoxCollider2D>();
+                Debug.LogWarning("CellView没有BoxCollider组件，添加一个");
+                collider = gameObject.AddComponent<BoxCollider>();
             }
 
             // 设置碰撞体大小
-            collider.size = new Vector2(1f, 1f);
+            collider.size = new Vector3(1f, 0.1f, 1f); // 调整Y轴高度使其更薄
+            collider.center = new Vector3(0f, 0f, 0f); // 调整中心点
         }
 
         // 初始化单元格视图
@@ -85,18 +86,6 @@ namespace ChessGame
             return _cell;
         }
 
-        // 处理鼠标点击
-        private void OnMouseDown()
-        {
-            Debug.Log($"CellView.OnMouseDown: 位置 {_cell?.Position}");
-            
-            if (OnCellClicked != null && _cell != null)
-            {
-                Debug.Log($"触发OnCellClicked事件: {_cell.Position}");
-                OnCellClicked(this);
-            }
-        }
-        
         // 为了兼容现有代码，保留原来的ToggleHighlight方法
         public void ToggleHighlight(bool isHighlighted)
         {

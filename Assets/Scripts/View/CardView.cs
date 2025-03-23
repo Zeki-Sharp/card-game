@@ -19,12 +19,16 @@ namespace ChessGame
         private void Awake()
         {
             // 获取碰撞体组件
-            BoxCollider2D collider = GetComponent<BoxCollider2D>();
-            if (collider != null)
+            BoxCollider collider = GetComponent<BoxCollider>();
+            if (collider == null)
             {
-                // 设置为触发器，这样它不会阻挡射线
-                collider.isTrigger = true;
+                collider = gameObject.AddComponent<BoxCollider>();
+                Debug.Log("为CardView添加了BoxCollider组件");
             }
+            
+            // 调整碰撞体大小
+            collider.size = new Vector3(0.9f, 0.2f, 0.9f); // 调整大小使其适合卡牌
+            collider.center = new Vector3(0f, 0.1f, 0f); // 稍微抬高中心点
         }
         
         public void Initialize(Card card)
