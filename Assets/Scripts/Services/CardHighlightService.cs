@@ -26,6 +26,8 @@ namespace ChessGame
             if (cardManager != null)
             {
                 Debug.Log("CardHighlightService: 订阅CardManager事件");
+                
+                // 订阅事件
                 cardManager.OnCardSelected += HighlightSelectedPosition;
                 cardManager.OnCardSelected += HighlightMovablePositions;
                 cardManager.OnCardSelected += HighlightAttackableCards;

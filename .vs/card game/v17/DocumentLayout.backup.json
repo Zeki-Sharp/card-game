@@ -3,11 +3,35 @@
   "WorkspaceRootPath": "D:\\C_sharp_scripts\\card game\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|d:\\c_sharp_scripts\\card game\\assets\\scripts\\controller\\board.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|D:\\C_sharp_scripts\\card game\\assets\\scripts\\controller\\cardmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\controller\\cardmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|d:\\c_sharp_scripts\\card game\\assets\\scripts\\fsm\\attackstate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\fsm\\attackstate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|D:\\C_sharp_scripts\\card game\\assets\\scripts\\fsm\\icardstate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\fsm\\icardstate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|D:\\C_sharp_scripts\\card game\\assets\\scripts\\fsm\\cardstatemachine.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\fsm\\cardstatemachine.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|D:\\C_sharp_scripts\\card game\\assets\\scripts\\fsm\\cardstatebase.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\fsm\\cardstatebase.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|D:\\C_sharp_scripts\\card game\\assets\\scripts\\fsm\\cardstate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\fsm\\cardstate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|D:\\C_sharp_scripts\\card game\\assets\\scripts\\controller\\board.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\controller\\board.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|d:\\c_sharp_scripts\\card game\\assets\\scripts\\data\\carddataprovider.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|D:\\C_sharp_scripts\\card game\\assets\\scripts\\data\\carddataprovider.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\data\\carddataprovider.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
@@ -23,10 +47,6 @@
       "RelativeMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\view\\cardview.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|D:\\C_sharp_scripts\\card game\\assets\\scripts\\controller\\cardmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\controller\\cardmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|D:\\C_sharp_scripts\\card game\\assets\\scripts\\fsm\\selectedstate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{BC5EE1DD-6483-9F70-A3CC-A0C3E95D3CBE}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\fsm\\selectedstate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
@@ -38,24 +58,84 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 10,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 2,
+              "Title": "ICardState.cs",
+              "DocumentMoniker": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\FSM\\ICardState.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\FSM\\ICardState.cs",
+              "ToolTip": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\FSM\\ICardState.cs",
+              "RelativeToolTip": "Assets\\Scripts\\FSM\\ICardState.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAACAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-23T11:09:26.071Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "CardStateMachine.cs",
+              "DocumentMoniker": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\FSM\\CardStateMachine.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\FSM\\CardStateMachine.cs",
+              "ToolTip": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\FSM\\CardStateMachine.cs",
+              "RelativeToolTip": "Assets\\Scripts\\FSM\\CardStateMachine.cs",
+              "ViewState": "AgIAAGEAAAAAAAAAAAAQwIEAAAACAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-23T11:09:20.357Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "CardState.cs",
+              "DocumentMoniker": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\FSM\\CardState.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\FSM\\CardState.cs",
+              "ToolTip": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\FSM\\CardState.cs",
+              "RelativeToolTip": "Assets\\Scripts\\FSM\\CardState.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAACAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-23T11:09:09.055Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "AttackState.cs",
+              "DocumentMoniker": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\FSM\\AttackState.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\FSM\\AttackState.cs",
+              "ToolTip": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\FSM\\AttackState.cs",
+              "RelativeToolTip": "Assets\\Scripts\\FSM\\AttackState.cs",
+              "ViewState": "AgIAACAAAAAAAAAAAAAzwCkAAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-23T11:08:47.876Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "CardStateBase.cs",
+              "DocumentMoniker": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\FSM\\CardStateBase.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\FSM\\CardStateBase.cs",
+              "ToolTip": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\FSM\\CardStateBase.cs",
+              "RelativeToolTip": "Assets\\Scripts\\FSM\\CardStateBase.cs",
+              "ViewState": "AgIAAAIAAAAAAAAAAAAAAB0AAAACAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-23T11:08:33.377Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
               "Title": "Board.cs",
               "DocumentMoniker": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\Controller\\Board.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\Controller\\Board.cs",
               "ToolTip": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\Controller\\Board.cs",
               "RelativeToolTip": "Assets\\Scripts\\Controller\\Board.cs",
-              "ViewState": "AgIAAEIAAAAAAAAAAAAYwBYAAAAiAAAAAAAAAA==",
+              "ViewState": "AgIAABQAAAAAAAAAAADwv2AAAAAbAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-23T09:51:16.661Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-03-23T09:51:16.661Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 7,
               "Title": "CardDataProvider.cs",
               "DocumentMoniker": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\Data\\CardDataProvider.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\Data\\CardDataProvider.cs",
@@ -63,12 +143,11 @@
               "RelativeToolTip": "Assets\\Scripts\\Data\\CardDataProvider.cs",
               "ViewState": "AgIAAAUAAAAAAAAAAAAwwBoAAAANAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-22T14:41:30.038Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-03-22T14:41:30.038Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 8,
               "Title": "GameController.cs",
               "DocumentMoniker": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\Controller\\GameController.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\Controller\\GameController.cs",
@@ -80,7 +159,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 10,
               "Title": "CardView.cs",
               "DocumentMoniker": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\View\\CardView.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\View\\CardView.cs",
@@ -92,7 +171,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 9,
               "Title": "CellView.cs",
               "DocumentMoniker": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\View\\CellView.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\View\\CellView.cs",
@@ -104,19 +183,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 0,
               "Title": "CardManager.cs",
               "DocumentMoniker": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\Controller\\CardManager.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\Controller\\CardManager.cs",
               "ToolTip": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\Controller\\CardManager.cs",
               "RelativeToolTip": "Assets\\Scripts\\Controller\\CardManager.cs",
-              "ViewState": "AgIAANsBAAAAAAAAAAAQwDUCAAACAAAAAAAAAA==",
+              "ViewState": "AgIAAE0DAAAAAAAAAAAswNQAAAANAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-22T11:55:58.77Z"
+              "WhenOpened": "2025-03-22T11:55:58.77Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 11,
               "Title": "SelectedState.cs",
               "DocumentMoniker": "D:\\C_sharp_scripts\\card game\\Assets\\Scripts\\FSM\\SelectedState.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\FSM\\SelectedState.cs",

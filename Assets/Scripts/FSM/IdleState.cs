@@ -11,8 +11,9 @@ namespace ChessGame.FSM
         public override void Enter()
         {
             Debug.Log("进入空闲状态");
-            // 清除所有高亮
-            StateMachine.CardManager.ClearAllHighlights();
+            
+            // 清除所有选中状态
+            StateMachine.CardManager.ClearSelectedPosition(); // 触发 OnCardDeselected
         }
         
         public override void Exit()
