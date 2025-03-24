@@ -46,36 +46,32 @@ namespace ChessGame.FSM
                     return;
                 }
 
-                // 敌方背面卡牌翻面后，照常受伤
-                Debug.Log("翻开的是敌方卡牌，继续执行攻击");
-                // 记录攻击前的生命值（用于判断是否受伤）
+                // 敌方背面卡牌翻面后，执行攻击但保证不会死亡
+                Debug.Log("翻开的是敌方卡牌，执行攻击但保证不会死亡");
+                
+                // 记录攻击前的生命值
                 int targetHpBefore = target.Data.Health;
                 int attackerHpBefore = attacker.Data.Health;
 
                 // 执行攻击（会直接修改双方血量）
                 bool success = attacker.Attack(target);
 
-                bool targetDead = target.Data.Health <= 0;
-                bool attackerDead = attacker.Data.Health <= 0;
-
-                // 移除死亡的卡牌（目标优先）
-                if (targetDead)
+                // 特殊规则：如果背面卡牌血量降至0或以下，保留1点血量
+                if (target.Data.Health <= 0)
                 {
-                    Debug.Log($"目标 {target.Data.Name} 被击败，移除卡牌");
-                    StateMachine.CardManager.RemoveCard(targetPos);
-                    StateMachine.CardManager.NotifyCardRemoved(targetPos);
+                    Debug.Log($"背面卡牌 {target.Data.Name} 血量降至0或以下，保留1点血量");
+                    target.Data.Health = 1;
                 }
-                else
+
+                // 触发受伤事件
+                if (targetHpBefore > target.Data.Health)
                 {
-                    // 没死就触发受伤事件
-                    if (targetHpBefore > target.Data.Health)
-                    {
-                        StateMachine.CardManager.NotifyCardDamaged(targetPos);
-                        Debug.Log($"目标 {target.Data.Name} 受伤");
-                    }
+                    StateMachine.CardManager.NotifyCardDamaged(targetPos);
+                    Debug.Log($"目标 {target.Data.Name} 受伤，当前血量: {target.Data.Health}");
                 }
 
                 // 攻击者是否死亡（通常是受到反击）
+                bool attackerDead = attacker.Data.Health <= 0;
                 if (attackerDead)
                 {
                     Debug.Log($"攻击者 {attacker.Data.Name} 被反击致死，移除卡牌");
@@ -89,11 +85,8 @@ namespace ChessGame.FSM
                         StateMachine.CardManager.NotifyCardDamaged(attacker.Position);
                         Debug.Log($"攻击者 {attacker.Data.Name} 受伤");
                     }
-                }
-
-                // 标记卡牌为已行动
-                if (!attackerDead)
-                {
+                    
+                    // 标记卡牌为已行动
                     attacker.HasActed = true;
                     Debug.Log($"标记卡牌 {attacker.Data.Name} 为已行动");
                 }

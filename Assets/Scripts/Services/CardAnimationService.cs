@@ -68,7 +68,7 @@ namespace ChessGame
         private IEnumerator MoveAnimationCoroutine(CardView cardView, Vector3 targetPosition)
         {
             Vector3 startPosition = cardView.transform.position;
-            float duration = 0.5f;
+            float duration = 0.3f;
             float elapsed = 0f;
             
             while (elapsed < duration)
