@@ -11,16 +11,54 @@ namespace ChessGame.FSM
         public override void Enter()
         {
             Debug.Log("进入移动状态");
-            
-            // 执行移动
-            bool success = StateMachine.CardManager.ExecuteMove();
-            
-            Debug.Log($"移动执行结果: {(success ? "成功" : "失败")}");
-            
-            // 检查是否需要结束回合
+
+            // 获取选中的移动卡牌
+            Card mover = StateMachine.CardManager.GetSelectedCard();
+            if (mover == null)
+            {
+                Debug.LogError("没有选中的移动卡牌");
+                return;
+            }
+
+            // 获取目标位置
+            Vector2Int? targetPosOpt = StateMachine.CardManager.GetTargetPosition();
+            if (!targetPosOpt.HasValue)
+            {
+                Debug.LogError("移动失败：没有目标位置");
+                CompleteState(CardState.Idle);
+                return;
+            }
+
+            Vector2Int targetPos = targetPosOpt.Value;
+
+            // 检查目标位置是否合法（可选，也可以假设SelectedState已经处理）
+            if (!mover.CanMoveTo(targetPos, StateMachine.CardManager.GetAllCards()))
+            {
+                Debug.LogWarning("目标位置不在合法移动范围内，回到Idle");
+                CompleteState(CardState.Idle);
+                return;
+            }
+
+            Debug.Log($"准备移动卡牌 {mover.Data.Name} 到 {targetPos}");
+
+            Vector2Int fromPos = mover.Position;
+
+            // 更新模型数据
+            mover.Position = targetPos;
+            mover.HasActed = true;
+
+            // 直接使用移动方法
+            StateMachine.CardManager.MoveCard(fromPos, targetPos);
+
+            // 触发事件
+            StateMachine.CardManager.NotifyCardMoved(fromPos, targetPos);
+
+            Debug.Log($"卡牌 {mover.Data.Name} 移动完成：{fromPos} -> {targetPos}");
+
+            // 调用通用回合结束检查
             CheckEndTurn();
-            
-            // 完成状态，返回空闲状态
+
+            // 状态完成，切换回 Idle
             CompleteState(CardState.Idle);
         }
         

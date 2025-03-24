@@ -90,23 +90,53 @@ namespace ChessGame
             Debug.Log($"播放攻击动画: 从 {attackerPosition} 到 {targetPosition}");
             
             CardView attackerView = cardManager.GetCardView(attackerPosition);
-            CardView targetView = cardManager.GetCardView(targetPosition);
-            
-            if (attackerView != null && targetView != null)
+            if (attackerView != null)
             {
-                // 播放攻击动画
-                attackerView.PlayAttackAnimation(targetView.transform.position);
+                // 获取目标位置的世界坐标
+                Vector3 targetWorldPos = GetWorldPosition(targetPosition);
                 
-                // 延迟一段时间后播放受伤动画
-                StartCoroutine(DelayedDamageAnimation(targetView, 0.3f));
+                // 播放攻击动画
+                StartCoroutine(AttackAnimationCoroutine(attackerView, targetWorldPos));
             }
         }
         
-        // 延迟播放受伤动画
-        private IEnumerator DelayedDamageAnimation(CardView cardView, float delay)
+        // 攻击动画协程
+        private IEnumerator AttackAnimationCoroutine(CardView attackerView, Vector3 targetPosition)
         {
-            yield return new WaitForSeconds(delay);
-            cardView.PlayDamageAnimation();
+            if (attackerView == null) yield break;
+            
+            Vector3 originalPosition = attackerView.transform.position;
+            Vector3 midPosition = Vector3.Lerp(originalPosition, targetPosition, 0.5f);
+            float duration = 0.3f;
+            float elapsed = 0f;
+            
+            // 向目标移动一半
+            while (elapsed < duration)
+            {
+                if (attackerView == null) yield break; // 检查对象是否仍然存在
+                
+                attackerView.transform.position = Vector3.Lerp(originalPosition, midPosition, elapsed / duration);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            // 回到原位
+            elapsed = 0f;
+            while (elapsed < duration)
+            {
+                if (attackerView == null) yield break; // 检查对象是否仍然存在
+                
+                attackerView.transform.position = Vector3.Lerp(midPosition, originalPosition, elapsed / duration);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            if (attackerView == null) yield break;
+            
+            attackerView.transform.position = originalPosition;
+            
+            // 更新卡牌视图
+            attackerView.UpdateVisuals();
         }
         
         // 播放受伤动画

@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace ChessGame
 {
@@ -20,6 +21,7 @@ namespace ChessGame
         private Card _card;
         private bool _isSelected = false;
         private Sprite _frontSprite; // 保存正面图片
+        private List<Coroutine> _activeCoroutines = new List<Coroutine>();
         
         private void Awake()
         {
@@ -240,6 +242,10 @@ namespace ChessGame
         // 播放死亡动画
         public void PlayDeathAnimation()
         {
+            // 停止所有活动协程
+            StopAllCoroutines();
+            
+            // 播放死亡动画
             StartCoroutine(DeathAnimationCoroutine());
         }
         
@@ -263,7 +269,8 @@ namespace ChessGame
                 yield return null;
             }
             
-            Destroy(gameObject);
+            // 动画完成后，通知可以安全销毁
+            gameObject.SetActive(false); // 先隐藏对象
         }
         
         // 设置选中状态
