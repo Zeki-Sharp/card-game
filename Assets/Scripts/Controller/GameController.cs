@@ -11,10 +11,12 @@ namespace ChessGame
         [SerializeField] private AIController aiController;
         [SerializeField] private GameStateManager gameStateManager;
         [SerializeField] private int initialCardCount = 3;
+        [SerializeField] private CardInitializer cardInitializer;
         
         // 游戏状态
         private bool _isGameInitialized = false;
         private bool _isGameOver = false;
+        private bool _cardsInitialized = false;
         
         private void Start()
         {
@@ -80,9 +82,10 @@ namespace ChessGame
             yield return null;
             
             // 生成初始卡牌
-            if (cardManager != null && board != null)
+            if (cardInitializer != null && !_cardsInitialized)
             {
-                cardManager.SpawnRandomCards(initialCardCount);
+                cardInitializer.SpawnInitialCards();
+                _cardsInitialized = true;
             }
             
             // 标记游戏已初始化

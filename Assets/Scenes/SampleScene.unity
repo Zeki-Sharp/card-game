@@ -677,6 +677,7 @@ GameObject:
   m_Component:
   - component: {fileID: 908457768}
   - component: {fileID: 908457767}
+  - component: {fileID: 908457769}
   m_Layer: 0
   m_Name: CardManager
   m_TagString: Untagged
@@ -716,6 +717,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1023976013}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &908457769
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 908457766}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 72ec61ab8252b264a8560bfad60bbd31, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cardManager: {fileID: 908457767}
+  cardDataProvider: {fileID: 1404373183}
+  initialPlayerCards: 3
+  initialEnemyCards: 3
 --- !u!1 &1023976012
 GameObject:
   m_ObjectHideFlags: 0
@@ -1118,6 +1135,7 @@ MonoBehaviour:
   aiController: {fileID: 770383906}
   gameStateManager: {fileID: 583560100}
   initialCardCount: 24
+  cardInitializer: {fileID: 0}
 --- !u!4 &1404373182
 Transform:
   m_ObjectHideFlags: 0

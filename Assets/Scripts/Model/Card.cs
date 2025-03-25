@@ -96,11 +96,7 @@ namespace ChessGame
             }
         }
         
-        // 检查卡牌是否可以行动
-        public bool CanAct()
-        {
-            return !HasActed && !IsFaceDown;
-        }
+
 
         // 判断是否可以移动到指定位置
         public virtual bool CanMoveTo(Vector2Int targetPosition, Dictionary<Vector2Int, Card> allCards)

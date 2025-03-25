@@ -60,8 +60,12 @@ namespace ChessGame.FSM
         {
             Debug.Log($"SelectedState.HandleCellClick: 位置 {position}");
             
-            // 检查是否是可移动的位置
-            if (StateMachine.CardManager.CanMoveTo(position))
+            // 获取选中的卡牌
+            Card selectedCard = StateMachine.CardManager.GetSelectedCard();
+            if (selectedCard == null) return;
+            
+            // 检查是否是可移动的位置 - 直接使用Card类的方法
+            if (selectedCard.CanMoveTo(position, StateMachine.CardManager.GetAllCards()))
             {
                 Debug.Log($"移动到位置: {position}");
                 // 设置目标位置
@@ -100,16 +104,18 @@ namespace ChessGame.FSM
                 return;
             }
             
-            // 如果点击的是背面卡牌，且在攻击范围内
-            if (targetCard != null && targetCard.IsFaceDown && StateMachine.CardManager.CanAttack(position))
+            // 如果点击的是背面卡牌，且在攻击范围内 - 直接使用Card类的方法
+            if (targetCard != null && targetCard.IsFaceDown && 
+                selectedCard.CanAttack(position, StateMachine.CardManager.GetAllCards()))
             {
                 Debug.Log($"攻击背面卡牌");
                 StateMachine.CardManager.SetTargetPosition(position);
                 Debug.Log("切换到攻击状态");
                 CompleteState(CardState.Attacking);
             }
-            // 如果点击的是敌方卡牌，且在攻击范围内
-            else if (targetCard != null && !targetCard.IsFaceDown && targetCard.OwnerId != selectedCard.OwnerId && StateMachine.CardManager.CanAttack(position))
+            // 如果点击的是敌方卡牌，且在攻击范围内 - 直接使用Card类的方法
+            else if (targetCard != null && !targetCard.IsFaceDown && targetCard.OwnerId != selectedCard.OwnerId && 
+                     selectedCard.CanAttack(position, StateMachine.CardManager.GetAllCards()))
             {
                 Debug.Log($"攻击敌方卡牌: {targetCard.Data.Name}");
                 StateMachine.CardManager.SetTargetPosition(position);

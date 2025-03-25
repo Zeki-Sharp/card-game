@@ -100,100 +100,6 @@ namespace ChessGame
             }
         }
         
-        // 生成卡牌
-        public void SpawnRandomCards(int count)
-        {
-            Debug.Log($"尝试生成卡牌，最大数量: {count}");
-            
-            if (cardDataProvider == null)
-            {
-                cardDataProvider = FindObjectOfType<CardDataProvider>();
-                if (cardDataProvider == null)
-                {
-                    Debug.LogError("找不到CardDataProvider组件");
-                    return;
-                }
-            }
-            
-            // 获取所有空白格子
-            List<Vector2Int> emptyPositions = GetEmptyPositions();
-            
-            if (emptyPositions.Count == 0)
-            {
-                Debug.LogWarning("没有空白格子可以生成卡牌");
-                return;
-            }
-            
-            // 获取所有卡牌数据
-            List<CardData> allCardDatas = cardDataProvider.GetAllCardData();
-            
-            if (allCardDatas == null || allCardDatas.Count == 0)
-            {
-                Debug.LogError("没有可用的卡牌数据");
-                return;
-            }
-            
-            // 确定实际可以生成的卡牌数量
-            int actualCount = Mathf.Min(count, emptyPositions.Count, allCardDatas.Count);
-            
-            Debug.Log($"卡牌集合中有 {allCardDatas.Count} 张卡牌，空白格子有 {emptyPositions.Count} 个，将生成 {actualCount} 张卡牌");
-            
-            // 随机打乱空白格子和卡牌数据
-            ShuffleList(emptyPositions);
-            ShuffleList(allCardDatas);
-            
-            // 分离玩家和敌方的卡牌数据
-            List<CardData> playerCards = new List<CardData>();
-            List<CardData> enemyCards = new List<CardData>();
-            
-            foreach (var cardData in allCardDatas)
-            {
-                if (cardData.Faction == 0)
-                {
-                    playerCards.Add(cardData);
-                }
-                else
-                {
-                    enemyCards.Add(cardData);
-                }
-            }
-            
-            // 确保每方至少有一张卡牌
-            if (playerCards.Count == 0 || enemyCards.Count == 0)
-            {
-                Debug.LogWarning("无法为双方分配卡牌");
-                return;
-            }
-            
-            // 计算每方应该生成的卡牌数量
-            int playerCardCount = Mathf.Min(playerCards.Count, actualCount / 2 + actualCount % 2);
-            int enemyCardCount = Mathf.Min(enemyCards.Count, actualCount / 2);
-            
-            // 生成玩家卡牌
-            for (int i = 0; i < playerCardCount && i < emptyPositions.Count; i++)
-            {
-                Vector2Int position = emptyPositions[i];
-                CardData cardData = playerCards[i];
-                
-                // 第一张玩家卡牌是正面的，其余是背面的
-                bool isFaceDown = i > 0;
-                SpawnCard(cardData, position, isFaceDown);
-            }
-            
-            // 生成敌方卡牌
-            for (int i = 0; i < enemyCardCount && i + playerCardCount < emptyPositions.Count; i++)
-            {
-                Vector2Int position = emptyPositions[i + playerCardCount];
-                CardData cardData = enemyCards[i];
-                
-                // 第一张敌方卡牌是正面的，其余是背面的
-                bool isFaceDown = i > 0;
-                SpawnCard(cardData, position, isFaceDown);
-            }
-            
-            Debug.Log($"成功生成了 {playerCardCount + enemyCardCount} 张卡牌");
-        }
-        
         // 获取所有空白格子
         private List<Vector2Int> GetEmptyPositions()
         {
@@ -212,46 +118,6 @@ namespace ChessGame
             }
             
             return emptyPositions;
-        }
-        
-        // 在指定位置生成卡牌
-        public void SpawnCard(CardData cardData, Vector2Int position, bool isFaceDown = true)
-        {
-            // 检查位置是否已有卡牌
-            if (_cards.ContainsKey(position))
-            {
-                Debug.LogWarning($"位置 {position} 已有卡牌，无法生成新卡牌");
-                return;
-            }
-            
-            // 创建卡牌模型，使用CardData中的阵营属性
-            Card card = new Card(cardData, position, cardData.Faction, isFaceDown);
-            _cards[position] = card;
-            
-            // 创建卡牌视图
-            CellView cellView = board.GetCellView(position.x, position.y);
-            if (cellView != null)
-            {
-                // 使用单元格的实际位置，并稍微调整Z坐标使卡牌显示在单元格上方
-                Vector3 cardPosition = cellView.transform.position;
-                cardPosition.z = -0f; // 调整Z坐标，使卡牌显示在单元格上方
-                Quaternion rotation = Quaternion.Euler(Camera.main.transform.rotation.eulerAngles.x, Camera.main.transform.rotation.eulerAngles.y, 0);
-
-                GameObject cardObject = Instantiate(cardPrefab, cardPosition, rotation);
-                cardObject.name = $"Card_{cardData.Name}_{position.x}_{position.y}";
-                
-                CardView cardView = cardObject.GetComponent<CardView>();
-                if (cardView != null)
-                {
-                    cardView.Initialize(card);
-                    _cardViews[position] = cardView;
-                }
-            }
-            
-            // 触发卡牌添加事件
-            OnCardAdded?.Invoke(position, card.OwnerId, card.IsFaceDown);
-            
-            Debug.Log($"生成卡牌: {cardData.Name}, 位置: {position}, 阵营: {card.OwnerId}, 背面: {isFaceDown}");
         }
         
         // 选中卡牌
@@ -321,19 +187,6 @@ namespace ChessGame
             }
         }
         
-        // 辅助方法：随机打乱列表
-        private void ShuffleList<T>(List<T> list)
-        {
-            int n = list.Count;
-            while (n > 1)
-            {
-                n--;
-                int k = UnityEngine.Random.Range(0, n + 1);
-                T value = list[k];
-                list[k] = list[n];
-                list[n] = value;
-            }
-        }
         
         // 翻转卡牌
         public void FlipCard(Vector2Int position)
@@ -529,30 +382,6 @@ namespace ChessGame
             return null;
         }
 
-        public bool CanMoveTo(Vector2Int position)
-        {
-            if (!_selectedPosition.HasValue)
-                return false;
-                
-            Card selectedCard = GetCard(_selectedPosition.Value);
-            if (selectedCard == null)
-                return false;
-                
-            return selectedCard.CanMoveTo(position, _cards);
-        }
-
-        public bool CanAttack(Vector2Int position)
-        {
-            if (!_selectedPosition.HasValue)
-                return false;
-                
-            Card selectedCard = GetCard(_selectedPosition.Value);
-            if (selectedCard == null)
-                return false;
-                
-            return selectedCard.CanAttack(position, _cards);
-        }
-
         // 添加SetTargetPosition方法
         public void SetTargetPosition(Vector2Int position)
         {
@@ -569,17 +398,6 @@ namespace ChessGame
         {
             OnCardDamaged?.Invoke(position);
         } 
-
-        public void ForceAddCard(Card card, Vector2Int position)
-        {
-            _cards[position] = card;
-            if (_cardViews.ContainsKey(card.Position))
-            {
-                CardView view = _cardViews[card.Position];
-                _cardViews.Remove(card.Position);
-                _cardViews[position] = view;
-            }
-        }
 
         public void NotifyCardMoved(Vector2Int fromPosition, Vector2Int toPosition)
         {
@@ -608,42 +426,114 @@ namespace ChessGame
             _stateMachine.ChangeState(CardState.Moving);
         }
 
-        // 移动卡牌（不销毁GameObject，只更新位置）
+        // 移动卡牌
         public void MoveCard(Vector2Int fromPosition, Vector2Int toPosition)
         {
+            // 检查源位置是否有卡牌
             if (!_cards.ContainsKey(fromPosition))
             {
-                Debug.LogError($"移动卡牌失败：位置 {fromPosition} 没有卡牌");
+                Debug.LogError($"位置 {fromPosition} 没有卡牌，无法移动");
                 return;
             }
             
+            // 检查目标位置是否已有卡牌
             if (_cards.ContainsKey(toPosition))
             {
-                Debug.LogError($"移动卡牌失败：目标位置 {toPosition} 已被占用");
+                Debug.LogError($"位置 {toPosition} 已有卡牌，无法移动到此位置");
                 return;
             }
             
             // 获取卡牌
             Card card = _cards[fromPosition];
             
-            // 从旧位置移除
-            _cards.Remove(fromPosition);
-            
-            // 添加到新位置
-            _cards[toPosition] = card;
+            // 更新卡牌位置
             card.Position = toPosition;
             
-            // 移动视图
+            // 更新数据结构
+            _cards.Remove(fromPosition);
+            _cards[toPosition] = card;
+            
+            // 更新视图
             if (_cardViews.ContainsKey(fromPosition))
             {
                 CardView cardView = _cardViews[fromPosition];
-                
-                // 更新字典
                 _cardViews.Remove(fromPosition);
                 _cardViews[toPosition] = cardView;
                 
-                // 触发移动事件
-                OnCardMoved?.Invoke(fromPosition, toPosition);
+                // 更新卡牌视图位置（实际移动由CardAnimationService处理）
+                CellView cellView = board.GetCellView(toPosition.x, toPosition.y);
+                if (cellView != null)
+                {
+                    // 这里只设置目标位置，实际的移动动画由CardAnimationService处理
+                    Vector3 targetPosition = cellView.transform.position;
+                    targetPosition.z = -0.1f; // 保持卡牌在单元格上方
+                    
+                    // 这里不直接设置位置，而是让动画服务处理
+                    // cardView.transform.position = targetPosition;
+                }
+            }
+            
+            Debug.Log($"移动卡牌: 从 {fromPosition} 到 {toPosition}");
+        }
+
+        // 添加卡牌到管理器
+        public void AddCard(Card card, Vector2Int position)
+        {
+            // 检查位置是否已有卡牌
+            if (_cards.ContainsKey(position))
+            {
+                Debug.LogWarning($"位置 {position} 已有卡牌，无法添加新卡牌");
+                return;
+            }
+            
+            // 添加卡牌数据
+            _cards[position] = card;
+            
+            // 创建卡牌视图
+            CreateCardView(card, position);
+            
+            // 触发卡牌添加事件
+            OnCardAdded?.Invoke(position, card.OwnerId, card.IsFaceDown);
+            
+            Debug.Log($"添加卡牌: {card.Data.Name}, 位置: {position}, 所有者: {card.OwnerId}, 背面: {card.IsFaceDown}");
+        }
+
+        // 创建卡牌视图
+        private void CreateCardView(Card card, Vector2Int position)
+        {
+            // 获取单元格视图
+            CellView cellView = board.GetCellView(position.x, position.y);
+            if (cellView == null)
+            {
+                Debug.LogError($"找不到位置 {position} 的单元格视图");
+                return;
+            }
+            
+            // 使用单元格的实际位置，并稍微调整Z坐标使卡牌显示在单元格上方
+            Vector3 cardPosition = cellView.transform.position;
+            cardPosition.z = -0.1f; // 调整Z坐标，使卡牌显示在单元格上方
+            
+            // 根据主相机的旋转设置卡牌的旋转
+            Quaternion rotation = Quaternion.Euler(90, 0, 0);
+            if (Camera.main != null)
+            {
+                rotation = Quaternion.Euler(Camera.main.transform.rotation.eulerAngles.x, 0, 0);
+            }
+            
+            // 实例化卡牌预制体
+            GameObject cardObject = Instantiate(cardPrefab, cardPosition, rotation);
+            cardObject.name = $"Card_{card.Data.Name}_{position.x}_{position.y}";
+            
+            // 获取并初始化卡牌视图组件
+            CardView cardView = cardObject.GetComponent<CardView>();
+            if (cardView != null)
+            {
+                cardView.Initialize(card);
+                _cardViews[position] = cardView;
+            }
+            else
+            {
+                Debug.LogError($"卡牌预制体没有CardView组件");
             }
         }
 
