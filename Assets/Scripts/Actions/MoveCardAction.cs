@@ -50,49 +50,27 @@ namespace ChessGame
             if (!CanExecute())
                 return false;
                 
-            // 获取卡牌
+            // 获取卡牌和视图
             Card card = CardManager.GetCard(_fromPosition);
+            CardView cardView = CardManager.GetCardView(_fromPosition);
             
-            // 更新卡牌数据位置
+            // 获取数据结构
+            Dictionary<Vector2Int, Card> cards = CardManager.GetAllCards();
+            Dictionary<Vector2Int, CardView> cardViews = CardManager.GetAllCardViews();
+            
+            // 更新卡牌位置
             CardManager.UpdateCardPosition(_fromPosition, _toPosition);
             
-            // 更新卡牌视图位置
+            // 更新视图位置
             CardManager.UpdateCardViewPosition(_fromPosition, _toPosition);
             
             // 标记卡牌已行动
             card.HasActed = true;
             
-            // 触发移动事件
+            // 触发移动事件 - 动画服务会监听此事件并播放动画
             GameEventSystem.Instance.NotifyCardMoved(_fromPosition, _toPosition);
             
             Debug.Log($"卡牌 {card.Data.Name} 移动完成：{_fromPosition} -> {_toPosition}");
-            
-            // 添加调试代码
-            Dictionary<Vector2Int, Card> allCards = CardManager.GetAllCards();
-            Dictionary<Vector2Int, CardView> allViews = CardManager.GetAllCardViews();
-
-            Debug.Log($"移动后的卡牌数据位置: {string.Join(", ", allCards.Keys)}");
-            Debug.Log($"移动后的卡牌视图位置: {string.Join(", ", allViews.Keys)}");
-
-            // 验证卡牌是否在新位置
-            if (allCards.ContainsKey(_toPosition))
-            {
-                Debug.Log($"卡牌数据已在新位置 {_toPosition}");
-            }
-            else
-            {
-                Debug.LogError($"卡牌数据不在新位置 {_toPosition}");
-            }
-
-            // 验证卡牌视图是否在新位置
-            if (allViews.ContainsKey(_toPosition))
-            {
-                Debug.Log($"卡牌视图已在新位置 {_toPosition}");
-            }
-            else
-            {
-                Debug.LogError($"卡牌视图不在新位置 {_toPosition}");
-            }
             
             return true;
         }

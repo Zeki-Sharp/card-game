@@ -339,7 +339,8 @@ namespace ChessGame
         // 获取所有卡牌的字典
         public Dictionary<Vector2Int, Card> GetAllCards()
         {
-            return _cards; // 返回实际引用
+            // 返回实际引用，而不是副本
+            return _cards;
         }
 
         public Vector2Int GetSelectedPosition()
@@ -377,7 +378,9 @@ namespace ChessGame
         public Card GetCard(Vector2Int position)
         {
             if (_cards.ContainsKey(position))
+            {
                 return _cards[position];
+            }
             return null;
         }
 
@@ -607,7 +610,8 @@ namespace ChessGame
         // 获取所有卡牌视图的字典
         public Dictionary<Vector2Int, CardView> GetAllCardViews()
         {
-            return _cardViews; // 返回实际引用
+            // 返回实际引用，而不是副本
+            return _cardViews;
         }
 
         // 直接更新卡牌视图字典
@@ -643,18 +647,8 @@ namespace ChessGame
             }
         }
 
-        // 移动卡牌
-        public void MoveCard(Vector2Int fromPosition, Vector2Int toPosition)
-        {
-            // 更新卡牌数据位置
-            UpdateCardPosition(fromPosition, toPosition);
-            
-            // 更新卡牌视图位置
-            UpdateCardViewPosition(fromPosition, toPosition);
-            
-            // 触发移动事件
-            GameEventSystem.Instance.NotifyCardMoved(fromPosition, toPosition);
-        }
+       
+        
 
     }
 
