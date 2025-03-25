@@ -55,35 +55,52 @@ namespace ChessGame
         {
             Debug.Log($"播放移动动画: 从 {fromPosition} 到 {toPosition}");
             
+            // 获取卡牌视图 - 注意这里使用toPosition，因为卡牌已经移动到新位置
             CardView cardView = cardManager.GetCardView(toPosition);
             if (cardView != null)
             {
+                Debug.Log($"找到卡牌视图: {cardView.name}, 当前位置: {cardView.transform.position}");
+                
                 // 获取目标位置的世界坐标
                 Vector3 targetWorldPos = GetWorldPosition(toPosition);
+                Debug.Log($"目标世界坐标: {targetWorldPos}");
                 
                 // 播放移动动画
                 StartCoroutine(MoveAnimationCoroutine(cardView, targetWorldPos));
+            }
+            else
+            {
+                Debug.LogError($"找不到位置 {toPosition} 的卡牌视图，这可能是因为字典更新不正确");
+                
+                // 打印所有卡牌视图位置进行调试
+                Dictionary<Vector2Int, CardView> allViews = cardManager.GetAllCardViews();
+                Debug.Log($"当前所有卡牌视图位置: {string.Join(", ", allViews.Keys)}");
             }
         }
         
         // 移动动画协程
         private IEnumerator MoveAnimationCoroutine(CardView cardView, Vector3 targetPosition)
         {
-            Vector3 startPosition = cardView.transform.position;
             float duration = 0.3f;
             float elapsed = 0f;
             
+            // 保存原始位置
+            Vector3 originalPosition = cardView.transform.position;
+            
+            Debug.Log($"开始移动动画: 从 {originalPosition} 到 {targetPosition}");
+            
+            // 执行移动动画
             while (elapsed < duration)
             {
-                cardView.transform.position = Vector3.Lerp(startPosition, targetPosition, elapsed / duration);
+                cardView.transform.position = Vector3.Lerp(originalPosition, targetPosition, elapsed / duration);
                 elapsed += Time.deltaTime;
                 yield return null;
             }
             
+            // 确保最终位置正确
             cardView.transform.position = targetPosition;
             
-            // 更新卡牌视图
-            cardView.UpdateVisuals();
+            Debug.Log($"移动动画完成: {cardView.name} 现在位于 {cardView.transform.position}");
         }
         
         // 播放攻击动画

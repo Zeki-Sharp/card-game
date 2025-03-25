@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using ChessGame;
 
 namespace ChessGame.FSM
 {
@@ -13,25 +14,32 @@ namespace ChessGame.FSM
             Debug.Log("进入移动状态");
             
             // 获取选中的卡牌和目标位置
-            Card selectedCard = StateMachine.CardManager.GetSelectedCard();
+            Vector2Int? selectedPosition = StateMachine.CardManager.GetSelectedPosition();
             Vector2Int? targetPosition = StateMachine.CardManager.GetTargetPosition();
             
-            if (selectedCard == null || !targetPosition.HasValue)
+            if (!selectedPosition.HasValue || !targetPosition.HasValue)
             {
                 Debug.LogError("移动状态：没有选中的卡牌或目标位置");
                 CompleteState(CardState.Idle);
                 return;
             }
             
-            // 执行移动
-            Vector2Int fromPosition = selectedCard.Position;
-            Vector2Int toPosition = targetPosition.Value;
+            // 创建移动行动
+            MoveCardAction moveAction = new MoveCardAction(
+                StateMachine.CardManager,
+                selectedPosition.Value,
+                targetPosition.Value
+            );
             
-            // 直接调用CardManager的MoveCard方法，它会通知GameEventSystem
-            StateMachine.CardManager.MoveCard(fromPosition, toPosition);
-            
-            // 标记卡牌已行动
-            selectedCard.HasActed = true;
+            // 执行移动行动
+            if (moveAction.Execute())
+            {
+                Debug.Log("移动行动执行成功");
+            }
+            else
+            {
+                Debug.LogWarning("移动行动执行失败");
+            }
             
             // 移动完成后，转换到空闲状态
             CompleteState(CardState.Idle);
@@ -40,6 +48,10 @@ namespace ChessGame.FSM
         public override void Exit()
         {
             Debug.Log("退出移动状态");
+            
+            // 清除选中和目标位置
+            StateMachine.CardManager.DeselectCard();
+            StateMachine.CardManager.ClearTargetPosition();
         }
         
         public override void HandleCellClick(Vector2Int position)
@@ -54,8 +66,7 @@ namespace ChessGame.FSM
         
         public override void Update()
         {
-            // 如果有移动动画，可以在这里检查动画是否完成
-            // 完成后调用 CompleteState(CardState.Idle)
+            // 移动状态不需要Update逻辑，因为移动是立即完成的
         }
         
         // 添加检查结束回合的方法

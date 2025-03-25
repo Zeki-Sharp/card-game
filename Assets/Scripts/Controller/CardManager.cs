@@ -336,10 +336,15 @@ namespace ChessGame
             }
         }
 
-        // 获取所有卡牌
+        // 获取所有卡牌的字典
         public Dictionary<Vector2Int, Card> GetAllCards()
         {
-            return new Dictionary<Vector2Int, Card>(_cards);
+            return _cards; // 返回实际引用
+        }
+
+        public Vector2Int GetSelectedPosition()
+        {
+            return _selectedPosition.Value;
         }
 
         public void ClearSelectedPosition()
@@ -354,10 +359,13 @@ namespace ChessGame
             GameEventSystem.Instance.NotifyCardDeselected();
         }
 
+        // 获取指定位置的卡牌视图
         public CardView GetCardView(Vector2Int position)
         {
             if (_cardViews.ContainsKey(position))
+            {
                 return _cardViews[position];
+            }
             return null;
         }
 
@@ -385,6 +393,11 @@ namespace ChessGame
             return _targetPosition.Value;
         }
 
+        public void ClearTargetPosition()
+        {
+            _targetPosition = null;
+        }
+
         // 修改DeselectCard方法
         public void DeselectCard()
         {
@@ -405,58 +418,6 @@ namespace ChessGame
             GameEventSystem.Instance.NotifyCardDeselected();
         }
 
-        // 修改MoveCard方法
-        public void MoveCard(Vector2Int fromPosition, Vector2Int toPosition)
-        {
-            // 检查源位置是否有卡牌
-            if (!_cards.ContainsKey(fromPosition))
-            {
-                Debug.LogError($"位置 {fromPosition} 没有卡牌，无法移动");
-                return;
-            }
-            
-            // 检查目标位置是否已有卡牌
-            if (_cards.ContainsKey(toPosition))
-            {
-                Debug.LogError($"位置 {toPosition} 已有卡牌，无法移动到此位置");
-                return;
-            }
-            
-            // 获取卡牌
-            Card card = _cards[fromPosition];
-            
-            // 更新卡牌位置
-            card.Position = toPosition;
-            
-            // 更新数据结构
-            _cards.Remove(fromPosition);
-            _cards[toPosition] = card;
-            
-            // 更新视图
-            if (_cardViews.ContainsKey(fromPosition))
-            {
-                CardView cardView = _cardViews[fromPosition];
-                _cardViews.Remove(fromPosition);
-                _cardViews[toPosition] = cardView;
-                
-                // 更新卡牌视图位置（实际移动由CardAnimationService处理）
-                CellView cellView = board.GetCellView(toPosition.x, toPosition.y);
-                if (cellView != null)
-                {
-                    // 这里只设置目标位置，实际的移动动画由CardAnimationService处理
-                    Vector3 targetPosition = cellView.transform.position;
-                    targetPosition.z = -0.1f; // 保持卡牌在单元格上方
-                    
-                    // 这里不直接设置位置，而是让动画服务处理
-                    // cardView.transform.position = targetPosition;
-                }
-            }
-            
-            Debug.Log($"移动卡牌: 从 {fromPosition} 到 {toPosition}");
-            
-            // 触发移动事件
-            GameEventSystem.Instance.NotifyCardMoved(fromPosition, toPosition);
-        }
 
         // 执行卡牌攻击
         public void AttackCard(Vector2Int attackerPosition, Vector2Int targetPosition)
@@ -641,6 +602,58 @@ namespace ChessGame
             {
                 _stateMachine.Dispose();
             }
+        }
+
+        // 获取所有卡牌视图的字典
+        public Dictionary<Vector2Int, CardView> GetAllCardViews()
+        {
+            return _cardViews; // 返回实际引用
+        }
+
+        // 直接更新卡牌视图字典
+        public void UpdateCardViewPosition(Vector2Int fromPosition, Vector2Int toPosition)
+        {
+            if (_cardViews.ContainsKey(fromPosition))
+            {
+                CardView cardView = _cardViews[fromPosition];
+                _cardViews.Remove(fromPosition);
+                _cardViews[toPosition] = cardView;
+                Debug.Log($"CardManager: 更新卡牌视图位置 从 {fromPosition} 到 {toPosition}");
+            }
+            else
+            {
+                Debug.LogError($"CardManager: 找不到位置 {fromPosition} 的卡牌视图");
+            }
+        }
+
+        // 直接更新卡牌数据字典
+        public void UpdateCardPosition(Vector2Int fromPosition, Vector2Int toPosition)
+        {
+            if (_cards.ContainsKey(fromPosition))
+            {
+                Card card = _cards[fromPosition];
+                _cards.Remove(fromPosition);
+                card.Position = toPosition;
+                _cards[toPosition] = card;
+                Debug.Log($"CardManager: 更新卡牌数据位置 从 {fromPosition} 到 {toPosition}");
+            }
+            else
+            {
+                Debug.LogError($"CardManager: 找不到位置 {fromPosition} 的卡牌");
+            }
+        }
+
+        // 移动卡牌
+        public void MoveCard(Vector2Int fromPosition, Vector2Int toPosition)
+        {
+            // 更新卡牌数据位置
+            UpdateCardPosition(fromPosition, toPosition);
+            
+            // 更新卡牌视图位置
+            UpdateCardViewPosition(fromPosition, toPosition);
+            
+            // 触发移动事件
+            GameEventSystem.Instance.NotifyCardMoved(fromPosition, toPosition);
         }
 
     }
