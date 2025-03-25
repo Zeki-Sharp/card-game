@@ -49,9 +49,9 @@ namespace ChessGame
             // 订阅事件
             if (cardManager != null)
             {
-                cardManager.OnCardRemoved += OnCardRemoved;
-                cardManager.OnCardFlipped += OnCardFlipped;
-                cardManager.OnCardAdded += OnCardAdded;
+                GameEventSystem.Instance.OnCardRemoved += OnCardRemoved;
+                GameEventSystem.Instance.OnCardFlipped += OnCardFlipped;
+                GameEventSystem.Instance.OnCardAdded += OnCardAdded;
             }
             
             // 延迟初始化卡牌状态，确保所有卡牌都已生成
@@ -63,9 +63,9 @@ namespace ChessGame
             // 取消订阅事件
             if (cardManager != null)
             {
-                cardManager.OnCardRemoved -= OnCardRemoved;
-                cardManager.OnCardFlipped -= OnCardFlipped;
-                cardManager.OnCardAdded -= OnCardAdded;
+                GameEventSystem.Instance.OnCardRemoved -= OnCardRemoved;
+                GameEventSystem.Instance.OnCardFlipped -= OnCardFlipped;
+                GameEventSystem.Instance.OnCardAdded -= OnCardAdded;
             }
         }
         
@@ -155,11 +155,10 @@ namespace ChessGame
             Card card = cardManager.GetCard(position);
             if (card == null) return;
             
-            // 从所有列表中移除
-            RemoveCardFromLists(position);
+            // 更新卡牌在状态列表中的分类
+            UpdateCardListClassification(card, position);
             
-            // 重新添加到正确的列表
-            AddCardToLists(position, card);
+            Debug.Log($"GameStateManager: 卡牌翻面事件处理完成，位置: {position}, 是否背面: {isFaceDown}");
         }
         
         // 卡牌添加时的处理
@@ -278,6 +277,16 @@ namespace ChessGame
             {
                 Debug.Log($"  位置: {card.position}, 名称: {card.cardName}");
             }
+        }
+        
+        // 更新卡牌在状态列表中的分类
+        private void UpdateCardListClassification(Card card, Vector2Int position)
+        {
+            // 从所有列表中移除
+            RemoveCardFromLists(position);
+            
+            // 重新添加到正确的列表
+            AddCardToLists(position, card);
         }
     }
 } 

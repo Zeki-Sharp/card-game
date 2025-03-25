@@ -19,33 +19,35 @@ namespace ChessGame
         
         private void Start()
         {
-            // 订阅卡牌管理器的事件
-            if (cardManager != null)
+            // 订阅GameEventSystem的事件
+            if (GameEventSystem.Instance != null)
             {
-                Debug.Log("CardAnimationService: 订阅CardManager事件");
-                cardManager.OnCardMoved += PlayMoveAnimation;
-                cardManager.OnCardAttacked += PlayAttackAnimation;
-                cardManager.OnCardRemoved += PlayDestroyAnimation;
-                cardManager.OnCardFlipped += PlayFlipAnimation;
-                cardManager.OnCardDamaged += PlayDamageAnimation;
+                Debug.Log("CardAnimationService: 订阅GameEventSystem事件");
+                
+                GameEventSystem.Instance.OnCardMoved += PlayMoveAnimation;
+                GameEventSystem.Instance.OnCardAttacked += PlayAttackAnimation;
+                GameEventSystem.Instance.OnCardRemoved += PlayDestroyAnimation;
+                GameEventSystem.Instance.OnCardFlipped += PlayFlipAnimation;
+                GameEventSystem.Instance.OnCardDamaged += PlayDamageAnimation;
             }
             else
             {
-                Debug.LogError("CardAnimationService: cardManager引用为空");
+                Debug.LogError("找不到GameEventSystem实例");
             }
         }
         
         private void OnDestroy()
         {
-            // 取消订阅事件
-            if (cardManager != null)
+            // 取消订阅GameEventSystem的事件
+            if (GameEventSystem.Instance != null)
             {
-                cardManager.OnCardMoved -= PlayMoveAnimation;
-                cardManager.OnCardAttacked -= PlayAttackAnimation;       
-                cardManager.OnCardRemoved -= PlayDestroyAnimation;
-                cardManager.OnCardFlipped -= PlayFlipAnimation;
-                cardManager.OnCardDamaged -= PlayDamageAnimation;
+                GameEventSystem.Instance.OnCardMoved -= PlayMoveAnimation;
+                GameEventSystem.Instance.OnCardAttacked -= PlayAttackAnimation;
+                GameEventSystem.Instance.OnCardRemoved -= PlayDestroyAnimation;
+                GameEventSystem.Instance.OnCardFlipped -= PlayFlipAnimation;
+                GameEventSystem.Instance.OnCardDamaged -= PlayDamageAnimation;
             }
+        
         }
         
         // 播放移动动画
@@ -166,13 +168,55 @@ namespace ChessGame
         // 播放翻面动画
         private void PlayFlipAnimation(Vector2Int position, bool isFaceDown)
         {
-            Debug.Log($"播放翻面动画: {position}, 是否背面: {isFaceDown}");
+            Debug.Log($"播放翻面动画: 位置 {position}, 是否背面: {isFaceDown}");
             
             CardView cardView = cardManager.GetCardView(position);
-            if (cardView != null && !isFaceDown) // 只有从背面翻到正面才播放动画
+            if (cardView != null)
             {
-                cardView.PlayFlipAnimation();
+                // 播放翻转动画
+                StartCoroutine(FlipAnimationCoroutine(cardView, isFaceDown));
             }
+        }
+        
+        // 使用缩放而非旋转的翻转动画
+        private IEnumerator FlipAnimationCoroutine(CardView cardView, bool isFaceDown)
+        {
+            float duration = 0.5f;
+            float elapsed = 0f;
+            
+            // 保存原始缩放
+            Vector3 originalScale = cardView.transform.localScale;
+            
+            // 第一阶段：缩小X轴直到看不见
+            while (elapsed < duration / 2)
+            {
+                float t = elapsed / (duration / 2);
+                Vector3 scale = cardView.transform.localScale;
+                scale.x = Mathf.Lerp(originalScale.x, 0, t);
+                cardView.transform.localScale = scale;
+                
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            // 在中间点更新卡牌视觉效果
+            cardView.UpdateVisuals();
+            
+            // 第二阶段：放大X轴直到正常大小
+            elapsed = 0f;
+            while (elapsed < duration / 2)
+            {
+                float t = elapsed / (duration / 2);
+                Vector3 scale = cardView.transform.localScale;
+                scale.x = Mathf.Lerp(0, originalScale.x, t);
+                cardView.transform.localScale = scale;
+                
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            // 确保恢复到正常大小
+            cardView.transform.localScale = originalScale;
         }
         
         // 获取世界坐标

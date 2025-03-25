@@ -58,6 +58,10 @@ namespace ChessGame.FSM
                 Debug.LogError($"状态机初始化失败: {e.Message}\n{e.StackTrace}");
                 throw;
             }
+            
+            // 订阅GameEventSystem事件
+            GameEventSystem.Instance.OnCardSelected += HandleCardSelected;
+            GameEventSystem.Instance.OnCardDeselected += HandleCardDeselected;
         }
         
         // 状态完成事件处理
@@ -125,6 +129,36 @@ namespace ChessGame.FSM
         public CardState GetCurrentStateType()
         {
             return _currentStateType;
+        }
+        
+        // 添加事件处理方法
+        private void HandleCardSelected(Vector2Int position)
+        {
+            // 根据当前状态处理卡牌选中事件
+            if (_currentState != null)
+            {
+                // 可以在这里添加特定的逻辑
+            }
+        }
+        
+        private void HandleCardDeselected()
+        {
+            // 根据当前状态处理卡牌取消选中事件
+            if (_currentState != null)
+            {
+                // 可以在这里添加特定的逻辑
+            }
+        }
+        
+        // 在析构函数或Dispose方法中取消订阅
+        public void Dispose()
+        {
+            // 取消订阅GameEventSystem事件
+            if (GameEventSystem.Instance != null)
+            {
+                GameEventSystem.Instance.OnCardSelected -= HandleCardSelected;
+                GameEventSystem.Instance.OnCardDeselected -= HandleCardDeselected;
+            }
         }
     }
 } 

@@ -12,148 +12,29 @@ namespace ChessGame.FSM
         public override void Enter()
         {
             Debug.Log("进入攻击状态");
-
-            Card attacker = StateMachine.CardManager.GetSelectedCard();
-            Vector2Int attackerPos = attacker.Position;
-            Vector2Int targetPos = StateMachine.CardManager.GetTargetPosition();
-            Card target = StateMachine.CardManager.GetCard(targetPos);
             
-            Debug.Log($"攻击准备就绪：攻击者 {attacker.Data.Name}，目标 {target.Data.Name}");
-
-            if (!attacker.CanAttack(targetPos, StateMachine.CardManager.GetAllCards()))
+            // 获取选中的卡牌和目标位置
+            Card selectedCard = StateMachine.CardManager.GetSelectedCard();
+            Vector2Int? targetPosition = StateMachine.CardManager.GetTargetPosition();
+            
+            if (selectedCard == null || !targetPosition.HasValue)
             {
-                Debug.LogWarning("进入AttackState时发现目标非法，说明前置逻辑出错");
-                CompleteState(CardState.Idle); // 兜底防御
+                Debug.LogError("攻击状态：没有选中的卡牌或目标位置");
+                CompleteState(CardState.Idle);
                 return;
             }
-
-            // 触发攻击动画事件
-            StateMachine.CardManager.NotifyCardAttacked(attackerPos, targetPos);
-
-            // 执行攻击
-            if (target.IsFaceDown)
-            {
-                Debug.Log("目标是背面卡牌，翻面处理");
-    
-                // 翻面
-                StateMachine.CardManager.FlipCard(targetPos);
-
-                // 特殊规则：如果是友方卡牌，则翻面但不受伤
-                if (target.OwnerId == attacker.OwnerId)
-                {
-                    Debug.Log("翻开的是我方卡牌，不执行攻击，只变为可选中");
-                    CompleteState(CardState.Idle); // 回到Idle，不结束回合
-                    return;
-                }
-
-                // 敌方背面卡牌翻面后，执行攻击但保证不会死亡
-                Debug.Log("翻开的是敌方卡牌，执行攻击但保证不会死亡");
-                
-                // 记录攻击前的生命值
-                int targetHpBefore = target.Data.Health;
-                int attackerHpBefore = attacker.Data.Health;
-
-                // 执行攻击（会直接修改双方血量）
-                bool success = attacker.Attack(target);
-
-                // 特殊规则：如果背面卡牌血量降至0或以下，保留1点血量
-                if (target.Data.Health <= 0)
-                {
-                    Debug.Log($"背面卡牌 {target.Data.Name} 血量降至0或以下，保留1点血量");
-                    target.Data.Health = 1;
-                }
-
-                // 触发受伤事件
-                if (targetHpBefore > target.Data.Health)
-                {
-                    StateMachine.CardManager.NotifyCardDamaged(targetPos);
-                    Debug.Log($"目标 {target.Data.Name} 受伤，当前血量: {target.Data.Health}");
-                }
-
-                // 攻击者是否死亡（通常是受到反击）
-                bool attackerDead = attacker.Data.Health <= 0;
-                if (attackerDead)
-                {
-                    Debug.Log($"攻击者 {attacker.Data.Name} 被反击致死，移除卡牌");
-                    StateMachine.CardManager.RemoveCard(attacker.Position); 
-                    StateMachine.CardManager.NotifyCardRemoved(attacker.Position);
-                }
-                else
-                {
-                    if (attackerHpBefore > attacker.Data.Health)
-                    {
-                        StateMachine.CardManager.NotifyCardDamaged(attacker.Position);
-                        Debug.Log($"攻击者 {attacker.Data.Name} 受伤");
-                    }
-                    
-                    // 标记卡牌为已行动
-                    attacker.HasActed = true;
-                    Debug.Log($"标记卡牌 {attacker.Data.Name} 为已行动");
-                }
-
-                // 检查是否结束回合
-                CheckEndTurn();
-
-                CompleteState(CardState.Idle);
-
-            }
-            else
-            {
-                // 处理正面卡牌的逻辑
-                Debug.Log("目标是正面卡牌，直接执行攻击");
-                
-                // 记录攻击前的生命值（用于判断是否受伤）
-                int targetHpBefore = target.Data.Health;
-                int attackerHpBefore = attacker.Data.Health;
-
-                // 执行攻击（会直接修改双方血量）
-                bool success = attacker.Attack(target);
-
-                bool targetDead = target.Data.Health <= 0;
-                bool attackerDead = attacker.Data.Health <= 0;
-
-                // 移除死亡的卡牌（目标优先）
-                if (targetDead)
-                {
-                    Debug.Log($"目标 {target.Data.Name} 被击败，移除卡牌");
-                    StateMachine.CardManager.RemoveCard(targetPos);
-                    StateMachine.CardManager.NotifyCardRemoved(targetPos);
-                }
-                else
-                {
-                    // 没死就触发受伤事件
-                    if (targetHpBefore > target.Data.Health)
-                    {
-                        StateMachine.CardManager.NotifyCardDamaged(targetPos);
-                        Debug.Log($"目标 {target.Data.Name} 受伤");
-                    }
-                }
-
-                // 攻击者是否死亡（通常是受到反击）
-                if (attackerDead)
-                {
-                    Debug.Log($"攻击者 {attacker.Data.Name} 被反击致死，移除卡牌");
-                    StateMachine.CardManager.RemoveCard(attacker.Position); 
-                    StateMachine.CardManager.NotifyCardRemoved(attacker.Position);
-                }
-                else
-                {
-                    if (attackerHpBefore > attacker.Data.Health)
-                    {
-                        StateMachine.CardManager.NotifyCardDamaged(attacker.Position);
-                        Debug.Log($"攻击者 {attacker.Data.Name} 受伤");
-                    }
-                    
-                    // 标记卡牌为已行动
-                    attacker.HasActed = true;
-                    Debug.Log($"标记卡牌 {attacker.Data.Name} 为已行动");
-                }
-
-                // 检查是否结束回合
-                CheckEndTurn();
-            }
             
-            // 完成状态，返回空闲状态
+            // 执行攻击
+            Vector2Int attackerPosition = selectedCard.Position;
+            Vector2Int defenderPosition = targetPosition.Value;
+            
+            // 直接调用CardManager的AttackCard方法，它会通知GameEventSystem
+            StateMachine.CardManager.AttackCard(attackerPosition, defenderPosition);
+            
+            // 标记卡牌已行动
+            selectedCard.HasActed = true;
+            
+            // 攻击完成后，转换到空闲状态
             CompleteState(CardState.Idle);
         }
         

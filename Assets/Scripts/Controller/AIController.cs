@@ -144,7 +144,7 @@ namespace ChessGame
                 // 设置目标位置并执行攻击
                 _cardManager.SelectCard(card.Position);
                 _cardManager.SetTargetPosition(targetPosition);
-                _cardManager.RequestAttack(); // 状态机会自动完成攻击处理
+                _cardManager.RequestAttack(); // 使用新的方法
 
                 return true;
             }
@@ -171,7 +171,7 @@ namespace ChessGame
                 // 设置目标位置并执行移动
                 _cardManager.SelectCard(card.Position);
                 _cardManager.SetTargetPosition(targetPosition);
-                _cardManager.RequestMove();
+                _cardManager.RequestMove(); // 使用新的方法
                 
                 return true;
             }

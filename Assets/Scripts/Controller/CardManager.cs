@@ -32,15 +32,6 @@ namespace ChessGame
         public int MoveRange => 1; // 默认值，实际应该从选中的卡牌获取
         public int AttackRange => 1; // 默认值，实际应该从选中的卡牌获取
 
-        public event Action<Vector2Int> OnCardRemoved;
-        public event Action<Vector2Int, bool> OnCardFlipped;
-        public event Action<Vector2Int, int, bool> OnCardAdded;
-        public event Action<Vector2Int> OnCardSelected;
-        public event Action OnCardDeselected;
-        public event Action<Vector2Int, Vector2Int> OnCardMoved;
-        public event Action<Vector2Int, Vector2Int> OnCardAttacked;
-        public event Action<Vector2Int> OnCardDamaged;
-        
         private void Awake()
         {
             Debug.Log("CardManager.Awake: 开始初始化状态机");
@@ -125,28 +116,21 @@ namespace ChessGame
         {
             Debug.Log($"CardManager.SelectCard: 位置 {position}");
             
+            // 检查是否有卡牌
             if (!_cards.ContainsKey(position))
             {
-                Debug.LogWarning($"位置 {position} 没有卡牌，无法选择");
+                Debug.LogWarning($"选择卡牌失败：位置 {position} 没有卡牌");
                 return;
             }
             
+            Card card = _cards[position];
+            Debug.Log($"选中卡牌: {card.Data.Name}, 所有者: {card.OwnerId}, 是否背面: {card.IsFaceDown}");
+            
+            // 设置选中位置
             _selectedPosition = position;
             
-            // 获取卡牌视图并高亮
-            if (_cardViews.ContainsKey(position))
-            {
-                CardView cardView = _cardViews[position];
-                Debug.Log($"找到卡牌视图: {cardView.name}");
-            }
-            else
-            {
-                Debug.LogWarning($"位置 {position} 没有对应的卡牌视图");
-            }
-            
             // 触发选中事件
-            Debug.Log($"触发OnCardSelected事件，位置: {position}");
-            OnCardSelected?.Invoke(position);
+            GameEventSystem.Instance.NotifyCardSelected(position);
         }
         
         // 获取选中的卡牌
@@ -188,29 +172,41 @@ namespace ChessGame
         }
         
         
-        // 翻转卡牌
-        public void FlipCard(Vector2Int position)
+        // 翻转卡牌（只支持从背面翻到正面）
+        public void FlipCard(Vector2Int position, bool isFaceDown)
         {
             if (!_cards.ContainsKey(position))
             {
-            Debug.LogWarning($"CardManager: 位置 {position} 没有卡牌，无法翻转");
+                Debug.LogWarning($"翻转卡牌失败：位置 {position} 没有卡牌");
                 return;
             }
-                
+            
             Card card = _cards[position];
             bool wasFaceDown = card.IsFaceDown;
             
-            if (wasFaceDown)
+            // 只处理从背面翻到正面的情况
+            if (wasFaceDown && !isFaceDown)
             {
                 Debug.Log($"CardManager: 翻转卡牌，位置: {position}, 卡牌: {card.Data.Name}");
                 
                 // 翻转卡牌
                 card.FlipToFaceUp();
                 
-                // 触发卡牌翻面事件 - 确保参数正确
-                OnCardFlipped?.Invoke(position, false); // false表示不再是背面
+                // 触发卡牌翻面事件
+                GameEventSystem.Instance.NotifyCardFlipped(position, false); // false表示不再是背面
                 
                 Debug.Log($"CardManager: 卡牌翻面完成，位置: {position}, 从背面翻到正面");
+                
+                // 更新卡牌视图
+                if (_cardViews.ContainsKey(position))
+                {
+                    _cardViews[position].UpdateVisuals();
+                }
+            }
+            else if (!wasFaceDown && isFaceDown)
+            {
+                // 如果尝试从正面翻到背面，记录警告但不执行
+                Debug.LogWarning($"不支持将卡牌从正面翻到背面: {position}");
             }
         }
 
@@ -227,18 +223,13 @@ namespace ChessGame
                     CardView cardView = _cardViews[position];
                     if (cardView != null)
                     {
-                        // 先触发销毁事件，让动画服务处理
-                        OnCardRemoved?.Invoke(position);
+                        // 触发移除事件
+                        GameEventSystem.Instance.NotifyCardRemoved(position);
                         
                         // 延迟销毁，给动画时间完成
                         StartCoroutine(DelayedDestroy(cardView.gameObject, 1.0f));
                     }
                     _cardViews.Remove(position);
-                }
-                else
-                {
-                    // 如果没有视图，直接触发事件
-                    OnCardRemoved?.Invoke(position);
                 }
             }
         }
@@ -359,8 +350,8 @@ namespace ChessGame
                 _selectedPosition = null;
             }
             
-            // 无论是否有选中位置，都触发OnCardDeselected事件
-            OnCardDeselected?.Invoke();
+            // 直接通知GameEventSystem
+            GameEventSystem.Instance.NotifyCardDeselected();
         }
 
         public CardView GetCardView(Vector2Int position)
@@ -394,39 +385,27 @@ namespace ChessGame
             return _targetPosition.Value;
         }
 
-        public void NotifyCardDamaged(Vector2Int position)
+        // 修改DeselectCard方法
+        public void DeselectCard()
         {
-            OnCardDamaged?.Invoke(position);
-        } 
-
-        public void NotifyCardMoved(Vector2Int fromPosition, Vector2Int toPosition)
-        {
-            OnCardMoved?.Invoke(fromPosition, toPosition);
+            // 检查是否有选中的卡牌
+            if (!_selectedPosition.HasValue)
+            {
+                Debug.Log("没有选中的卡牌，无需取消选中");
+                return;
+            }
+            
+            // 清除选中位置
+            _selectedPosition = null;
+            
+            // 清除目标位置
+            _targetPosition = null;
+            
+            // 无论是否有选中位置，都触发OnCardDeselected事件
+            GameEventSystem.Instance.NotifyCardDeselected();
         }
 
-        public void NotifyCardAttacked(Vector2Int fromPosition, Vector2Int toPosition)
-        {
-            OnCardAttacked?.Invoke(fromPosition, toPosition);
-        }
-
-        public void NotifyCardRemoved(Vector2Int position)
-        {
-            OnCardRemoved?.Invoke(position);
-        }
-
-        // 请求攻击
-        public void RequestAttack()
-        {
-            _stateMachine.ChangeState(CardState.Attacking);
-        }
-
-        // 请求移动 
-        public void RequestMove()
-        {
-            _stateMachine.ChangeState(CardState.Moving);
-        }
-
-        // 移动卡牌
+        // 修改MoveCard方法
         public void MoveCard(Vector2Int fromPosition, Vector2Int toPosition)
         {
             // 检查源位置是否有卡牌
@@ -474,9 +453,91 @@ namespace ChessGame
             }
             
             Debug.Log($"移动卡牌: 从 {fromPosition} 到 {toPosition}");
+            
+            // 触发移动事件
+            GameEventSystem.Instance.NotifyCardMoved(fromPosition, toPosition);
         }
 
-        // 添加卡牌到管理器
+        // 执行卡牌攻击
+        public void AttackCard(Vector2Int attackerPosition, Vector2Int targetPosition)
+        {
+            Debug.Log($"执行攻击: 从 {attackerPosition} 到 {targetPosition}");
+            
+            // 获取攻击者和目标
+            Card attacker = GetCard(attackerPosition);
+            Card target = GetCard(targetPosition);
+            
+            if (attacker == null || target == null)
+            {
+                Debug.LogError($"攻击失败: 攻击者或目标不存在");
+                return;
+            }
+            
+            // 记录攻击前的生命值
+            int attackerHpBefore = attacker.Data.Health;
+            int targetHpBefore = target.Data.Health;
+            
+            // 处理背面卡牌的特殊情况
+            if (target.IsFaceDown)
+            {
+                Debug.Log("目标是背面卡牌，先翻面");
+                
+                // 翻面
+                FlipCard(targetPosition, false);
+                
+                // 特殊规则：如果是友方卡牌，则翻面但不受伤
+                if (target.OwnerId == attacker.OwnerId)
+                {
+                    Debug.Log("翻开的是我方卡牌，不执行攻击");
+                    
+                    // 触发攻击事件（仅用于动画）
+                    GameEventSystem.Instance.NotifyCardAttacked(attackerPosition, targetPosition);
+                    return;
+                }
+                
+                // 执行攻击
+                bool success = attacker.Attack(target);
+                
+                // 特殊规则：如果背面卡牌血量降至0或以下，保留1点血量
+                if (target.Data.Health <= 0)
+                {
+                    Debug.Log($"背面卡牌 {target.Data.Name} 血量降至0或以下，保留1点血量");
+                    target.Data.Health = 1;
+                }
+            }
+            else
+            {
+                // 正面卡牌正常攻击
+                Debug.Log("目标是正面卡牌，直接执行攻击");
+                bool success = attacker.Attack(target);
+            }
+            
+            // 触发攻击事件
+            GameEventSystem.Instance.NotifyCardAttacked(attackerPosition, targetPosition);
+            
+            // 处理伤害和死亡
+            ProcessDamageAndDeath(attacker, attackerPosition, attackerHpBefore);
+            ProcessDamageAndDeath(target, targetPosition, targetHpBefore);
+        }
+
+        // 处理伤害和死亡
+        private void ProcessDamageAndDeath(Card card, Vector2Int position, int hpBefore)
+        {
+            if (card.Data.Health <= 0)
+            {
+                // 卡牌死亡
+                Debug.Log($"卡牌 {card.Data.Name} 被击败，移除卡牌");
+                RemoveCard(position);
+            }
+            else if (hpBefore > card.Data.Health)
+            {
+                // 卡牌受伤但未死亡
+                Debug.Log($"卡牌 {card.Data.Name} 受伤，当前血量: {card.Data.Health}");
+                GameEventSystem.Instance.NotifyCardDamaged(position);
+            }
+        }
+
+        // 修改AddCard方法
         public void AddCard(Card card, Vector2Int position)
         {
             // 检查位置是否已有卡牌
@@ -492,8 +553,8 @@ namespace ChessGame
             // 创建卡牌视图
             CreateCardView(card, position);
             
-            // 触发卡牌添加事件
-            OnCardAdded?.Invoke(position, card.OwnerId, card.IsFaceDown);
+            // 触发添加事件
+            GameEventSystem.Instance.NotifyCardAdded(position, card.OwnerId, card.IsFaceDown);
             
             Debug.Log($"添加卡牌: {card.Data.Name}, 位置: {position}, 所有者: {card.OwnerId}, 背面: {card.IsFaceDown}");
         }
@@ -534,6 +595,51 @@ namespace ChessGame
             else
             {
                 Debug.LogError($"卡牌预制体没有CardView组件");
+            }
+        }
+
+        // 请求攻击
+        public void RequestAttack()
+        {
+            Debug.Log("请求执行攻击");
+            _stateMachine.ChangeState(CardState.Attacking);
+        }
+
+        // 请求移动 
+        public void RequestMove()
+        {
+            Debug.Log("请求执行移动");
+            _stateMachine.ChangeState(CardState.Moving);
+        }
+
+        // 对卡牌造成伤害
+        public void DamageCard(Vector2Int position, int damage)
+        {
+            Card card = GetCard(position);
+            if (card == null)
+            {
+                Debug.LogError($"伤害失败: 位置 {position} 没有卡牌");
+                return;
+            }
+            
+            // 记录伤害前的生命值
+            int hpBefore = card.Data.Health;
+            
+            // 造成伤害
+            card.Data.Health -= damage;
+            
+            Debug.Log($"卡牌 {card.Data.Name} 受到 {damage} 点伤害，当前血量: {card.Data.Health}");
+            
+            // 处理伤害和死亡
+            ProcessDamageAndDeath(card, position, hpBefore);
+        }
+
+        private void OnDestroy()
+        {
+            // 释放状态机资源
+            if (_stateMachine != null)
+            {
+                _stateMachine.Dispose();
             }
         }
 

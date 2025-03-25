@@ -733,6 +733,8 @@ MonoBehaviour:
   cardDataProvider: {fileID: 1404373183}
   initialPlayerCards: 3
   initialEnemyCards: 3
+  initialPlayerFaceUpCards: 1
+  initialEnemyFaceUpCards: 1
 --- !u!1 &1023976012
 GameObject:
   m_ObjectHideFlags: 0
@@ -1135,7 +1137,7 @@ MonoBehaviour:
   aiController: {fileID: 770383906}
   gameStateManager: {fileID: 583560100}
   initialCardCount: 24
-  cardInitializer: {fileID: 0}
+  cardInitializer: {fileID: 908457769}
 --- !u!4 &1404373182
 Transform:
   m_ObjectHideFlags: 0

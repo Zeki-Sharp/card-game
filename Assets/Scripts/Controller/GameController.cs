@@ -18,6 +18,17 @@ namespace ChessGame
         private bool _isGameOver = false;
         private bool _cardsInitialized = false;
         
+        private void Awake()
+        {
+            // 确保GameEventSystem实例存在
+            if (GameEventSystem.Instance == null)
+            {
+                Debug.LogError("GameEventSystem实例不存在，将自动创建");
+            }
+            
+            // ... 其他初始化代码 ...
+        }
+        
         private void Start()
         {
             Debug.Log("GameController.Start: 开始初始化游戏");

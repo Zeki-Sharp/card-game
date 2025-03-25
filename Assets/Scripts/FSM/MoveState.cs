@@ -11,54 +11,29 @@ namespace ChessGame.FSM
         public override void Enter()
         {
             Debug.Log("进入移动状态");
-
-            // 获取选中的移动卡牌
-            Card mover = StateMachine.CardManager.GetSelectedCard();
-            if (mover == null)
+            
+            // 获取选中的卡牌和目标位置
+            Card selectedCard = StateMachine.CardManager.GetSelectedCard();
+            Vector2Int? targetPosition = StateMachine.CardManager.GetTargetPosition();
+            
+            if (selectedCard == null || !targetPosition.HasValue)
             {
-                Debug.LogError("没有选中的移动卡牌");
-                return;
-            }
-
-            // 获取目标位置
-            Vector2Int? targetPosOpt = StateMachine.CardManager.GetTargetPosition();
-            if (!targetPosOpt.HasValue)
-            {
-                Debug.LogError("移动失败：没有目标位置");
+                Debug.LogError("移动状态：没有选中的卡牌或目标位置");
                 CompleteState(CardState.Idle);
                 return;
             }
-
-            Vector2Int targetPos = targetPosOpt.Value;
-
-            // 检查目标位置是否合法（可选，也可以假设SelectedState已经处理）
-            if (!mover.CanMoveTo(targetPos, StateMachine.CardManager.GetAllCards()))
-            {
-                Debug.LogWarning("目标位置不在合法移动范围内，回到Idle");
-                CompleteState(CardState.Idle);
-                return;
-            }
-
-            Debug.Log($"准备移动卡牌 {mover.Data.Name} 到 {targetPos}");
-
-            Vector2Int fromPos = mover.Position;
-
-            // 更新模型数据
-            mover.Position = targetPos;
-            mover.HasActed = true;
-
-            // 直接使用移动方法
-            StateMachine.CardManager.MoveCard(fromPos, targetPos);
-
-            // 触发事件
-            StateMachine.CardManager.NotifyCardMoved(fromPos, targetPos);
-
-            Debug.Log($"卡牌 {mover.Data.Name} 移动完成：{fromPos} -> {targetPos}");
-
-            // 调用通用回合结束检查
-            CheckEndTurn();
-
-            // 状态完成，切换回 Idle
+            
+            // 执行移动
+            Vector2Int fromPosition = selectedCard.Position;
+            Vector2Int toPosition = targetPosition.Value;
+            
+            // 直接调用CardManager的MoveCard方法，它会通知GameEventSystem
+            StateMachine.CardManager.MoveCard(fromPosition, toPosition);
+            
+            // 标记卡牌已行动
+            selectedCard.HasActed = true;
+            
+            // 移动完成后，转换到空闲状态
             CompleteState(CardState.Idle);
         }
         

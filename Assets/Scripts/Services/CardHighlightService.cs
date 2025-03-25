@@ -22,33 +22,34 @@ namespace ChessGame
         
         private void Start()
         {
-            // 订阅卡牌管理器的事件
-            if (cardManager != null)
+            // 订阅GameEventSystem的事件
+            if (GameEventSystem.Instance != null)
             {
-                Debug.Log("CardHighlightService: 订阅CardManager事件");
+                Debug.Log("CardHighlightService: 订阅GameEventSystem事件");
                 
                 // 订阅事件
-                cardManager.OnCardSelected += HighlightSelectedPosition;
-                cardManager.OnCardSelected += HighlightMovablePositions;
-                cardManager.OnCardSelected += HighlightAttackableCards;
-                cardManager.OnCardDeselected += ClearAllHighlights;
+                GameEventSystem.Instance.OnCardSelected += HighlightSelectedPosition;
+                GameEventSystem.Instance.OnCardSelected += HighlightMovablePositions;
+                GameEventSystem.Instance.OnCardDeselected += ClearAllHighlights;
+                
+                
             }
             else
             {
-                Debug.LogError("CardHighlightService: cardManager引用为空");
+                Debug.LogError("找不到GameEventSystem实例");
             }
         }
         
         private void OnDestroy()
         {
-            // 取消订阅事件
-            if (cardManager != null)
+            // 取消订阅GameEventSystem的事件
+            if (GameEventSystem.Instance != null)
             {
-                cardManager.OnCardSelected -= HighlightSelectedPosition;
-                cardManager.OnCardSelected -= HighlightMovablePositions;
-                cardManager.OnCardSelected -= HighlightAttackableCards;
-                cardManager.OnCardDeselected -= ClearAllHighlights;
+                GameEventSystem.Instance.OnCardSelected -= HighlightSelectedPosition;
+                GameEventSystem.Instance.OnCardSelected -= HighlightMovablePositions;
+                GameEventSystem.Instance.OnCardDeselected -= ClearAllHighlights;
             }
+            
         }
         
         // 高亮选中的卡牌位置
@@ -57,7 +58,7 @@ namespace ChessGame
             Debug.Log($"高亮选中位置: {position}");
             
             Card card = cardManager.GetCard(position);
-            if (card == null || card.OwnerId != 0) return;
+            if (card == null) return;
             
             // 高亮选中的格子
             CellView cellView = board.GetCellView(position.x, position.y);
@@ -73,7 +74,7 @@ namespace ChessGame
             Debug.Log($"高亮可移动位置，选中位置: {position}");
             
             Card card = cardManager.GetCard(position);
-            if (card == null || card.OwnerId != 0) return;
+            if (card == null || (card.OwnerId != 0 && !card.IsFaceDown)) return;
             
             // 如果不是玩家回合，不显示可移动位置
             TurnManager turnManager = cardManager.GetTurnManager();
@@ -81,15 +82,36 @@ namespace ChessGame
                 return;
                 
             // 获取可移动的位置
-            List<Vector2Int> movablePositions = card.GetMovablePositions(cardManager.BoardWidth, cardManager.BoardHeight, cardManager.GetAllCards());
+            List<Vector2Int> movablePositions = card.GetMovablePositions(
+                cardManager.BoardWidth, 
+                cardManager.BoardHeight, 
+                cardManager.GetAllCards()
+            );
             
             // 高亮可移动的格子
-            foreach (Vector2Int pos in movablePositions)
+            foreach (Vector2Int movablePos in movablePositions)
             {
-                CellView cellView = board.GetCellView(pos.x, pos.y);
+                CellView cellView = board.GetCellView(movablePos.x, movablePos.y);
                 if (cellView != null)
                 {
                     cellView.SetHighlight(CellView.HighlightType.Move);
+                }
+            }
+            
+            // 获取可攻击的位置
+            List<Vector2Int> attackablePositions = card.GetAttackablePositions(
+                cardManager.BoardWidth, 
+                cardManager.BoardHeight, 
+                cardManager.GetAllCards()
+            );
+            
+            // 高亮可攻击的格子
+            foreach (Vector2Int attackablePos in attackablePositions)
+            {
+                CellView cellView = board.GetCellView(attackablePos.x, attackablePos.y);
+                if (cellView != null)
+                {
+                    cellView.SetHighlight(CellView.HighlightType.Attack);
                 }
             }
         }
