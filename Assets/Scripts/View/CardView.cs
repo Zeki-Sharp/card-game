@@ -17,6 +17,8 @@ namespace ChessGame
         [SerializeField] private Color enemyColor = Color.red;
         [SerializeField] private Color actedColor = new Color(0.5f, 0.5f, 0.5f, 1f);
         [SerializeField] private Sprite cardBackSprite; // 卡牌背面图片
+        [SerializeField] private Sprite cardFrontSprite; // 卡牌正面图片
+        [SerializeField] private TextMeshPro nameText;
         
         private Card _card;
         private bool _isSelected = false;
@@ -52,11 +54,11 @@ namespace ChessGame
         {
             _card = card;
             
+            // 调试信息
+            Debug.Log($"初始化卡牌视图: {card.Data.Name}, 图片: {(card.Data.Image != null ? "有图片" : "无图片")}");
+            
             // 保存正面图片
-            if (card.Data.Image != null)
-            {
-                _frontSprite = card.Data.Image;
-            }
+            _frontSprite = card.Data.Image;
             
             UpdateVisuals();
         }
@@ -65,15 +67,22 @@ namespace ChessGame
         {
             if (_card == null) return;
             
-            // 更新卡牌图片
+            // 更新卡牌名称
+            if (nameText != null)
+            {
+                nameText.text = _card.Data.Name;
+            }
+            
+            // 更新卡牌图片 - 使用卡牌数据中的图片
             if (cardRenderer != null)
             {
-                // 根据卡牌状态显示正面或背面
-                if (_card.IsFaceDown && cardBackSprite != null)
+                if (_card.IsFaceDown)
                 {
+                    // 背面状态 - 使用卡背图片
                     cardRenderer.sprite = cardBackSprite;
                     
-                    // 隐藏攻击力和生命值
+                    // 隐藏属性文本
+                    if (nameText != null) nameText.gameObject.SetActive(false);
                     if (attackText != null) attackText.gameObject.SetActive(false);
                     if (healthText != null) healthText.gameObject.SetActive(false);
                     if (attackBackRenderer != null) attackBackRenderer.gameObject.SetActive(false);
@@ -81,38 +90,67 @@ namespace ChessGame
                 }
                 else
                 {
-                    cardRenderer.sprite = _frontSprite;
-                    
-                    // 显示攻击力和生命值
-                    if (attackText != null)
+                    // 正面状态 - 使用卡牌数据中的图片
+                    if (_card.Data.Image != null)
                     {
-                        attackText.gameObject.SetActive(true);
-                        attackText.text = _card.Data.Attack.ToString();
+                        cardRenderer.sprite = _card.Data.Image;
+                        Debug.Log($"使用卡牌数据图片: {_card.Data.Name}");
+                    }
+                    else
+                    {
+                        // 如果卡牌数据中没有图片，使用默认正面图片
+                        cardRenderer.sprite = cardFrontSprite;
+                        Debug.LogWarning($"卡牌 {_card.Data.Name} 没有图片，使用默认正面图片");
                     }
                     
-                    if (healthText != null)
-                    {
-                        healthText.gameObject.SetActive(true);
-                        healthText.text = _card.Data.Health.ToString();
-                    }
-                    
+                    // 显示属性文本
+                    if (nameText != null) nameText.gameObject.SetActive(true);
+                    if (attackText != null) attackText.gameObject.SetActive(true);
+                    if (healthText != null) healthText.gameObject.SetActive(true);
                     if (attackBackRenderer != null) attackBackRenderer.gameObject.SetActive(true);
                     if (healthBackRenderer != null) healthBackRenderer.gameObject.SetActive(true);
                 }
             }
             
-            // 根据所属玩家设置边框颜色
+            // 更新攻击力和生命值
+            if (attackText != null)
+            {
+                attackText.text = _card.Data.Attack.ToString();
+            }
+            
+            if (healthText != null)
+            {
+                // 设置血量文字内容
+                healthText.text = _card.Data.Health.ToString();
+                
+                // 根据生命值设置颜色
+                /*if (_card.Data.Health <= 0)
+                {
+                    healthText.color = Color.red;
+                }
+                else if (_card.Data.Health <= 2)
+                {
+                    healthText.color = new Color(1.0f, 0.5f, 0.0f); // 橙色
+                }
+                else
+                {
+                    healthText.color = Color.green;
+                }*/
+            }
+            
+            // 根据所有者设置边框颜色
             if (frameRenderer != null)
             {
                 frameRenderer.color = _card.OwnerId == 0 ? playerColor : enemyColor;
                 
-                // 如果已行动或是背面状态，降低亮度
-                if (_card.HasActed || _card.IsFaceDown)
+                // 如果已行动，降低亮度
+                if (_card.HasActed && !_card.IsFaceDown)
                 {
                     frameRenderer.color = actedColor;
                 }
             }
-
+            
+            // 设置排序顺序
             cardRenderer.sortingOrder = 100;
             frameRenderer.sortingOrder = 101;
             if (attackBackRenderer != null) attackBackRenderer.sortingOrder = 102;

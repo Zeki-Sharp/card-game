@@ -70,36 +70,15 @@ namespace ChessGame
                 // 触发翻面事件
                 GameEventSystem.Instance.NotifyCardFlipped(_targetPosition, false);
                 
-                // 特殊规则：如果是友方卡牌，则翻面但不受伤
-                if (targetCard.OwnerId == attackerCard.OwnerId)
-                {
-                    Debug.Log("翻开的是我方卡牌，不执行攻击");
-                    
-                    // 触发攻击事件（仅用于动画）
-                    GameEventSystem.Instance.NotifyCardAttacked(_attackerPosition, _targetPosition);
-                    
-                    // 标记攻击者已行动
-                    attackerCard.HasActed = true;
-                    
-                    return true;
-                }
                 
                 // 执行攻击
-                bool success = attackerCard.Attack(targetCard);
+                attackerCard.Attack(targetCard);
                 
                 // 特殊规则：如果背面卡牌血量降至0或以下，保留1点血量
                 if (targetCard.Data.Health <= 0)
                 {
                     Debug.Log($"背面卡牌 {targetCard.Data.Name} 血量降至0或以下，保留1点血量");
                     targetCard.Data.Health = 1;
-                }
-
-                if(attackerCard.Data.Health <= 0)
-                {
-                    Debug.Log($"攻击者卡牌 {attackerCard.Data.Name} 生命值为 {attackerCard.Data.Health}，将被移除");
-                    
-                    // 移除攻击者卡牌
-                    bool removeResult = CardManager.RemoveCard(_attackerPosition);
                 }
                 
                 // 标记攻击者已行动
@@ -117,55 +96,63 @@ namespace ChessGame
             {
                 // 正面卡牌正常攻击
                 Debug.Log("目标是正面卡牌，直接执行攻击");
-                bool success = attackerCard.Attack(targetCard);
                 
-                if (success)
+                // 记录攻击前的生命值，用于调试
+                int attackerHealthBefore = attackerCard.Data.Health;
+                int targetHealthBefore = targetCard.Data.Health;
+                
+                // 执行攻击和反击
+                attackerCard.Attack(targetCard);
+                attackerCard.AntiAttack(targetCard);
+                
+                // 记录攻击后的生命值，用于调试
+                int attackerHealthAfter = attackerCard.Data.Health;
+                int targetHealthAfter = targetCard.Data.Health;
+                
+                Debug.Log($"攻击前生命值 - 攻击者: {attackerHealthBefore}, 目标: {targetHealthBefore}");
+                Debug.Log($"攻击后生命值 - 攻击者: {attackerHealthAfter}, 目标: {targetHealthAfter}");
+                
+                // 标记攻击者已行动
+                attackerCard.HasActed = true;
+                
+                // 立即更新双方卡牌视图
+                CardView attackerView = CardManager.GetCardView(_attackerPosition);
+                CardView targetView = CardManager.GetCardView(_targetPosition);
+                
+                if (attackerView != null) attackerView.UpdateVisuals();
+                if (targetView != null) targetView.UpdateVisuals();
+                
+                // 触发攻击事件
+                GameEventSystem.Instance.NotifyCardAttacked(_attackerPosition, _targetPosition);
+                
+                // 触发受伤事件
+                GameEventSystem.Instance.NotifyCardDamaged(_targetPosition);
+                GameEventSystem.Instance.NotifyCardDamaged(_attackerPosition); // 别忘了攻击者也可能受伤
+                
+                // 检查目标卡牌是否死亡
+                if (targetCard.Data.Health <= 0)
                 {
-                    // 标记攻击者已行动
-                    attackerCard.HasActed = true;
+                    Debug.Log($"目标卡牌 {targetCard.Data.Name} 生命值为 {targetCard.Data.Health}，将被移除");
                     
-                    // 触发攻击事件
-                    GameEventSystem.Instance.NotifyCardAttacked(_attackerPosition, _targetPosition);
+                    // 立即更新目标卡牌视图，显示生命值为0
+                    if (targetView != null) targetView.UpdateVisuals();
                     
-                    // 触发受伤事件
-                    GameEventSystem.Instance.NotifyCardDamaged(_targetPosition);
-                    
-                    // 检查目标卡牌是否死亡
-                    if (targetCard.Data.Health <= 0)
-                    {
-                        Debug.Log($"目标卡牌 {targetCard.Data.Name} 生命值为 {targetCard.Data.Health}，将被移除");
-                        
-                        // 确保移除前记录一些信息，以便调试
-                        
-                        // 立即更新目标卡牌视图，显示生命值为0
-                        Dictionary<Vector2Int, CardView> cardViews = CardManager.GetAllCardViews();
-                        if (cardViews.TryGetValue(_targetPosition, out CardView targetView))
-                        {
-                            targetView.UpdateVisuals();
-                        }
-                        
-                        // 移除目标卡牌
-                        bool removeResult = CardManager.RemoveCard(_targetPosition);
-                    }
-                    
-                    // 检查攻击者是否死亡（反伤机制）
-                    if (attackerCard.Data.Health <= 0)
-                    {
-                        Debug.Log($"攻击者卡牌 {attackerCard.Data.Name} 生命值为 {attackerCard.Data.Health}，将被移除");
-                        
-                        // 移除攻击者卡牌
-                        bool removeResult = CardManager.RemoveCard(_attackerPosition);
-                        
-                    }
-                    
-                    Debug.Log($"卡牌 {attackerCard.Data.Name} 攻击 {targetCard.Data.Name} 成功");
-                }
-                else
-                {
-                    Debug.LogWarning($"卡牌 {attackerCard.Data.Name} 攻击 {targetCard.Data.Name} 失败");
+                    // 移除目标卡牌
+                    CardManager.RemoveCard(_targetPosition);
                 }
                 
-                return success;
+                // 检查攻击者是否死亡（反伤机制）
+                if (attackerCard.Data.Health <= 0)
+                {
+                    Debug.Log($"攻击者卡牌 {attackerCard.Data.Name} 生命值为 {attackerCard.Data.Health}，将被移除");
+                    
+                    // 移除攻击者卡牌
+                    CardManager.RemoveCard(_attackerPosition);
+                    
+                }
+                    
+                Debug.Log($"卡牌 {attackerCard.Data.Name} 攻击 {targetCard.Data.Name} 成功");
+                return true;
             }
         }
     }

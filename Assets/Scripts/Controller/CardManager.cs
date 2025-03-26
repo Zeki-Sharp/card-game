@@ -415,6 +415,20 @@ namespace ChessGame
             }
         }
 
+        // 添加到CardManager类中
+        public Vector3 GetWorldPosition(Vector2Int gridPosition)
+        {
+            // 计算棋盘中心偏移
+            float offsetX = -((BoardWidth - 1) * 1f) / 2f;
+            float offsetY = -((BoardHeight - 1) * 1f) / 2f;
+            
+            return new Vector3(
+                gridPosition.x * 1f + offsetX,
+                gridPosition.y * 1f + offsetY,
+                0f
+            );
+        }
+
     }
 
 

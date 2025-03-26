@@ -45,14 +45,32 @@ namespace ChessGame
             // 计算伤害
             int damage = this.Data.Attack;
             
+            // 记录攻击前的生命值
+            int targetHealthBefore = target.Data.Health;
+            
             // 应用伤害
             target.Data.Health -= damage;
             
-            // 反伤机制：攻击者也受到目标的攻击力伤害
-            this.Data.Health -= target.Data.Attack;
+            Debug.Log($"卡牌 {this.Data.Name}(攻击力:{this.Data.Attack}) 攻击 {target.Data.Name}，造成 {damage} 点伤害，目标生命值: {targetHealthBefore} -> {target.Data.Health}");
             
-            Debug.Log($"卡牌 {this.Data.Name} 攻击 {target.Data.Name}，造成 {damage} 点伤害，目标剩余生命值: {target.Data.Health}");
-            Debug.Log($"卡牌 {this.Data.Name} 受到反伤 {target.Data.Attack} 点，剩余生命值: {this.Data.Health}");
+            return true;
+        }
+
+        // 反击方法
+        public bool AntiAttack(Card target)
+        {
+            if (target == null) return false;
+            
+            // 计算反伤
+            int damage = target.Data.Attack;
+            
+            // 记录反击前的生命值
+            int myHealthBefore = this.Data.Health;
+            
+            // 应用反伤
+            this.Data.Health -= damage;
+            
+            Debug.Log($"卡牌 {this.Data.Name} 受到反伤 {damage} 点，生命值: {myHealthBefore} -> {this.Data.Health}");
             
             return true;
         }

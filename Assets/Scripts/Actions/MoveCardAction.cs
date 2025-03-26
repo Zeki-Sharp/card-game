@@ -54,9 +54,35 @@ namespace ChessGame
             Card card = CardManager.GetCard(_fromPosition);
             CardView cardView = CardManager.GetCardView(_fromPosition);
             
+            Debug.Log($"开始移动卡牌: {card.Data.Name}, 从 {_fromPosition} 到 {_toPosition}");
+            
             // 获取数据结构
             Dictionary<Vector2Int, Card> cards = CardManager.GetAllCards();
             Dictionary<Vector2Int, CardView> cardViews = CardManager.GetAllCardViews();
+            
+            // 从原位置移除卡牌数据
+            if (!cards.Remove(_fromPosition))
+            {
+                Debug.LogError($"移动失败：无法从位置 {_fromPosition} 移除卡牌数据");
+                return false;
+            }
+            
+            // 更新卡牌位置属性
+            card.Position = _toPosition;
+            
+            // 添加到新位置
+            cards[_toPosition] = card;
+            
+            // 更新视图字典
+            if (cardView != null)
+            {
+                if (!cardViews.Remove(_fromPosition))
+                {
+                    Debug.LogWarning($"移动警告：无法从位置 {_fromPosition} 移除卡牌视图");
+                }
+                
+                cardViews[_toPosition] = cardView;
+            }
             
             // 标记卡牌已行动
             card.HasActed = true;
