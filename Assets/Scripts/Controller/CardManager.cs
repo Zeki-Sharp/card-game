@@ -170,69 +170,8 @@ namespace ChessGame
                 Debug.Log("状态机已初始化，当前状态：" + _stateMachine.GetCurrentStateType().ToString());
             }
         }
-        
-        
-        // 翻转卡牌（只支持从背面翻到正面）
-        public void FlipCard(Vector2Int position, bool isFaceDown)
-        {
-            if (!_cards.ContainsKey(position))
-            {
-                Debug.LogWarning($"翻转卡牌失败：位置 {position} 没有卡牌");
-                return;
-            }
-            
-            Card card = _cards[position];
-            bool wasFaceDown = card.IsFaceDown;
-            
-            // 只处理从背面翻到正面的情况
-            if (wasFaceDown && !isFaceDown)
-            {
-                Debug.Log($"CardManager: 翻转卡牌，位置: {position}, 卡牌: {card.Data.Name}");
-                
-                // 翻转卡牌
-                card.FlipToFaceUp();
-                
-                // 触发卡牌翻面事件
-                GameEventSystem.Instance.NotifyCardFlipped(position, false); // false表示不再是背面
-                
-                Debug.Log($"CardManager: 卡牌翻面完成，位置: {position}, 从背面翻到正面");
-                
-                // 更新卡牌视图
-                if (_cardViews.ContainsKey(position))
-                {
-                    _cardViews[position].UpdateVisuals();
-                }
-            }
-            else if (!wasFaceDown && isFaceDown)
-            {
-                // 如果尝试从正面翻到背面，记录警告但不执行
-                Debug.LogWarning($"不支持将卡牌从正面翻到背面: {position}");
-            }
-        }
+    
 
-        // 移除卡牌
-        public void RemoveCard(Vector2Int position)
-        {
-            if (_cards.ContainsKey(position))
-            {
-                _cards.Remove(position);
-                
-                // 移除视图
-                if (_cardViews.ContainsKey(position))
-                {
-                    CardView cardView = _cardViews[position];
-                    if (cardView != null)
-                    {
-                        // 触发移除事件
-                        GameEventSystem.Instance.NotifyCardRemoved(position);
-                        
-                        // 延迟销毁，给动画时间完成
-                        StartCoroutine(DelayedDestroy(cardView.gameObject, 1.0f));
-                    }
-                    _cardViews.Remove(position);
-                }
-            }
-        }
         
         private IEnumerator DelayedDestroy(GameObject obj, float delay)
         {
@@ -422,67 +361,6 @@ namespace ChessGame
         }
 
 
-        // 执行卡牌攻击
-        public void AttackCard(Vector2Int attackerPosition, Vector2Int targetPosition)
-        {
-            Debug.Log($"执行攻击: 从 {attackerPosition} 到 {targetPosition}");
-            
-            // 获取攻击者和目标
-            Card attacker = GetCard(attackerPosition);
-            Card target = GetCard(targetPosition);
-            
-            if (attacker == null || target == null)
-            {
-                Debug.LogError($"攻击失败: 攻击者或目标不存在");
-                return;
-            }
-            
-            // 记录攻击前的生命值
-            int attackerHpBefore = attacker.Data.Health;
-            int targetHpBefore = target.Data.Health;
-            
-            // 处理背面卡牌的特殊情况
-            if (target.IsFaceDown)
-            {
-                Debug.Log("目标是背面卡牌，先翻面");
-                
-                // 翻面
-                FlipCard(targetPosition, false);
-                
-                // 特殊规则：如果是友方卡牌，则翻面但不受伤
-                if (target.OwnerId == attacker.OwnerId)
-                {
-                    Debug.Log("翻开的是我方卡牌，不执行攻击");
-                    
-                    // 触发攻击事件（仅用于动画）
-                    GameEventSystem.Instance.NotifyCardAttacked(attackerPosition, targetPosition);
-                    return;
-                }
-                
-                // 执行攻击
-                bool success = attacker.Attack(target);
-                
-                // 特殊规则：如果背面卡牌血量降至0或以下，保留1点血量
-                if (target.Data.Health <= 0)
-                {
-                    Debug.Log($"背面卡牌 {target.Data.Name} 血量降至0或以下，保留1点血量");
-                    target.Data.Health = 1;
-                }
-            }
-            else
-            {
-                // 正面卡牌正常攻击
-                Debug.Log("目标是正面卡牌，直接执行攻击");
-                bool success = attacker.Attack(target);
-            }
-            
-            // 触发攻击事件
-            GameEventSystem.Instance.NotifyCardAttacked(attackerPosition, targetPosition);
-            
-            // 处理伤害和死亡
-            ProcessDamageAndDeath(attacker, attackerPosition, attackerHpBefore);
-            ProcessDamageAndDeath(target, targetPosition, targetHpBefore);
-        }
 
         // 处理伤害和死亡
         private void ProcessDamageAndDeath(Card card, Vector2Int position, int hpBefore)
@@ -501,37 +379,17 @@ namespace ChessGame
             }
         }
 
-        // 修改AddCard方法
-        public void AddCard(Card card, Vector2Int position)
-        {
-            // 检查位置是否已有卡牌
-            if (_cards.ContainsKey(position))
-            {
-                Debug.LogWarning($"位置 {position} 已有卡牌，无法添加新卡牌");
-                return;
-            }
-            
-            // 添加卡牌数据
-            _cards[position] = card;
-            
-            // 创建卡牌视图
-            CreateCardView(card, position);
-            
-            // 触发添加事件
-            GameEventSystem.Instance.NotifyCardAdded(position, card.OwnerId, card.IsFaceDown);
-            
-            Debug.Log($"添加卡牌: {card.Data.Name}, 位置: {position}, 所有者: {card.OwnerId}, 背面: {card.IsFaceDown}");
-        }
-
         // 创建卡牌视图
-        private void CreateCardView(Card card, Vector2Int position)
+        public CardView CreateCardView(Card card, Vector2Int position)
         {
+            if (card == null) return null;
+            
             // 获取单元格视图
             CellView cellView = board.GetCellView(position.x, position.y);
             if (cellView == null)
             {
                 Debug.LogError($"找不到位置 {position} 的单元格视图");
-                return;
+                return null;
             }
             
             // 使用单元格的实际位置，并稍微调整Z坐标使卡牌显示在单元格上方
@@ -554,12 +412,23 @@ namespace ChessGame
             if (cardView != null)
             {
                 cardView.Initialize(card);
-                _cardViews[position] = cardView;
             }
-            else
-            {
-                Debug.LogError($"卡牌预制体没有CardView组件");
-            }
+            
+            return cardView;
+        }
+
+        // 获取世界坐标
+        private Vector3 GetWorldPosition(Vector2Int gridPosition)
+        {
+            // 计算棋盘中心偏移
+            float offsetX = -((board.Width - 1) * 1f) / 2f;
+            float offsetY = -((board.Height - 1) * 1f) / 2f;
+            
+            return new Vector3(
+                gridPosition.x * 1f + offsetX,
+                gridPosition.y * 1f + offsetY,
+                -0.1f // 卡牌在单元格上方
+            );
         }
 
         // 请求攻击
@@ -614,23 +483,7 @@ namespace ChessGame
             return _cardViews;
         }
 
-        // 直接更新卡牌视图字典
-        public void UpdateCardViewPosition(Vector2Int fromPosition, Vector2Int toPosition)
-        {
-            if (_cardViews.ContainsKey(fromPosition))
-            {
-                CardView cardView = _cardViews[fromPosition];
-                _cardViews.Remove(fromPosition);
-                _cardViews[toPosition] = cardView;
-                Debug.Log($"CardManager: 更新卡牌视图位置 从 {fromPosition} 到 {toPosition}");
-            }
-            else
-            {
-                Debug.LogError($"CardManager: 找不到位置 {fromPosition} 的卡牌视图");
-            }
-        }
-
-        // 直接更新卡牌数据字典
+        // 更新卡牌位置
         public void UpdateCardPosition(Vector2Int fromPosition, Vector2Int toPosition)
         {
             if (_cards.ContainsKey(fromPosition))
@@ -647,8 +500,78 @@ namespace ChessGame
             }
         }
 
-       
-        
+        // 更新卡牌视图位置
+        public void UpdateCardViewPosition(Vector2Int fromPosition, Vector2Int toPosition)
+        {
+            if (_cardViews.ContainsKey(fromPosition))
+            {
+                CardView cardView = _cardViews[fromPosition];
+                _cardViews.Remove(fromPosition);
+                _cardViews[toPosition] = cardView;
+                Debug.Log($"CardManager: 更新卡牌视图位置 从 {fromPosition} 到 {toPosition}");
+            }
+            else
+            {
+                Debug.LogError($"CardManager: 找不到位置 {fromPosition} 的卡牌视图");
+            }
+        }
+
+        // 移动卡牌
+        public bool MoveCard(Vector2Int fromPosition, Vector2Int toPosition)
+        {
+            MoveCardAction moveAction = new MoveCardAction(this, fromPosition, toPosition);
+            return moveAction.Execute();
+        }
+
+        // 攻击卡牌
+        public bool AttackCard(Vector2Int attackerPosition, Vector2Int targetPosition)
+        {
+            AttackCardAction attackAction = new AttackCardAction(this, attackerPosition, targetPosition);
+            return attackAction.Execute();
+        }
+
+        // 翻转卡牌
+        public bool FlipCard(Vector2Int position)
+        {
+            FlipCardAction flipAction = new FlipCardAction(this, position);
+            return flipAction.Execute();
+        }
+
+        // 移除卡牌
+        public bool RemoveCard(Vector2Int position)
+        {
+            Debug.Log($"CardManager.RemoveCard: 尝试移除位置 {position} 的卡牌");
+            
+            // 检查卡牌是否存在
+            Card card = GetCard(position);
+            if (card == null)
+            {
+                Debug.LogWarning($"CardManager.RemoveCard: 位置 {position} 没有卡牌");
+                return false;
+            }
+            
+            // 创建并执行移除行动
+            RemoveCardAction removeAction = new RemoveCardAction(this, position);
+            bool result = removeAction.Execute();
+            
+            if (result)
+            {
+                Debug.Log($"CardManager.RemoveCard: 成功移除位置 {position} 的卡牌 {card.Data.Name}");
+            }
+            else
+            {
+                Debug.LogError($"CardManager.RemoveCard: 移除位置 {position} 的卡牌失败");
+            }
+            
+            return result;
+        }
+
+        // 添加卡牌
+        public bool AddCard(Card card, Vector2Int position)
+        {
+            AddCardAction addAction = new AddCardAction(this, card, position);
+            return addAction.Execute();
+        }
 
     }
 

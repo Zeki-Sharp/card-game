@@ -286,5 +286,44 @@ namespace ChessGame
                 }
             }
         }
+        
+        // 播放销毁动画
+        public void PlayDestroyAnimation()
+        {
+            // 开始销毁动画协程
+            StartCoroutine(DestroyAnimationCoroutine());
+        }
+        
+        // 销毁动画协程
+        private IEnumerator DestroyAnimationCoroutine()
+        {
+            // 保存原始颜色和缩放
+            Color originalColor = cardRenderer.color;
+            Vector3 originalScale = transform.localScale;
+            
+            // 目标颜色（透明）
+            Color targetColor = new Color(originalColor.r, originalColor.g, originalColor.b, 0f);
+            
+            // 动画持续时间
+            float duration = 0.5f;
+            float elapsed = 0f;
+            
+            // 播放动画
+            while (elapsed < duration)
+            {
+                float t = elapsed / duration;
+                
+                // 缩小并淡出
+                transform.localScale = Vector3.Lerp(originalScale, Vector3.zero, t);
+                cardRenderer.color = Color.Lerp(originalColor, targetColor, t);
+                
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            // 确保完全透明和缩小
+            transform.localScale = Vector3.zero;
+            cardRenderer.color = targetColor;
+        }
     }
 } 
