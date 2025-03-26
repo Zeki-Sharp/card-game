@@ -429,6 +429,26 @@ namespace ChessGame
             );
         }
 
+        // 翻开指定位置的卡牌
+        public void FlipCard(Vector2Int position)
+        {
+            Card card = GetCard(position);
+            if (card != null && card.IsFaceDown)
+            {
+                // 创建并执行翻转卡牌行动
+                FlipCardAction action = new FlipCardAction(this, position);
+                if (action.CanExecute())
+                {
+                    action.Execute();
+                    Debug.Log($"翻开位置 {position} 的卡牌: {card.Data.Name}");
+                }
+                else
+                {
+                    Debug.LogWarning($"无法翻开位置 {position} 的卡牌");
+                }
+            }
+        }
+
     }
 
 

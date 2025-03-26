@@ -732,10 +732,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cardManager: {fileID: 908457767}
   cardDataProvider: {fileID: 1404373183}
-  initialPlayerCards: 5
-  initialEnemyCards: 5
-  initialPlayerFaceUpCards: 2
-  initialEnemyFaceUpCards: 2
+  initialPlayerCards: 4
+  initialEnemyCards: 4
+  initialPlayerFaceUpCards: 1
+  initialEnemyFaceUpCards: 1
 --- !u!1 &1023976012
 GameObject:
   m_ObjectHideFlags: 0

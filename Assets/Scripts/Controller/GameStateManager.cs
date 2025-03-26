@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using System.Collections;
 
 namespace ChessGame
 {
@@ -56,6 +57,12 @@ namespace ChessGame
             
             // 延迟初始化卡牌状态，确保所有卡牌都已生成
             Invoke("InitializeCardStates", 1.0f);
+            
+            // 订阅卡牌移除事件
+            if (GameEventSystem.Instance != null)
+            {
+                GameEventSystem.Instance.OnCardRemoved += CheckAndFlipCard;
+            }
         }
         
         private void OnDestroy()
@@ -66,6 +73,11 @@ namespace ChessGame
                 GameEventSystem.Instance.OnCardRemoved -= OnCardRemoved;
                 GameEventSystem.Instance.OnCardFlipped -= OnCardFlipped;
                 GameEventSystem.Instance.OnCardAdded -= OnCardAdded;
+            }
+            
+            if (GameEventSystem.Instance != null)
+            {
+                GameEventSystem.Instance.OnCardRemoved -= CheckAndFlipCard;
             }
         }
         
@@ -287,6 +299,92 @@ namespace ChessGame
             
             // 重新添加到正确的列表
             AddCardToLists(position, card);
+        }
+        
+        // 检查并翻开卡牌的方法
+        private void CheckAndFlipCard(Vector2Int removedPosition)
+        {
+            // 延迟一帧执行，确保卡牌已经被完全移除
+            StartCoroutine(CheckAndFlipCardDelayed());
+        }
+        
+        private IEnumerator CheckAndFlipCardDelayed()
+        {
+            // 等待一帧，确保卡牌状态已更新
+            yield return null;
+            
+            // 更新卡牌状态
+            UpdateCardStates();
+            
+            // 检查玩家卡牌
+            if (playerFaceUpCards.Count == 0 && playerFaceDownCards.Count > 0)
+            {
+                Debug.Log("玩家没有正面卡牌，自动翻开一张背面卡牌");
+                FlipRandomCard(0); // 0 表示玩家
+            }
+            
+            // 检查敌方卡牌
+            if (enemyFaceUpCards.Count == 0 && enemyFaceDownCards.Count > 0)
+            {
+                Debug.Log("敌方没有正面卡牌，自动翻开一张背面卡牌");
+                FlipRandomCard(1); // 1 表示敌方
+            }
+        }
+        
+        // 随机翻开一张指定所有者的背面卡牌
+        private void FlipRandomCard(int ownerId)
+        {
+            List<CardStateInfo> faceDownCards = ownerId == 0 ? playerFaceDownCards : enemyFaceDownCards;
+            
+            if (faceDownCards.Count == 0)
+                return;
+            
+            // 随机选择一张背面卡牌
+            int randomIndex = UnityEngine.Random.Range(0, faceDownCards.Count);
+            CardStateInfo cardInfo = faceDownCards[randomIndex];
+            
+            Debug.Log($"随机选择翻开卡牌: {cardInfo.cardName} 在位置 {cardInfo.position}");
+            
+            // 获取卡牌管理器
+            CardManager cardManager = FindObjectOfType<CardManager>();
+            if (cardManager != null)
+            {
+                // 翻开卡牌
+                cardManager.FlipCard(cardInfo.position);
+                
+                // 更新卡牌状态
+                UpdateCardStates();
+                
+                Debug.Log($"自动翻开卡牌完成: {cardInfo.cardName}");
+            }
+            else
+            {
+                Debug.LogError("找不到 CardManager，无法翻开卡牌");
+            }
+        }
+        
+        // 更新所有卡牌状态
+        private void UpdateCardStates()
+        {
+            // 清空所有列表
+            ClearAllLists();
+            
+            // 获取所有卡牌
+            Dictionary<Vector2Int, Card> allCards = cardManager.GetAllCards();
+            
+            // 遍历所有卡牌，根据状态分类
+            foreach (var kvp in allCards)
+            {
+                Vector2Int position = kvp.Key;
+                Card card = kvp.Value;
+                
+                // 添加到相应列表
+                AddCardToLists(position, card);
+            }
+            
+            // 输出调试信息
+            Debug.Log($"更新卡牌状态 - 玩家正面: {playerFaceUpCards.Count}, 玩家背面: {playerFaceDownCards.Count}, " +
+                      $"敌方正面: {enemyFaceUpCards.Count}, 敌方背面: {enemyFaceDownCards.Count}");
         }
     }
 } 
