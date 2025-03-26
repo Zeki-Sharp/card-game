@@ -168,15 +168,39 @@ namespace ChessGame
                 Vector2Int targetPosition = movablePositions[Random.Range(0, movablePositions.Count)];
                 Debug.Log($"AI移动卡牌，从 {card.Position} 到 {targetPosition}");
                 
-                // 设置目标位置并执行移动
-                _cardManager.SelectCard(card.Position);
-                _cardManager.SetTargetPosition(targetPosition);
-                _cardManager.RequestMove(); // 使用新的方法
+                // 直接使用CardManager的MoveCard方法
+                bool success = _cardManager.MoveCard(card.Position, targetPosition);
                 
-                return true;
+                return success;
             }
             
             Debug.Log("AI没有可移动的位置");
+            return false;
+        }
+
+        // 尝试随机攻击
+        private bool TryAttackRandomly(Card card)
+        {
+            Debug.Log($"AI尝试攻击，位置: {card.Position}, 攻击范围: {card.AttackRange}");
+            
+            // 获取可攻击的位置
+            List<Vector2Int> attackablePositions = card.GetAttackablePositions(_cardManager.BoardWidth, _cardManager.BoardHeight, _cardManager.GetAllCards());
+            
+            Debug.Log($"找到 {attackablePositions.Count} 个可攻击位置");
+            
+            // 如果有可攻击的位置，随机选择一个进行攻击
+            if (attackablePositions.Count > 0)
+            {
+                Vector2Int targetPosition = attackablePositions[Random.Range(0, attackablePositions.Count)];
+                Debug.Log($"AI攻击卡牌，从 {card.Position} 到 {targetPosition}");
+                
+                // 直接使用CardManager的AttackCard方法
+                bool success = _cardManager.AttackCard(card.Position, targetPosition);
+                
+                return success;
+            }
+            
+            Debug.Log("AI没有可攻击的位置");
             return false;
         }
 

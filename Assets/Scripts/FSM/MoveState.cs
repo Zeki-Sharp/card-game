@@ -24,21 +24,16 @@ namespace ChessGame.FSM
                 return;
             }
             
-            // 创建移动行动
-            MoveCardAction moveAction = new MoveCardAction(
-                StateMachine.CardManager,
-                selectedPosition.Value,
-                targetPosition.Value
-            );
+            // 直接使用CardManager的MoveCard方法
+            bool success = StateMachine.CardManager.MoveCard(selectedPosition.Value, targetPosition.Value);
             
-            // 执行移动行动
-            if (moveAction.Execute())
+            if (success)
             {
-                Debug.Log("移动行动执行成功");
+                Debug.Log("移动成功");
             }
             else
             {
-                Debug.LogWarning("移动行动执行失败");
+                Debug.LogWarning("移动失败");
             }
             
             // 移动完成后，转换到空闲状态

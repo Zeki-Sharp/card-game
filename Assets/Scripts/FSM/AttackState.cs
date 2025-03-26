@@ -14,25 +14,27 @@ namespace ChessGame.FSM
             Debug.Log("进入攻击状态");
             
             // 获取选中的卡牌和目标位置
-            Card selectedCard = StateMachine.CardManager.GetSelectedCard();
+            Vector2Int? selectedPosition = StateMachine.CardManager.GetSelectedPosition();
             Vector2Int? targetPosition = StateMachine.CardManager.GetTargetPosition();
             
-            if (selectedCard == null || !targetPosition.HasValue)
+            if (!selectedPosition.HasValue || !targetPosition.HasValue)
             {
                 Debug.LogError("攻击状态：没有选中的卡牌或目标位置");
                 CompleteState(CardState.Idle);
                 return;
             }
             
-            // 执行攻击
-            Vector2Int attackerPosition = selectedCard.Position;
-            Vector2Int defenderPosition = targetPosition.Value;
+            // 直接使用CardManager的AttackCard方法
+            bool success = StateMachine.CardManager.AttackCard(selectedPosition.Value, targetPosition.Value);
             
-            // 直接调用CardManager的AttackCard方法，它会通知GameEventSystem
-            StateMachine.CardManager.AttackCard(attackerPosition, defenderPosition);
-            
-            // 标记卡牌已行动
-            selectedCard.HasActed = true;
+            if (success)
+            {
+                Debug.Log("攻击成功");
+            }
+            else
+            {
+                Debug.LogWarning("攻击失败");
+            }
             
             // 攻击完成后，转换到空闲状态
             CompleteState(CardState.Idle);

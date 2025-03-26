@@ -91,25 +91,6 @@ namespace ChessGame
             }
         }
         
-        // 获取所有空白格子
-        private List<Vector2Int> GetEmptyPositions()
-        {
-            List<Vector2Int> emptyPositions = new List<Vector2Int>();
-            
-            for (int x = 0; x < board.Width; x++)
-            {
-                for (int y = 0; y < board.Height; y++)
-                {
-                    Vector2Int position = new Vector2Int(x, y);
-                    if (!_cards.ContainsKey(position))
-                    {
-                        emptyPositions.Add(position);
-                    }
-                }
-            }
-            
-            return emptyPositions;
-        }
         
         // 选中卡牌
         public void SelectCard(Vector2Int position)
@@ -141,12 +122,6 @@ namespace ChessGame
             return null;
         }
         
-        // 获取指定位置的单元格视图
-        public CellView GetCellView(int x, int y)
-        {
-            return board.GetCellView(x, y);
-        }
-        
         
         
         // 检查状态机
@@ -170,17 +145,7 @@ namespace ChessGame
                 Debug.Log("状态机已初始化，当前状态：" + _stateMachine.GetCurrentStateType().ToString());
             }
         }
-    
 
-        
-        private IEnumerator DelayedDestroy(GameObject obj, float delay)
-        {
-            yield return new WaitForSeconds(delay);
-            if (obj != null)
-            {
-                Destroy(obj);
-            }
-        }
         
         // 重置所有卡牌的行动状态
         public void ResetAllCardActions()
@@ -235,27 +200,6 @@ namespace ChessGame
             return turnManager;
         }
         
-        // 检查是否有玩家卡牌
-        public bool HasPlayerCards()
-        {
-            foreach (var card in _cards.Values)
-            {
-                if (card.OwnerId == 0)
-                    return true;
-            }
-            return false;
-        }
-        
-        // 检查是否有敌方卡牌
-        public bool HasEnemyCards()
-        {
-            foreach (var card in _cards.Values)
-            {
-                if (card.OwnerId == 1)
-                    return true;
-            }
-            return false;
-        }
 
         // 标记所有玩家卡牌为已行动
         public void MarkAllPlayerCardsAsActed()
@@ -361,24 +305,6 @@ namespace ChessGame
         }
 
 
-
-        // 处理伤害和死亡
-        private void ProcessDamageAndDeath(Card card, Vector2Int position, int hpBefore)
-        {
-            if (card.Data.Health <= 0)
-            {
-                // 卡牌死亡
-                Debug.Log($"卡牌 {card.Data.Name} 被击败，移除卡牌");
-                RemoveCard(position);
-            }
-            else if (hpBefore > card.Data.Health)
-            {
-                // 卡牌受伤但未死亡
-                Debug.Log($"卡牌 {card.Data.Name} 受伤，当前血量: {card.Data.Health}");
-                GameEventSystem.Instance.NotifyCardDamaged(position);
-            }
-        }
-
         // 创建卡牌视图
         public CardView CreateCardView(Card card, Vector2Int position)
         {
@@ -417,64 +343,88 @@ namespace ChessGame
             return cardView;
         }
 
-        // 获取世界坐标
-        private Vector3 GetWorldPosition(Vector2Int gridPosition)
+
+        // 移动卡牌
+        public bool MoveCard(Vector2Int fromPosition, Vector2Int toPosition)
         {
-            // 计算棋盘中心偏移
-            float offsetX = -((board.Width - 1) * 1f) / 2f;
-            float offsetY = -((board.Height - 1) * 1f) / 2f;
+            MoveCardAction moveAction = new MoveCardAction(this, fromPosition, toPosition);
+            return moveAction.Execute();
+        }
+
+        // 攻击卡牌
+        public bool AttackCard(Vector2Int attackerPosition, Vector2Int targetPosition)
+        {
+            AttackCardAction attackAction = new AttackCardAction(this, attackerPosition, targetPosition);
+            return attackAction.Execute();
+        }
+
+
+        // 移除卡牌
+        public bool RemoveCard(Vector2Int position)
+        {
+            RemoveCardAction removeAction = new RemoveCardAction(this, position);
+            return removeAction.Execute();
+        }
+
+        // 添加卡牌
+        public bool AddCard(Card card, Vector2Int position)
+        {
+            AddCardAction addAction = new AddCardAction(this, card, position);
+            return addAction.Execute();
+        }
+
+        // 请求移动
+        public void RequestMove()
+        {
+            // 获取选中的卡牌和目标位置
+            Vector2Int? selectedPosition = GetSelectedPosition();
+            Vector2Int? targetPosition = GetTargetPosition();
             
-            return new Vector3(
-                gridPosition.x * 1f + offsetX,
-                gridPosition.y * 1f + offsetY,
-                -0.1f // 卡牌在单元格上方
-            );
+            if (!selectedPosition.HasValue || !targetPosition.HasValue)
+            {
+                Debug.LogError("移动失败：没有选中的卡牌或目标位置");
+                return;
+            }
+            
+            // 直接使用MoveCard方法
+            bool success = MoveCard(selectedPosition.Value, targetPosition.Value);
+            
+            if (success)
+            {
+                Debug.Log("移动成功");
+            }
+            else
+            {
+                Debug.LogWarning("移动失败");
+            }
         }
 
         // 请求攻击
         public void RequestAttack()
         {
-            Debug.Log("请求执行攻击");
-            _stateMachine.ChangeState(CardState.Attacking);
-        }
-
-        // 请求移动 
-        public void RequestMove()
-        {
-            Debug.Log("请求执行移动");
-            _stateMachine.ChangeState(CardState.Moving);
-        }
-
-        // 对卡牌造成伤害
-        public void DamageCard(Vector2Int position, int damage)
-        {
-            Card card = GetCard(position);
-            if (card == null)
+            // 获取选中的卡牌和目标位置
+            Vector2Int? selectedPosition = GetSelectedPosition();
+            Vector2Int? targetPosition = GetTargetPosition();
+            
+            if (!selectedPosition.HasValue || !targetPosition.HasValue)
             {
-                Debug.LogError($"伤害失败: 位置 {position} 没有卡牌");
+                Debug.LogError("攻击失败：没有选中的卡牌或目标位置");
                 return;
             }
             
-            // 记录伤害前的生命值
-            int hpBefore = card.Data.Health;
+            // 直接使用AttackCard方法
+            bool success = AttackCard(selectedPosition.Value, targetPosition.Value);
             
-            // 造成伤害
-            card.Data.Health -= damage;
-            
-            Debug.Log($"卡牌 {card.Data.Name} 受到 {damage} 点伤害，当前血量: {card.Data.Health}");
-            
-            // 处理伤害和死亡
-            ProcessDamageAndDeath(card, position, hpBefore);
-        }
-
-        private void OnDestroy()
-        {
-            // 释放状态机资源
-            if (_stateMachine != null)
+            if (success)
             {
-                _stateMachine.Dispose();
+                Debug.Log("攻击成功");
+            }
+            else
+            {
+                Debug.LogWarning("攻击失败");
             }
         }
+
 
         // 获取所有卡牌视图的字典
         public Dictionary<Vector2Int, CardView> GetAllCardViews()
@@ -514,63 +464,6 @@ namespace ChessGame
             {
                 Debug.LogError($"CardManager: 找不到位置 {fromPosition} 的卡牌视图");
             }
-        }
-
-        // 移动卡牌
-        public bool MoveCard(Vector2Int fromPosition, Vector2Int toPosition)
-        {
-            MoveCardAction moveAction = new MoveCardAction(this, fromPosition, toPosition);
-            return moveAction.Execute();
-        }
-
-        // 攻击卡牌
-        public bool AttackCard(Vector2Int attackerPosition, Vector2Int targetPosition)
-        {
-            AttackCardAction attackAction = new AttackCardAction(this, attackerPosition, targetPosition);
-            return attackAction.Execute();
-        }
-
-        // 翻转卡牌
-        public bool FlipCard(Vector2Int position)
-        {
-            FlipCardAction flipAction = new FlipCardAction(this, position);
-            return flipAction.Execute();
-        }
-
-        // 移除卡牌
-        public bool RemoveCard(Vector2Int position)
-        {
-            Debug.Log($"CardManager.RemoveCard: 尝试移除位置 {position} 的卡牌");
-            
-            // 检查卡牌是否存在
-            Card card = GetCard(position);
-            if (card == null)
-            {
-                Debug.LogWarning($"CardManager.RemoveCard: 位置 {position} 没有卡牌");
-                return false;
-            }
-            
-            // 创建并执行移除行动
-            RemoveCardAction removeAction = new RemoveCardAction(this, position);
-            bool result = removeAction.Execute();
-            
-            if (result)
-            {
-                Debug.Log($"CardManager.RemoveCard: 成功移除位置 {position} 的卡牌 {card.Data.Name}");
-            }
-            else
-            {
-                Debug.LogError($"CardManager.RemoveCard: 移除位置 {position} 的卡牌失败");
-            }
-            
-            return result;
-        }
-
-        // 添加卡牌
-        public bool AddCard(Card card, Vector2Int position)
-        {
-            AddCardAction addAction = new AddCardAction(this, card, position);
-            return addAction.Execute();
         }
 
     }
