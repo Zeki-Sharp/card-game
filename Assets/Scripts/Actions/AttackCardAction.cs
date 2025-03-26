@@ -93,6 +93,14 @@ namespace ChessGame
                     Debug.Log($"背面卡牌 {targetCard.Data.Name} 血量降至0或以下，保留1点血量");
                     targetCard.Data.Health = 1;
                 }
+
+                if(attackerCard.Data.Health <= 0)
+                {
+                    Debug.Log($"攻击者卡牌 {attackerCard.Data.Name} 生命值为 {attackerCard.Data.Health}，将被移除");
+                    
+                    // 移除攻击者卡牌
+                    bool removeResult = CardManager.RemoveCard(_attackerPosition);
+                }
                 
                 // 标记攻击者已行动
                 attackerCard.HasActed = true;
@@ -123,19 +131,31 @@ namespace ChessGame
                     GameEventSystem.Instance.NotifyCardDamaged(_targetPosition);
                     
                     // 检查目标卡牌是否死亡
-                    if (!targetCard.IsAlive())
+                    if (targetCard.Data.Health <= 0)
                     {
                         Debug.Log($"目标卡牌 {targetCard.Data.Name} 生命值为 {targetCard.Data.Health}，将被移除");
+                        
+                        // 确保移除前记录一些信息，以便调试
+                        
+                        // 立即更新目标卡牌视图，显示生命值为0
+                        Dictionary<Vector2Int, CardView> cardViews = CardManager.GetAllCardViews();
+                        if (cardViews.TryGetValue(_targetPosition, out CardView targetView))
+                        {
+                            targetView.UpdateVisuals();
+                        }
+                        
                         // 移除目标卡牌
-                        CardManager.RemoveCard(_targetPosition);
+                        bool removeResult = CardManager.RemoveCard(_targetPosition);
                     }
                     
-                    // 检查攻击者是否死亡
-                    if (!attackerCard.IsAlive())
+                    // 检查攻击者是否死亡（反伤机制）
+                    if (attackerCard.Data.Health <= 0)
                     {
                         Debug.Log($"攻击者卡牌 {attackerCard.Data.Name} 生命值为 {attackerCard.Data.Health}，将被移除");
+                        
                         // 移除攻击者卡牌
-                        CardManager.RemoveCard(_attackerPosition);
+                        bool removeResult = CardManager.RemoveCard(_attackerPosition);
+                        
                     }
                     
                     Debug.Log($"卡牌 {attackerCard.Data.Name} 攻击 {targetCard.Data.Name} 成功");

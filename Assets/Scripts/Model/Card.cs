@@ -42,34 +42,17 @@ namespace ChessGame
         {
             if (target == null) return false;
             
-            // 如果卡牌是背面状态，不能主动攻击
-            if (IsFaceDown)
-                return false;
-                
-            // 如果目标是背面状态
-            if (target.IsFaceDown)
-            {
-                // 翻转为正面
-                target.FlipToFaceUp();
-                
-                // 对背面卡牌造成伤害，攻击方不受伤
-                target.Data.Health -= this.Data.Attack;
-                
-                // 如果血量小于等于0，设置为1（背面卡牌不会直接死亡）
-                if (target.Data.Health <= 0)
-                {
-                    target.Data.Health = 1;
-                }
-            }
-            else
-            {
-                // 双方都是正面卡牌，双方都受伤
-                target.Data.Health -= this.Data.Attack;
-                this.Data.Health -= target.Data.Attack;
-            }
+            // 计算伤害
+            int damage = this.Data.Attack;
             
-            // 标记为已行动
-            HasActed = true;
+            // 应用伤害
+            target.Data.Health -= damage;
+            
+            // 反伤机制：攻击者也受到目标的攻击力伤害
+            this.Data.Health -= target.Data.Attack;
+            
+            Debug.Log($"卡牌 {this.Data.Name} 攻击 {target.Data.Name}，造成 {damage} 点伤害，目标剩余生命值: {target.Data.Health}");
+            Debug.Log($"卡牌 {this.Data.Name} 受到反伤 {target.Data.Attack} 点，剩余生命值: {this.Data.Health}");
             
             return true;
         }

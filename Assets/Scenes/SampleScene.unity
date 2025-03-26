@@ -607,6 +607,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   actionDelay: 0.5
+  selectionDelay: 0.8
 --- !u!4 &770383907
 Transform:
   m_ObjectHideFlags: 0
@@ -731,10 +732,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cardManager: {fileID: 908457767}
   cardDataProvider: {fileID: 1404373183}
-  initialPlayerCards: 3
-  initialEnemyCards: 3
-  initialPlayerFaceUpCards: 1
-  initialEnemyFaceUpCards: 1
+  initialPlayerCards: 5
+  initialEnemyCards: 5
+  initialPlayerFaceUpCards: 2
+  initialEnemyFaceUpCards: 2
 --- !u!1 &1023976012
 GameObject:
   m_ObjectHideFlags: 0

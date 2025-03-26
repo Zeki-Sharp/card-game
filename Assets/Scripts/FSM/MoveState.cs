@@ -30,6 +30,9 @@ namespace ChessGame.FSM
             if (success)
             {
                 Debug.Log("移动成功");
+                
+                // 检查是否应该结束回合
+                CheckEndTurn();
             }
             else
             {

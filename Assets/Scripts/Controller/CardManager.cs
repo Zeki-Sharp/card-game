@@ -373,57 +373,6 @@ namespace ChessGame
             return addAction.Execute();
         }
 
-        // 请求移动
-        public void RequestMove()
-        {
-            // 获取选中的卡牌和目标位置
-            Vector2Int? selectedPosition = GetSelectedPosition();
-            Vector2Int? targetPosition = GetTargetPosition();
-            
-            if (!selectedPosition.HasValue || !targetPosition.HasValue)
-            {
-                Debug.LogError("移动失败：没有选中的卡牌或目标位置");
-                return;
-            }
-            
-            // 直接使用MoveCard方法
-            bool success = MoveCard(selectedPosition.Value, targetPosition.Value);
-            
-            if (success)
-            {
-                Debug.Log("移动成功");
-            }
-            else
-            {
-                Debug.LogWarning("移动失败");
-            }
-        }
-
-        // 请求攻击
-        public void RequestAttack()
-        {
-            // 获取选中的卡牌和目标位置
-            Vector2Int? selectedPosition = GetSelectedPosition();
-            Vector2Int? targetPosition = GetTargetPosition();
-            
-            if (!selectedPosition.HasValue || !targetPosition.HasValue)
-            {
-                Debug.LogError("攻击失败：没有选中的卡牌或目标位置");
-                return;
-            }
-            
-            // 直接使用AttackCard方法
-            bool success = AttackCard(selectedPosition.Value, targetPosition.Value);
-            
-            if (success)
-            {
-                Debug.Log("攻击成功");
-            }
-            else
-            {
-                Debug.LogWarning("攻击失败");
-            }
-        }
 
 
         // 获取所有卡牌视图的字典

@@ -58,12 +58,6 @@ namespace ChessGame
             Dictionary<Vector2Int, Card> cards = CardManager.GetAllCards();
             Dictionary<Vector2Int, CardView> cardViews = CardManager.GetAllCardViews();
             
-            // 更新卡牌位置
-            CardManager.UpdateCardPosition(_fromPosition, _toPosition);
-            
-            // 更新视图位置
-            CardManager.UpdateCardViewPosition(_fromPosition, _toPosition);
-            
             // 标记卡牌已行动
             card.HasActed = true;
             
