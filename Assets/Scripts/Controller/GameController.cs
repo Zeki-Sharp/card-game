@@ -97,13 +97,6 @@ namespace ChessGame
             }
         }
         
-        // 修改InitializeGameDelayed方法，确保它不会被调用
-        private IEnumerator InitializeGameDelayed()
-        {
-            Debug.LogWarning("InitializeGameDelayed被调用，但这个方法已被禁用");
-            yield return null;
-        }
-        
         private void Update()
         {
             // 处理鼠标点击

@@ -32,11 +32,11 @@ MonoBehaviour:
     faceUpCount: 0
     positions: []
   enemyCards:
-  - cardId: 1
+  - cardId: 6
     count: 2
     ownerId: 1
-    isFaceDown: 1
-    faceUpCount: 0
+    isFaceDown: 0
+    faceUpCount: 1
     positions: []
   - cardId: 7
     count: 2
@@ -47,6 +47,6 @@ MonoBehaviour:
   - cardId: 8
     count: 2
     ownerId: 1
-    isFaceDown: 0
-    faceUpCount: 1
+    isFaceDown: 1
+    faceUpCount: 0
     positions: []
