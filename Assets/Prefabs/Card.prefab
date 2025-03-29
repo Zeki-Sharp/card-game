@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 1781624999200478341}
   - component: {fileID: 2873846989460175649}
   - component: {fileID: 407427397495385538}
-  - component: {fileID: 1951248471324232213}
   - component: {fileID: 4584510636262689134}
   m_Layer: 7
   m_Name: HealthText
@@ -173,27 +172,6 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_renderer: {fileID: 2873846989460175649}
   m_maskType: 0
---- !u!114 &1951248471324232213
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1755824276539221444}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 32d40088a6124c578ad6b428df586e2e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_pivot: {x: 0.5, y: 0.5}
-  m_anchorPosition: 4
-  m_rect:
-    serializedVersion: 2
-    x: 0
-    y: 0
-    width: 2
-    height: 0
-  m_margins: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &4584510636262689134
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -455,6 +433,8 @@ MonoBehaviour:
   enemyColor: {r: 1, g: 0, b: 0, a: 1}
   actedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   cardBackSprite: {fileID: 21300000, guid: 16b0c6470e2816b4dbb9c8976f8b2d45, type: 3}
+  cardFrontSprite: {fileID: 0}
+  nameText: {fileID: 0}
 --- !u!65 &8065131872714316343
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -739,7 +719,6 @@ GameObject:
   - component: {fileID: 1332075562040355600}
   - component: {fileID: 301971342743614980}
   - component: {fileID: 7585257593658828228}
-  - component: {fileID: 1882912732960889203}
   - component: {fileID: 5978699841297328799}
   m_Layer: 7
   m_Name: AttackText
@@ -901,27 +880,6 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_renderer: {fileID: 301971342743614980}
   m_maskType: 0
---- !u!114 &1882912732960889203
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7948135984397321995}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 32d40088a6124c578ad6b428df586e2e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_pivot: {x: 0.5, y: 0.5}
-  m_anchorPosition: 4
-  m_rect:
-    serializedVersion: 2
-    x: 0
-    y: 0
-    width: 2
-    height: 0
-  m_margins: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &5978699841297328799
 MonoBehaviour:
   m_ObjectHideFlags: 0
