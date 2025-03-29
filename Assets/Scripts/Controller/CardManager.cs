@@ -452,12 +452,16 @@ namespace ChessGame
         // 清空所有卡牌
         public void ClearAllCards()
         {
+            Debug.Log("CardManager.ClearAllCards: 开始清空所有卡牌");
+            
             // 保存所有卡牌位置的副本
             List<Vector2Int> positions = new List<Vector2Int>(_cards.Keys);
+            Debug.Log($"当前卡牌数量: {positions.Count}");
             
             // 移除所有卡牌
             foreach (Vector2Int position in positions)
             {
+                Debug.Log($"移除位置 {position} 的卡牌");
                 RemoveCard(position);
             }
             

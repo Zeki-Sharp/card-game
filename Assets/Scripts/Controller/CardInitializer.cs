@@ -18,10 +18,6 @@ namespace ChessGame
         
         [SerializeField] private CardManager cardManager;
         [SerializeField] private CardDataProvider cardDataProvider;
-        [SerializeField] private int initialPlayerCards = 3;
-        [SerializeField] private int initialEnemyCards = 3;
-        [SerializeField] private int initialPlayerFaceUpCards = 1; // 初始正面朝上的玩家卡牌数量
-        [SerializeField] private int initialEnemyFaceUpCards = 1; // 初始正面朝上的敌方卡牌数量
         
         private void Awake()
         {
@@ -49,47 +45,27 @@ namespace ChessGame
 
         private void Start()
         {
+            // 禁用自动初始化
             // 只有在未初始化时才执行
-            if (!_hasInitialized)
-            {
-                StartCoroutine(InitializeCardsDelayed());
-            }
+            // if (!_hasInitialized)
+            // {
+            //     StartCoroutine(InitializeCardsDelayed());
+            // }
         }
         
         // 修改InitializeCardsDelayed方法
         private IEnumerator InitializeCardsDelayed()
         {
-            yield return new WaitForSeconds(0.5f);
-            
-            if (!_hasInitialized)
-            {
-                // 生成初始卡牌
-                SpawnInitialCards();
-                _hasInitialized = true;
-            }
+            Debug.LogWarning("InitializeCardsDelayed被调用，但这个方法已被禁用");
+            yield return null;
         }
         
         // 修改SpawnInitialCards方法
         public void SpawnInitialCards()
         {
-            Debug.Log($"SpawnInitialCards被调用，调用堆栈: {new System.Diagnostics.StackTrace()}");
-            
-            // 防止重复初始化
-            if (_hasInitialized)
-            {
-                Debug.LogWarning("卡牌已经初始化过，忽略重复调用");
-                return;
-            }
-            
-            Debug.Log("生成初始卡牌");
-            
-            // 生成玩家卡牌（第一张正面朝上）
-            SpawnPlayerCards(initialPlayerCards);
-            
-            // 生成敌方卡牌（第一张正面朝上）
-            SpawnEnemyCards(initialEnemyCards);
-            
-            _hasInitialized = true;
+            Debug.LogWarning("SpawnInitialCards被调用，但这个方法已被禁用");
+            // 防止执行任何卡牌生成逻辑
+            return;
         }
         
         // 生成玩家卡牌

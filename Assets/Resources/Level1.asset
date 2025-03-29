@@ -16,32 +16,37 @@ MonoBehaviour:
   - cardId: 1
     count: 2
     ownerId: 0
-    isFaceDown: 1
-    positions:
-    - {x: 0, y: 0}
+    isFaceDown: 0
+    faceUpCount: 1
+    positions: []
   - cardId: 2
     count: 2
     ownerId: 0
     isFaceDown: 1
+    faceUpCount: 0
     positions: []
   - cardId: 3
     count: 2
     ownerId: 0
-    isFaceDown: 0
+    isFaceDown: 1
+    faceUpCount: 0
     positions: []
   enemyCards:
-  - cardId: 6
+  - cardId: 1
     count: 2
     ownerId: 1
     isFaceDown: 1
+    faceUpCount: 0
     positions: []
   - cardId: 7
     count: 2
     ownerId: 1
     isFaceDown: 1
+    faceUpCount: 0
     positions: []
   - cardId: 8
     count: 2
     ownerId: 1
     isFaceDown: 0
+    faceUpCount: 1
     positions: []

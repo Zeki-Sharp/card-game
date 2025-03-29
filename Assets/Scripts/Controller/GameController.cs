@@ -40,12 +40,14 @@ namespace ChessGame
             LevelDataLoader levelLoader = FindObjectOfType<LevelDataLoader>();
             if (levelLoader != null)
             {
+                Debug.Log("使用LevelDataLoader加载关卡");
                 levelLoader.LoadLevel();
             }
             else
             {
-                // 如果找不到LevelDataLoader，使用原来的方法
-                StartCoroutine(InitializeGameDelayed());
+                Debug.LogWarning("找不到LevelDataLoader，游戏将不会初始化卡牌");
+                // 完全禁用原来的初始化方法
+                // StartCoroutine(InitializeGameDelayed());
             }
         }
         
@@ -95,23 +97,11 @@ namespace ChessGame
             }
         }
         
-        // 延迟初始化游戏
+        // 修改InitializeGameDelayed方法，确保它不会被调用
         private IEnumerator InitializeGameDelayed()
         {
-            // 等待一帧，确保所有组件都已初始化
+            Debug.LogWarning("InitializeGameDelayed被调用，但这个方法已被禁用");
             yield return null;
-            
-            // 生成初始卡牌
-            if (cardInitializer != null && !_cardsInitialized)
-            {
-                cardInitializer.SpawnInitialCards();
-                _cardsInitialized = true;
-            }
-            
-            // 标记游戏已初始化
-            _isGameInitialized = true;
-            
-            Debug.Log("游戏初始化完成");
         }
         
         private void Update()
