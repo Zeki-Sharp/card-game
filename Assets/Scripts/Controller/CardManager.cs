@@ -449,6 +449,29 @@ namespace ChessGame
             }
         }
 
+        // 清空所有卡牌
+        public void ClearAllCards()
+        {
+            // 保存所有卡牌位置的副本
+            List<Vector2Int> positions = new List<Vector2Int>(_cards.Keys);
+            
+            // 移除所有卡牌
+            foreach (Vector2Int position in positions)
+            {
+                RemoveCard(position);
+            }
+            
+            // 确保字典已清空
+            _cards.Clear();
+            _cardViews.Clear();
+            
+            // 清除选中状态
+            _selectedPosition = null;
+            _targetPosition = null;
+            
+            Debug.Log("已清空所有卡牌");
+        }
+
     }
 
 

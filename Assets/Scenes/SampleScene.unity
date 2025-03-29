@@ -324,6 +324,53 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &375010345
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 375010347}
+  - component: {fileID: 375010346}
+  m_Layer: 0
+  m_Name: LevelDataLoader
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &375010346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 375010345}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 752c6b66b89a92c4bbc257ec576d4117, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cardDataProvider: {fileID: 1404373183}
+  cardInitializer: {fileID: 908457769}
+  levelConfig: {fileID: 11400000, guid: bb73b08434b7d574b8001bf0009d572d, type: 2}
+--- !u!4 &375010347
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 375010345}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1.497994, y: -2.2499533, z: -0.25004676}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -732,10 +779,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cardManager: {fileID: 908457767}
   cardDataProvider: {fileID: 1404373183}
-  initialPlayerCards: 4
-  initialEnemyCards: 4
-  initialPlayerFaceUpCards: 1
-  initialEnemyFaceUpCards: 1
+  initialPlayerCards: 0
+  initialEnemyCards: 0
+  initialPlayerFaceUpCards: 0
+  initialEnemyFaceUpCards: 0
 --- !u!1 &1023976012
 GameObject:
   m_ObjectHideFlags: 0
@@ -1167,6 +1214,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cardDataCollection: {fileID: 11400000, guid: 6956a269858cb5f4f84dfa7c07578dbf, type: 2}
+  csvFilePath: CardData
+  useCSV: 1
 --- !u!1 &2077239992
 GameObject:
   m_ObjectHideFlags: 0
@@ -1311,3 +1360,4 @@ SceneRoots:
   - {fileID: 260428337}
   - {fileID: 1023976013}
   - {fileID: 669802241}
+  - {fileID: 375010347}

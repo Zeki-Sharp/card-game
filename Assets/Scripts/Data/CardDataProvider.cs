@@ -53,5 +53,24 @@ namespace ChessGame
             
             return new List<CardData>(_availableCards);
         }
+        
+        // 根据ID获取卡牌数据
+        public CardData GetCardDataById(int id)
+        {
+            if (!_isInitialized)
+            {
+                LoadCardData();
+            }
+            
+            CardData cardData = _availableCards.Find(card => card.Id == id);
+            if (cardData == null)
+            {
+                Debug.LogError($"找不到ID为 {id} 的卡牌数据");
+                return null;
+            }
+            
+            // 返回卡牌数据的副本，避免修改原始数据
+            return cardData.Clone();
+        }
     }
 } 

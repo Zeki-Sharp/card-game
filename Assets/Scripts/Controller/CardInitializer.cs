@@ -310,11 +310,8 @@ namespace ChessGame
                 return;
             }
             
-            // 获取所有可用卡牌数据
-            List<CardData> availableCards = cardDataProvider.GetAllCardData();
-            
-            // 查找指定ID的卡牌数据
-            CardData cardData = availableCards.Find(card => card.Id == cardId);
+            // 获取卡牌数据
+            CardData cardData = cardDataProvider.GetCardDataById(cardId);
             if (cardData == null)
             {
                 Debug.LogError($"找不到ID为 {cardId} 的卡牌数据");

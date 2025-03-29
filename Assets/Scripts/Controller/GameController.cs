@@ -36,8 +36,17 @@ namespace ChessGame
             // 初始化组件
             InitializeComponents();
             
-            // 使用协程延迟生成卡牌
-            StartCoroutine(InitializeGameDelayed());
+            // 使用LevelDataLoader加载关卡
+            LevelDataLoader levelLoader = FindObjectOfType<LevelDataLoader>();
+            if (levelLoader != null)
+            {
+                levelLoader.LoadLevel();
+            }
+            else
+            {
+                // 如果找不到LevelDataLoader，使用原来的方法
+                StartCoroutine(InitializeGameDelayed());
+            }
         }
         
         // 初始化组件
