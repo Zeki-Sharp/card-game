@@ -1,151 +1,202 @@
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using System.Text.RegularExpressions;
 
-namespace ChessGame.Utils
+namespace ChessGame
 {
-    public static class CSVReader
+    public class CSVReader
     {
-        // 从文件读取CSV数据
-        public static List<Dictionary<string, string>> ReadCSVFile(string filePath)
+        private static readonly string SPLIT_RE = @",(?=(?:[^""]*""[^""]*"")*(?![^""]*""))";
+        private static readonly string LINE_SPLIT_RE = @"\r\n|\n\r|\n|\r";
+        private static readonly char[] TRIM_CHARS = { '\"' };
+
+        /// <summary>
+        /// 从CSV文件读取卡牌数据
+        /// </summary>
+        /// <param name="filePath">CSV文件路径（相对于Resources文件夹）</param>
+        /// <returns>卡牌数据列表</returns>
+        public static List<CardData> ReadCardDataFromCSV(string filePath)
         {
-            List<Dictionary<string, string>> data = new List<Dictionary<string, string>>();
-            
-            try
+            List<CardData> cardDataList = new List<CardData>();
+            TextAsset csvFile = Resources.Load<TextAsset>(filePath);
+
+            if (csvFile == null)
             {
-                // 读取所有文本
-                string[] lines = File.ReadAllLines(filePath);
-                if (lines.Length <= 1)
+                Debug.LogError($"找不到CSV文件: {filePath}");
+                return cardDataList;
+            }
+
+            string[] lines = Regex.Split(csvFile.text, LINE_SPLIT_RE);
+            if (lines.Length <= 1) return cardDataList;
+
+            // 获取表头
+            string[] headers = Regex.Split(lines[0], SPLIT_RE);
+            for (int i = 0; i < headers.Length; i++)
+            {
+                headers[i] = headers[i].Trim(TRIM_CHARS);
+            }
+
+            // 解析每一行数据
+            for (int i = 1; i < lines.Length; i++)
+            {
+                string line = lines[i].Trim();
+                if (line.Length == 0) continue;
+
+                string[] values = Regex.Split(line, SPLIT_RE);
+                if (values.Length == 0 || values[0].Trim() == "") continue;
+
+                // 创建卡牌数据对象
+                CardData cardData = new CardData();
+                Dictionary<string, string> entry = new Dictionary<string, string>();
+
+                for (int j = 0; j < headers.Length && j < values.Length; j++)
                 {
-                    Debug.LogWarning($"CSV文件 {filePath} 没有数据行");
-                    return data;
+                    string value = values[j].Trim(TRIM_CHARS);
+                    entry[headers[j]] = value;
                 }
-                
-                // 解析标题行
-                string[] headers = ParseCSVLine(lines[0]);
-                
-                // 解析数据行
-                for (int i = 1; i < lines.Length; i++)
+
+                // 解析ID
+                if (entry.TryGetValue("Id", out string idStr) && int.TryParse(idStr, out int id))
                 {
-                    if (string.IsNullOrWhiteSpace(lines[i]))
-                        continue;
-                        
-                    string[] values = ParseCSVLine(lines[i]);
-                    Dictionary<string, string> entry = new Dictionary<string, string>();
-                    
-                    // 确保值的数量与标题数量一致
-                    int valueCount = Mathf.Min(headers.Length, values.Length);
-                    
-                    for (int j = 0; j < valueCount; j++)
+                    // 使用反射设置私有字段
+                    System.Reflection.FieldInfo idField = typeof(CardData).GetField("id", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (idField != null)
                     {
-                        entry[headers[j]] = values[j];
+                        idField.SetValue(cardData, id);
                     }
-                    
-                    data.Add(entry);
                 }
-                
-                Debug.Log($"成功从 {filePath} 读取了 {data.Count} 条数据");
+
+                // 解析名称
+                if (entry.TryGetValue("Name", out string name))
+                {
+                    System.Reflection.FieldInfo nameField = typeof(CardData).GetField("name", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (nameField != null)
+                    {
+                        nameField.SetValue(cardData, name);
+                    }
+                }
+
+                // 解析攻击力
+                if (entry.TryGetValue("Attack", out string attackStr) && int.TryParse(attackStr, out int attack))
+                {
+                    System.Reflection.FieldInfo attackField = typeof(CardData).GetField("attack", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (attackField != null)
+                    {
+                        attackField.SetValue(cardData, attack);
+                    }
+                }
+
+                // 解析生命值
+                if (entry.TryGetValue("Health", out string healthStr) && int.TryParse(healthStr, out int health))
+                {
+                    System.Reflection.FieldInfo healthField = typeof(CardData).GetField("health", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (healthField != null)
+                    {
+                        healthField.SetValue(cardData, health);
+                    }
+                }
+
+                // 解析阵营
+                if (entry.TryGetValue("Faction", out string factionStr) && int.TryParse(factionStr, out int faction))
+                {
+                    System.Reflection.FieldInfo factionField = typeof(CardData).GetField("faction", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (factionField != null)
+                    {
+                        factionField.SetValue(cardData, faction);
+                    }
+                }
+
+                // 解析移动范围
+                if (entry.TryGetValue("MoveRange", out string moveRangeStr) && int.TryParse(moveRangeStr, out int moveRange))
+                {
+                    System.Reflection.FieldInfo moveRangeField = typeof(CardData).GetField("moveRange", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (moveRangeField != null)
+                    {
+                        moveRangeField.SetValue(cardData, moveRange);
+                    }
+                }
+
+                // 解析攻击范围
+                if (entry.TryGetValue("AttackRange", out string attackRangeStr) && int.TryParse(attackRangeStr, out int attackRange))
+                {
+                    System.Reflection.FieldInfo attackRangeField = typeof(CardData).GetField("attackRange", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (attackRangeField != null)
+                    {
+                        attackRangeField.SetValue(cardData, attackRange);
+                    }
+                }
+
+                // 解析图片名称并加载图片
+                if (entry.TryGetValue("ImageName", out string imageName) && !string.IsNullOrEmpty(imageName))
+                {
+                    Sprite sprite = Resources.Load<Sprite>($"CardImages/{imageName}");
+                    if (sprite != null)
+                    {
+                        System.Reflection.FieldInfo imageField = typeof(CardData).GetField("image", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                        if (imageField != null)
+                        {
+                            imageField.SetValue(cardData, sprite);
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"找不到卡牌图片: CardImages/{imageName}");
+                    }
+                }
+
+                cardDataList.Add(cardData);
             }
-            catch (System.Exception e)
-            {
-                Debug.LogError($"读取CSV文件 {filePath} 时出错: {e.Message}");
-            }
-            
-            return data;
+
+            Debug.Log($"从CSV文件 {filePath} 中读取了 {cardDataList.Count} 张卡牌数据");
+            return cardDataList;
         }
-        
-        // 从Resources文件夹读取CSV数据
-        public static List<Dictionary<string, string>> ReadCSVFromResources(string resourcePath)
+
+        /// <summary>
+        /// 从CSV文件读取数据到字典列表
+        /// </summary>
+        /// <param name="filePath">CSV文件路径（相对于Resources文件夹）</param>
+        /// <returns>字典列表，每个字典代表一行数据</returns>
+        public static List<Dictionary<string, string>> ReadCSV(string filePath)
         {
-            List<Dictionary<string, string>> data = new List<Dictionary<string, string>>();
-            
-            try
+            List<Dictionary<string, string>> list = new List<Dictionary<string, string>>();
+            TextAsset csvFile = Resources.Load<TextAsset>(filePath);
+
+            if (csvFile == null)
             {
-                Debug.Log($"尝试加载CSV资源: {resourcePath}");
-                TextAsset textAsset = Resources.Load<TextAsset>(resourcePath);
-                if (textAsset == null)
-                {
-                    Debug.LogError($"找不到CSV资源: {resourcePath}，检查路径是否正确");
-                    // 列出Resources文件夹中的所有文本资产
-                    TextAsset[] allTextAssets = Resources.LoadAll<TextAsset>("");
-                    Debug.Log($"Resources文件夹中的所有文本资产: {allTextAssets.Length}");
-                    foreach (var asset in allTextAssets)
-                    {
-                        Debug.Log($"找到文本资产: {asset.name}");
-                    }
-                    return data;
-                }
-                
-                string[] lines = textAsset.text.Split('\n');
-                if (lines.Length <= 1)
-                {
-                    Debug.LogWarning($"CSV资源 {resourcePath} 没有数据行");
-                    return data;
-                }
-                
-                // 解析标题行
-                string[] headers = ParseCSVLine(lines[0]);
-                
-                // 解析数据行
-                for (int i = 1; i < lines.Length; i++)
-                {
-                    if (string.IsNullOrWhiteSpace(lines[i]))
-                        continue;
-                        
-                    string[] values = ParseCSVLine(lines[i]);
-                    Dictionary<string, string> entry = new Dictionary<string, string>();
-                    
-                    // 确保值的数量与标题数量一致
-                    int valueCount = Mathf.Min(headers.Length, values.Length);
-                    
-                    for (int j = 0; j < valueCount; j++)
-                    {
-                        entry[headers[j]] = values[j];
-                    }
-                    
-                    data.Add(entry);
-                }
-                
-                Debug.Log($"成功从资源 {resourcePath} 读取了 {data.Count} 条数据");
+                Debug.LogError($"找不到CSV文件: {filePath}");
+                return list;
             }
-            catch (System.Exception e)
+
+            string[] lines = Regex.Split(csvFile.text, LINE_SPLIT_RE);
+            if (lines.Length <= 1) return list;
+
+            // 获取表头
+            string[] headers = Regex.Split(lines[0], SPLIT_RE);
+            for (int i = 0; i < headers.Length; i++)
             {
-                Debug.LogError($"读取CSV资源 {resourcePath} 时出错: {e.Message}");
+                headers[i] = headers[i].Trim(TRIM_CHARS);
             }
-            
-            return data;
-        }
-        
-        // 解析CSV行
-        private static string[] ParseCSVLine(string line)
-        {
-            List<string> result = new List<string>();
-            bool inQuotes = false;
-            string currentValue = "";
-            
-            for (int i = 0; i < line.Length; i++)
+
+            // 解析每一行数据
+            for (int i = 1; i < lines.Length; i++)
             {
-                char c = line[i];
-                
-                if (c == '"')
+                string line = lines[i].Trim();
+                if (line.Length == 0) continue;
+
+                string[] values = Regex.Split(line, SPLIT_RE);
+                if (values.Length == 0 || values[0].Trim() == "") continue;
+
+                Dictionary<string, string> entry = new Dictionary<string, string>();
+                for (int j = 0; j < headers.Length && j < values.Length; j++)
                 {
-                    inQuotes = !inQuotes;
+                    string value = values[j].Trim(TRIM_CHARS);
+                    entry[headers[j]] = value;
                 }
-                else if (c == ',' && !inQuotes)
-                {
-                    result.Add(currentValue);
-                    currentValue = "";
-                }
-                else
-                {
-                    currentValue += c;
-                }
+                list.Add(entry);
             }
-            
-            // 添加最后一个值
-            result.Add(currentValue);
-            
-            return result.ToArray();
+
+            return list;
         }
     }
 } 
