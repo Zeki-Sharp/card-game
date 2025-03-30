@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using ChessGame.Cards;
 
 namespace ChessGame
 {
@@ -31,10 +32,7 @@ namespace ChessGame
             OwnerId = ownerId;
             HasActed = false;
             IsFaceDown = isFaceDown;
-            
-            // 可以根据CardData中的属性设置不同的移动和攻击范围
-            // 例如：MoveRange = data.MoveRange;
-            // 例如：AttackRange = data.AttackRange;
+        
         }
 
         // 卡牌攻击目标
@@ -110,11 +108,11 @@ namespace ChessGame
             if (allCards.ContainsKey(targetPosition))
                 return false;
             
-            // 计算曼哈顿距离
-            int distance = Mathf.Abs(targetPosition.x - Position.x) + Mathf.Abs(targetPosition.y - Position.y);
+            // 使用 GetMovablePositions 方法获取可移动位置
+            List<Vector2Int> movablePositions = GetMovablePositions(100, 100, allCards); // 使用足够大的棋盘尺寸
             
-            // 检查是否在移动范围内
-            return distance <= MoveRange && distance > 0; // 不能移动到自己的位置
+            // 检查目标位置是否在可移动位置列表中
+            return movablePositions.Contains(targetPosition);
         }
         
         // 判断是否可以攻击指定位置
@@ -135,11 +133,11 @@ namespace ChessGame
             if (targetCard.OwnerId == OwnerId && !targetCard.IsFaceDown)
                 return false;
             
-            // 计算曼哈顿距离
-            int distance = Mathf.Abs(targetPosition.x - Position.x) + Mathf.Abs(targetPosition.y - Position.y);
+            // 使用 GetAttackablePositions 方法获取可攻击位置
+            List<Vector2Int> attackablePositions = GetAttackablePositions(100, 100, allCards); // 使用足够大的棋盘尺寸
             
-            // 检查是否在攻击范围内
-            return distance <= AttackRange && distance > 0; // 不能攻击自己
+            // 检查目标位置是否在可攻击位置列表中
+            return attackablePositions.Contains(targetPosition);
         }
         
         // 获取可移动的位置列表
@@ -177,6 +175,13 @@ namespace ChessGame
                     }
                 }
             }
+            
+            Debug.Log($"[Card] 卡牌 {Data.Id}({Data.Name}) 计算可移动位置，位置数量: {movablePositions.Count}");
+            
+            // 使用行为管理器修改可移动位置
+            CardBehaviorManager.Instance.ModifyMovablePositions(this, boardWidth, boardHeight, allCards, ref movablePositions);
+            
+            Debug.Log($"[Card] 卡牌 {Data.Id}({Data.Name}) 行为修改后的可移动位置，位置数量: {movablePositions.Count}");
             
             return movablePositions;
         }
@@ -219,6 +224,13 @@ namespace ChessGame
                     }
                 }
             }
+            
+            Debug.Log($"[Card] 卡牌 {Data.Id}({Data.Name}) 计算可攻击位置，位置数量: {attackablePositions.Count}");
+            
+            // 使用行为管理器修改可攻击位置
+            CardBehaviorManager.Instance.ModifyAttackablePositions(this, boardWidth, boardHeight, allCards, ref attackablePositions);
+            
+            Debug.Log($"[Card] 卡牌 {Data.Id}({Data.Name}) 行为修改后的可攻击位置，位置数量: {attackablePositions.Count}");
             
             return attackablePositions;
         }

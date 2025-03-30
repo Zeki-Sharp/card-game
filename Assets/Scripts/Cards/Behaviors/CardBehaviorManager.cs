@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ChessGame.Cards
 {
@@ -39,46 +40,71 @@ namespace ChessGame.Cards
         public void SetCardBehaviors(Card card, MovementType movementType, AttackType attackType)
         {
             int cardId = card.Data.Id;
+            string cardName = card.Data.Name;
             
             // 设置移动行为
             if (!_movementBehaviors.ContainsKey(cardId))
             {
                 _movementBehaviors[cardId] = BehaviorFactory.CreateMovementBehavior(movementType);
+                Debug.Log($"[CardBehavior] 为卡牌 {cardId}({cardName}) 设置移动行为: {movementType}");
             }
             
             // 设置攻击行为
             if (!_attackBehaviors.ContainsKey(cardId))
             {
                 _attackBehaviors[cardId] = BehaviorFactory.CreateAttackBehavior(attackType);
+                Debug.Log($"[CardBehavior] 为卡牌 {cardId}({cardName}) 设置攻击行为: {attackType}");
             }
         }
         
-        // 获取卡牌的可移动位置
-        public List<Vector2Int> GetMovablePositions(Card card, int boardWidth, int boardHeight, Dictionary<Vector2Int, Card> allCards)
+        // 修改卡牌的可移动位置
+        public void ModifyMovablePositions(Card card, int boardWidth, int boardHeight, Dictionary<Vector2Int, Card> allCards, ref List<Vector2Int> positions)
         {
             int cardId = card.Data.Id;
+            string cardName = card.Data.Name;
+            
+            Debug.Log($"[CardBehavior] 修改卡牌 {cardId}({cardName}) 的可移动位置，原始位置数量: {positions.Count}");
             
             if (_movementBehaviors.TryGetValue(cardId, out IMovementBehavior behavior))
             {
-                return behavior.GetMovablePositions(card, boardWidth, boardHeight, allCards);
+                List<Vector2Int> originalPositions = new List<Vector2Int>(positions);
+                positions = behavior.GetMovablePositions(card, boardWidth, boardHeight, allCards);
+                
+                Debug.Log($"[CardBehavior] 使用卡牌 {cardId}({cardName}) 的自定义移动行为 {behavior.GetType().Name}，修改后位置数量: {positions.Count}");
+                
+                // 输出位置变化详情
+                string positionsStr = string.Join(", ", positions.Select(p => $"({p.x},{p.y})"));
+                Debug.Log($"[CardBehavior] 卡牌 {cardId}({cardName}) 的可移动位置: {positionsStr}");
             }
-            
-            // 如果没有特定行为，使用卡牌自己的方法
-            return card.GetMovablePositions(boardWidth, boardHeight, allCards);
+            else
+            {
+                Debug.Log($"[CardBehavior] 卡牌 {cardId}({cardName}) 没有自定义移动行为，使用默认行为");
+            }
         }
         
-        // 获取卡牌的可攻击位置
-        public List<Vector2Int> GetAttackablePositions(Card card, int boardWidth, int boardHeight, Dictionary<Vector2Int, Card> allCards)
+        // 修改卡牌的可攻击位置
+        public void ModifyAttackablePositions(Card card, int boardWidth, int boardHeight, Dictionary<Vector2Int, Card> allCards, ref List<Vector2Int> positions)
         {
             int cardId = card.Data.Id;
+            string cardName = card.Data.Name;
+            
+            Debug.Log($"[CardBehavior] 修改卡牌 {cardId}({cardName}) 的可攻击位置，原始位置数量: {positions.Count}");
             
             if (_attackBehaviors.TryGetValue(cardId, out IAttackBehavior behavior))
             {
-                return behavior.GetAttackablePositions(card, boardWidth, boardHeight, allCards);
+                List<Vector2Int> originalPositions = new List<Vector2Int>(positions);
+                positions = behavior.GetAttackablePositions(card, boardWidth, boardHeight, allCards);
+                
+                Debug.Log($"[CardBehavior] 使用卡牌 {cardId}({cardName}) 的自定义攻击行为 {behavior.GetType().Name}，修改后位置数量: {positions.Count}");
+                
+                // 输出位置变化详情
+                string positionsStr = string.Join(", ", positions.Select(p => $"({p.x},{p.y})"));
+                Debug.Log($"[CardBehavior] 卡牌 {cardId}({cardName}) 的可攻击位置: {positionsStr}");
             }
-            
-            // 如果没有特定行为，使用卡牌自己的方法
-            return card.GetAttackablePositions(boardWidth, boardHeight, allCards);
+            else
+            {
+                Debug.Log($"[CardBehavior] 卡牌 {cardId}({cardName}) 没有自定义攻击行为，使用默认行为");
+            }
         }
         
         // 清除卡牌行为

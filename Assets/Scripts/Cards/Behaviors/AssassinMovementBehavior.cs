@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace ChessGame.Cards
 {
     // 特殊移动：移动距离=2
-    public class SpecialMovementBehavior : IMovementBehavior
+    public class AssassinMovementBehavior : IMovementBehavior
     {
         public List<Vector2Int> GetMovablePositions(Card card, int boardWidth, int boardHeight, Dictionary<Vector2Int, Card> allCards)
         {

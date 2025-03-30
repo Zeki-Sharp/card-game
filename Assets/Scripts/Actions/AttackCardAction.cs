@@ -47,7 +47,7 @@ namespace ChessGame
         }
         
         public override bool Execute()
-        {
+        {    
             if (!CanExecute())
                 return false;
                 

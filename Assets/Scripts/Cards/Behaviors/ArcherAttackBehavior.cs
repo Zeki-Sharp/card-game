@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace ChessGame.Cards
 {
     // 特殊攻击：能够攻击距离为2的格子，但不能攻击距离为1的格子
-    public class SpecialAttackBehavior : IAttackBehavior
+    public class ArcherAttackBehavior : IAttackBehavior
     {
         public List<Vector2Int> GetAttackablePositions(Card card, int boardWidth, int boardHeight, Dictionary<Vector2Int, Card> allCards)
         {

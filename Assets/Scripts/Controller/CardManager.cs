@@ -513,21 +513,21 @@ namespace ChessGame
                 MovementType movementType = cardDataProvider.GetCardMovementType(cardId);
                 AttackType attackType = cardDataProvider.GetCardAttackType(cardId);
                 
+                Debug.Log($"[CardManager] 为卡牌 {cardId}({card.Data.Name}) 获取行为类型: 移动={movementType}, 攻击={attackType}");
+                
                 // 使用行为管理器设置卡牌行为
                 CardBehaviorManager.Instance.SetCardBehaviors(card, movementType, attackType);
+            }
+            else
+            {
+                Debug.LogWarning($"[CardManager] cardDataProvider 为空，无法设置卡牌 {card.Data.Id}({card.Data.Name}) 的行为");
             }
         }
 
         // 修改现有的创建卡牌方法，添加行为设置
-        public Card CreateCard(int cardId, Vector2Int position, int ownerId = 0, bool isFaceDown = true)
+        public Card CreateCard(CardData cardData, Vector2Int position, int ownerId = 0, bool isFaceDown = true)
         {
-            // 获取卡牌数据
-            CardData cardData = cardDataProvider.GetCardDataById(cardId);
-            if (cardData == null)
-            {
-                Debug.LogError($"找不到ID为 {cardId} 的卡牌数据");
-                return null;
-            }
+            Debug.Log($"[CardManager] 创建卡牌 {cardData.Id}({cardData.Name}) 在位置 ({position.x},{position.y})");
             
             // 创建卡牌
             Card card = new Card(cardData, position, ownerId, isFaceDown);
