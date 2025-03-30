@@ -146,6 +146,12 @@ namespace ChessGame
             }
         }
 
+        //获取状态机
+        public CardStateMachine GetCardStateMachine()
+        {
+            return _stateMachine;
+        }
+
         
         // 重置所有卡牌的行动状态
         public void ResetAllCardActions()

@@ -23,6 +23,12 @@ namespace ChessGame
                 Debug.LogError("找不到TurnManager组件");
                 return;
             }
+
+            // 订阅游戏结束事件
+            if (GameEventSystem.Instance != null)
+            {
+                GameEventSystem.Instance.OnGameOver += CloseSelf;
+            }
             
             // 添加点击事件
             _button.onClick.AddListener(OnButtonClick);
@@ -33,6 +39,12 @@ namespace ChessGame
             if (_button != null)
             {
                 _button.onClick.RemoveListener(OnButtonClick);
+            }
+
+            // 取消订阅游戏结束事件
+            if (GameEventSystem.Instance != null)
+            {
+                GameEventSystem.Instance.OnGameOver -= CloseSelf;
             }
         }
         
@@ -52,6 +64,12 @@ namespace ChessGame
                 Debug.Log("点击结束回合按钮");
                 _turnManager.EndPlayerTurn();
             }
+        }
+
+        //关闭自身
+        private void CloseSelf()
+        {
+            gameObject.SetActive(false);
         }
     }
 } 

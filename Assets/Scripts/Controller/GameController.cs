@@ -10,8 +10,7 @@ namespace ChessGame
         [SerializeField] private TurnManager turnManager;
         [SerializeField] private AIController aiController;
         [SerializeField] private GameStateManager gameStateManager;
-        [SerializeField] private int initialCardCount = 3;
-        [SerializeField] private CardInitializer cardInitializer;
+        [SerializeField] private GameEndChecker gameEndChecker;
         
         // 游戏状态
         private bool _isGameInitialized = false;
@@ -85,6 +84,13 @@ namespace ChessGame
             {
                 gameStateManager = FindObjectOfType<GameStateManager>();
                 Debug.Log($"找到GameStateManager: {(gameStateManager != null ? "成功" : "失败")}");
+            }
+            
+            // 初始化GameEndChecker
+            if (gameEndChecker == null)
+            {
+                gameEndChecker = FindObjectOfType<GameEndChecker>();
+                Debug.Log($"找到GameEndChecker: {(gameEndChecker != null ? "成功" : "失败")}");
             }
             
             // 检查状态机是否初始化
@@ -227,6 +233,42 @@ namespace ChessGame
                 // 暂停游戏
                 Time.timeScale = 0;
                 Debug.Log("游戏暂停");
+            }
+        }
+        
+        // 重置游戏
+        public void RestartGame()
+        {
+            Debug.Log("重新开始游戏");
+            
+            // 重置游戏状态
+            _isGameOver = false;
+            
+            // 清空棋盘
+            if (cardManager != null)
+            {
+                cardManager.ClearAllCards();
+            }
+            
+            // 重新加载关卡
+            LevelDataLoader levelLoader = FindObjectOfType<LevelDataLoader>();
+            if (levelLoader != null)
+            {
+                levelLoader.LoadLevelByIndex(1); // 加载第一关
+            }
+            
+            // 重置回合管理器
+            if (turnManager != null)
+            {
+                turnManager.ResetTurns();
+                turnManager.ResetTurnCount();
+                turnManager.enabled = true; // 确保回合管理器被启用
+            }
+            
+            // 重置游戏结束检查器
+            if (gameEndChecker != null)
+            {
+                gameEndChecker.ResetGame();
             }
         }
     }

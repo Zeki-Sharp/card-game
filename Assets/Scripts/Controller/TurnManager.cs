@@ -28,6 +28,10 @@ namespace ChessGame
         // 添加一个标志，表示是否正在切换回合
         private bool _isSwitchingTurn = false;
         
+        // 添加回合计数属性
+        private int _turnCount = 0;
+        public int TurnCount => _turnCount;
+        
         private void Awake()
         {
             _cardManager = FindObjectOfType<CardManager>();
@@ -65,6 +69,10 @@ namespace ChessGame
         {
             Debug.Log("开始玩家回合");
             _currentTurn = TurnState.PlayerTurn;
+            
+            // 增加回合计数
+            _turnCount++;
+            Debug.Log($"当前回合: {_turnCount}");
             
             // 重置所有卡牌的行动状态
             _cardManager.ResetAllCardActions();
@@ -176,6 +184,18 @@ namespace ChessGame
         public bool IsPlayerTurn()
         {
             return _currentTurn == TurnState.PlayerTurn;
+        }
+        
+        // 添加重置回合计数的方法
+        public void ResetTurnCount()
+        {
+            _turnCount = 0;
+        }
+
+        public void ResetTurns()
+        {
+            _currentTurn = TurnState.PlayerTurn;
+            _turnCount = 0;
         }
     }
 } 

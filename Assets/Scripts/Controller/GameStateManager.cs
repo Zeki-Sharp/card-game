@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
-using System;
 using System.Collections;
+using System.Linq;
 
 namespace ChessGame
 {
@@ -195,6 +195,20 @@ namespace ChessGame
         {
             return new List<CardStateInfo>(playerFaceDownCards);
         }
+
+        //获取玩家存活的卡牌列表
+        public List<CardStateInfo> GetPlayerAliveCards()
+        {
+            return playerFaceUpCards.Where(c => c.health > 0).ToList();
+        }
+
+        // 获取玩家卡牌总数
+        public int GetPlayerCardCount()
+        {
+            return playerFaceUpCards.Count + playerFaceDownCards.Count;
+        }
+
+        
         
         // 获取敌方正面卡牌列表
         public List<CardStateInfo> GetEnemyFaceUpCards()
@@ -206,6 +220,18 @@ namespace ChessGame
         public List<CardStateInfo> GetEnemyFaceDownCards()
         {
             return new List<CardStateInfo>(enemyFaceDownCards);
+        }
+
+        //获取敌方存活的卡牌列表
+        public List<CardStateInfo> GetEnemyAliveCards()
+        {
+            return enemyFaceUpCards.Where(c => c.health > 0).ToList();
+        }
+
+        // 获取敌方卡牌总数
+        public int GetEnemyCardCount()
+        {
+            return enemyFaceUpCards.Count + enemyFaceDownCards.Count;
         }
         
         // 检查玩家是否有正面卡牌

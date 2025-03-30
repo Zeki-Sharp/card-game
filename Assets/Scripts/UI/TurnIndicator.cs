@@ -29,6 +29,12 @@ namespace ChessGame
             {
                 Debug.LogError("找不到TurnManager组件");
             }
+
+            // 订阅游戏结束事件
+            if (GameEventSystem.Instance != null)
+            {
+                GameEventSystem.Instance.OnGameOver += CloseSelf;
+            }
         }
         
         private void OnDestroy()
@@ -37,6 +43,12 @@ namespace ChessGame
             if (_turnManager != null)
             {
                 _turnManager.OnTurnChanged -= OnTurnChanged;
+            }
+
+            // 取消订阅游戏结束事件
+            if (GameEventSystem.Instance != null)
+            {
+                GameEventSystem.Instance.OnGameOver -= CloseSelf;
             }
         }
         
@@ -52,6 +64,12 @@ namespace ChessGame
             {
                 backgroundImage.color = turnState == TurnState.PlayerTurn ? playerTurnColor : enemyTurnColor;
             }
+        }
+
+        //关闭自身
+        private void CloseSelf()
+        {
+            gameObject.SetActive(false);
         }
     }
 } 

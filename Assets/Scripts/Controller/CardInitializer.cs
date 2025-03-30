@@ -29,37 +29,5 @@ namespace ChessGame
                 cardDataProvider = FindObjectOfType<CardDataProvider>();
         }
         
-        // 在指定位置生成卡牌
-        /*public void SpawnCardAt(Vector2Int position, int cardId, int ownerId = 0, bool isFaceDown = true)
-        {
-            if (cardManager == null || cardDataProvider == null)
-            {
-                Debug.LogError("CardManager或CardDataProvider未设置");
-                return;
-            }
-            
-            // 检查位置是否已被占用
-            if (cardManager.GetCard(position) != null)
-            {
-                Debug.LogWarning($"位置 {position} 已被占用，无法生成卡牌");
-                return;
-            }
-            
-            // 获取卡牌数据
-            CardData cardData = cardDataProvider.GetCardDataById(cardId);
-            if (cardData == null)
-            {
-                Debug.LogError($"找不到ID为 {cardId} 的卡牌数据");
-                return;
-            }
-            
-            // 创建卡牌
-            Card card = new Card(cardData, position, ownerId, isFaceDown);
-            
-            // 添加到卡牌管理器
-            cardManager.AddCard(card, position);
-            
-            Debug.Log($"在位置 {position} 生成卡牌: {cardData.Name}, 所有者: {ownerId}, 背面: {isFaceDown}");
-        }*/
     }
 } 
