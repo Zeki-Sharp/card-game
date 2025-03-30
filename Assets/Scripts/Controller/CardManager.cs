@@ -3,6 +3,7 @@ using UnityEngine;
 using ChessGame.FSM;
 using System;
 using System.Collections;
+using ChessGame.Cards;
 
 namespace ChessGame
 {
@@ -446,6 +447,9 @@ namespace ChessGame
             // 创建卡牌
             Card card = new Card(cardData, position, ownerId, isFaceDown);
             
+            // 设置卡牌行为
+            SetCardBehavior(card);
+            
             // 添加到卡牌管理器
             AddCard(card, position);
             
@@ -498,6 +502,46 @@ namespace ChessGame
             _targetPosition = null;
             
             Debug.Log("已清空所有卡牌");
+        }
+
+        // 创建卡牌时设置行为
+        private void SetCardBehavior(Card card)
+        {
+            if (cardDataProvider != null)
+            {
+                int cardId = card.Data.Id;
+                MovementType movementType = cardDataProvider.GetCardMovementType(cardId);
+                AttackType attackType = cardDataProvider.GetCardAttackType(cardId);
+                
+                // 使用行为管理器设置卡牌行为
+                CardBehaviorManager.Instance.SetCardBehaviors(card, movementType, attackType);
+            }
+        }
+
+        // 修改现有的创建卡牌方法，添加行为设置
+        public Card CreateCard(int cardId, Vector2Int position, int ownerId = 0, bool isFaceDown = true)
+        {
+            // 获取卡牌数据
+            CardData cardData = cardDataProvider.GetCardDataById(cardId);
+            if (cardData == null)
+            {
+                Debug.LogError($"找不到ID为 {cardId} 的卡牌数据");
+                return null;
+            }
+            
+            // 创建卡牌
+            Card card = new Card(cardData, position, ownerId, isFaceDown);
+            
+            // 设置卡牌行为
+            SetCardBehavior(card);
+            
+            // 添加到卡牌管理器
+            _cards[position] = card;
+            
+            // 创建卡牌视图
+            CreateCardView(card, position);
+            
+            return card;
         }
 
     }

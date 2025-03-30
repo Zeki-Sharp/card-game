@@ -1,4 +1,5 @@
 using UnityEngine;
+using ChessGame.Cards;
 
 namespace ChessGame
 {
@@ -14,6 +15,10 @@ namespace ChessGame
         public int faction = 0; // 0为玩家阵营，1为敌方阵营
         public int moveRange = 1;
         public int attackRange = 1;
+        
+        [Header("行为类型")]
+        public MovementType movementType = MovementType.Default;
+        public AttackType attackType = AttackType.Default;
         
         // 转换为现有的 CardData 结构
         public CardData ToCardData()

@@ -555,7 +555,7 @@ MonoBehaviour:
   cardDataProvider: {fileID: 522177358}
   cardManager: {fileID: 908457767}
   levelCSVPathFormat: Levels/Level{0}
-  currentLevelIndex: 1
+  currentLevelIndex: 3
 --- !u!1 &392744847
 GameObject:
   m_ObjectHideFlags: 0
