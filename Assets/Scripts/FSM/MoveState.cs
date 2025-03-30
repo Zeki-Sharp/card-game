@@ -70,36 +70,15 @@ namespace ChessGame.FSM
         // 添加检查结束回合的方法
         private void CheckEndTurn()
         {
-            // 获取回合管理器
             TurnManager turnManager = StateMachine.CardManager.GetTurnManager();
             if (turnManager == null) return;
-            
-            // 检查是否所有玩家卡牌都已行动
-            bool allCardsActed = true;
-            Dictionary<Vector2Int, Card> allCards = StateMachine.CardManager.GetAllCards();
-            
-            Debug.Log("检查是否所有玩家卡牌都已行动:");
-            foreach (var cardPair in allCards)
+
+            if (turnManager.IsPlayerTurn())
             {
-                Card card = cardPair.Value;
-                if (card.OwnerId == 0 && !card.HasActed && !card.IsFaceDown)
-                {
-                    Debug.Log($"发现未行动的玩家卡牌: 位置 {card.Position}, 名称 {card.Data.Name}");
-                    allCardsActed = false;
-                    break;
-                }
-            }
-            
-            // 如果所有卡牌都已行动，结束回合
-            if (allCardsActed && turnManager.IsPlayerTurn())
-            {
-                Debug.Log("所有玩家卡牌都已行动，自动结束回合");
+                Debug.Log("任意玩家卡牌行动后立即结束回合");
                 turnManager.EndPlayerTurn();
             }
-            else
-            {
-                Debug.Log($"不结束回合: allCardsActed={allCardsActed}, IsPlayerTurn={turnManager.IsPlayerTurn()}");
-            }
         }
+
     }
 } 
