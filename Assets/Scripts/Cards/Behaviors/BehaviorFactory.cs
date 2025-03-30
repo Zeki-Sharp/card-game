@@ -24,6 +24,8 @@ namespace ChessGame.Cards
             {
                 case AttackType.Archer:
                     return new ArcherAttackBehavior();
+                case AttackType.Assassin:
+                    return new AssassinAttackBehavior();
                 case AttackType.Default:
                 default:
                     return new DefaultAttackBehavior();
