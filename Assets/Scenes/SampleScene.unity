@@ -355,9 +355,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cardDataProvider: {fileID: 1404373183}
   cardInitializer: {fileID: 908457769}
-  levelConfig: {fileID: 11400000, guid: bb73b08434b7d574b8001bf0009d572d, type: 2}
-  levelCSVPath: Levels/Level1
-  useCSV: 1
+  levelCSVPathFormat: Levels/Level{0}
+  currentLevelIndex: 2
 --- !u!4 &375010347
 Transform:
   m_ObjectHideFlags: 0

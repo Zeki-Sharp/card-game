@@ -30,14 +30,24 @@ namespace ChessGame
         public bool IsInitialized { get; private set; } = false;
         
         // 初始化
-        private void Start()
+        private void Awake()
         {
+            Debug.Log("Board.Awake: 开始初始化棋盘");
             InitializeBoard();
         }
         
         // 初始化棋盘
-        private void InitializeBoard()
+        public void InitializeBoard()
         {
+            // 如果已经初始化，直接返回
+            if (IsInitialized)
+            {
+                Debug.Log("Board 已经初始化，跳过重复初始化");
+                return;
+            }
+            
+            Debug.Log("开始初始化棋盘");
+            
             // 创建数据模型
             _cells = new Cell[width, height];
             _cellViews = new CellView[width, height];
@@ -80,6 +90,8 @@ namespace ChessGame
             
             // 初始化完成后触发事件
             OnBoardInitialized?.Invoke();
+            
+            Debug.Log("棋盘初始化完成");
         }
         
         // 转发单元格点击事件
@@ -111,6 +123,11 @@ namespace ChessGame
         // 获取指定位置的单元格视图
         public CellView GetCellView(int x, int y)
         {
+            if(_cellViews == null)
+            {
+                Debug.LogError("Board.GetCellView为空， 单元格视图数组未初始化");
+                return null;
+            }
             if (x >= 0 && x < width && y >= 0 && y < height)
             {
                 return _cellViews[x, y];

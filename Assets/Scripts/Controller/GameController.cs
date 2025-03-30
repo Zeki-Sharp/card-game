@@ -41,13 +41,11 @@ namespace ChessGame
             if (levelLoader != null)
             {
                 Debug.Log("使用LevelDataLoader加载关卡");
-                levelLoader.LoadLevel();
+                //levelLoader.LoadLevel();
             }
             else
             {
                 Debug.LogWarning("找不到LevelDataLoader，游戏将不会初始化卡牌");
-                // 完全禁用原来的初始化方法
-                // StartCoroutine(InitializeGameDelayed());
             }
         }
         

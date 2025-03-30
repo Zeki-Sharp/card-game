@@ -7,11 +7,11 @@ namespace ChessGame
     {
         [SerializeField] private CardDataProvider cardDataProvider;
         [SerializeField] private CardInitializer cardInitializer;
-        [SerializeField] private LevelCardConfiguration levelConfig;
-        [SerializeField] private string levelCSVPath;
-        [SerializeField] private bool useCSV = false;
+        [SerializeField] private string levelCSVPathFormat = "Levels/Level{0}"; // 关卡CSV路径格式，{0}将被替换为关卡索引
+        [SerializeField] private int currentLevelIndex = 1; // 当前关卡索引
         
         private static LevelDataLoader _instance;
+        private LevelCardConfiguration _currentLevelConfig;
 
         private void Awake()
         {
@@ -43,25 +43,84 @@ namespace ChessGame
                     return;
                 }
             }
+            
+            // 默认加载当前关卡
+            LoadLevelByIndex(currentLevelIndex);
         }
         
-        public void LoadLevel()
+        // 加载指定索引的关卡
+        public void LoadLevelByIndex(int levelIndex)
+        {
+            Debug.Log($"加载关卡索引: {levelIndex}");
+            currentLevelIndex = levelIndex;
+            
+            // 使用格式化的路径加载CSV
+            string formattedPath = string.Format(levelCSVPathFormat, levelIndex);
+            LoadLevelFromCSV(formattedPath);
+        }
+
+        // 加载下一个关卡
+        public void LoadNextLevel()
+        {
+            LoadLevelByIndex(currentLevelIndex + 1);
+        }
+
+        // 从CSV加载关卡配置
+        private void LoadLevelFromCSV(string csvPath)
+        {
+            Debug.Log($"从CSV加载关卡配置: {csvPath}");
+            
+            // 从CSV读取配置
+            _currentLevelConfig = LevelCardConfigurationCSVReader.ReadFromCSV(csvPath);
+            
+            if (_currentLevelConfig != null)
+            {
+                // 加载关卡
+                LoadLevel();
+            }
+            else
+            {
+                Debug.LogError($"从CSV加载配置失败: {csvPath}");
+            }
+        }
+        
+        // 加载当前关卡配置
+        private void LoadLevel()
         {
             Debug.Log("LevelDataLoader.LoadLevel 开始执行");
             
-            // 如果启用了CSV且未指定levelConfig，尝试从CSV加载
-            if (useCSV && levelConfig == null)
+            if (_currentLevelConfig == null)
             {
-                LoadLevelFromCSV();
+                Debug.LogError("未加载关卡配置");
                 return;
             }
             
-            if (levelConfig == null)
+            // 获取 Board 并确保它已初始化
+            Board board = FindObjectOfType<Board>();
+            if (board == null)
             {
-                Debug.LogError("未设置关卡配置");
+                Debug.LogError("找不到 Board 组件，无法加载关卡");
                 return;
             }
             
+            // 如果 Board 尚未初始化，等待初始化完成
+            if (!board.IsInitialized)
+            {
+                Debug.Log("Board 尚未初始化，等待初始化完成后再加载关卡");
+                board.OnBoardInitialized += () => {
+                    Debug.Log("Board 初始化完成，现在开始加载关卡");
+                    ContinueLoadLevel();
+                };
+                return;
+            }
+            
+            // Board 已初始化，直接继续加载
+            ContinueLoadLevel();
+        }
+        
+        // 分离出实际的加载逻辑，以便在 Board 初始化后调用
+        private void ContinueLoadLevel()
+        {
             // 清空当前棋盘
             CardManager cardManager = FindObjectOfType<CardManager>();
             if (cardManager != null)
@@ -86,13 +145,13 @@ namespace ChessGame
             LoadEnemyCards();
             
             Debug.Log("关卡加载完成，总共加载了：" + 
-                      levelConfig.PlayerCards.Count + " 种玩家卡牌和 " + 
-                      levelConfig.EnemyCards.Count + " 种敌方卡牌");
+                      _currentLevelConfig.PlayerCards.Count + " 种玩家卡牌和 " + 
+                      _currentLevelConfig.EnemyCards.Count + " 种敌方卡牌");
         }
         
         private void LoadPlayerCards()
         {
-            foreach (LevelCardEntry entry in levelConfig.PlayerCards)
+            foreach (LevelCardEntry entry in _currentLevelConfig.PlayerCards)
             {
                 SpawnCards(entry);
             }
@@ -100,7 +159,7 @@ namespace ChessGame
         
         private void LoadEnemyCards()
         {
-            foreach (LevelCardEntry entry in levelConfig.EnemyCards)
+            foreach (LevelCardEntry entry in _currentLevelConfig.EnemyCards)
             {
                 SpawnCards(entry);
             }
@@ -116,38 +175,21 @@ namespace ChessGame
                 return;
             }
             
+            // 使用CardData的Faction作为ownerId
+            int ownerId = cardData.Faction;
+            
             // 获取棋盘尺寸
-            CardManager cardManager = FindObjectOfType<CardManager>();
-            if (cardManager == null)
-            {
-                Debug.LogError("找不到CardManager组件");
-                return;
-            }
+            Board board = FindObjectOfType<Board>();
+            int boardWidth = board != null ? board.Width : 4;
+            int boardHeight = board != null ? board.Height : 6;
             
-            int boardWidth = cardManager.BoardWidth;
-            int boardHeight = cardManager.BoardHeight;
-            
-            // 生成指定数量的卡牌
-            int count = entry.count;
-            int ownerId = entry.ownerId;
-            
-            // 修正这里的逻辑：
-            // 如果isFaceDown为true，则所有卡牌都背面朝上
-            // 如果isFaceDown为false，则根据faceUpCount决定有多少张卡牌正面朝上
-            
-            // 如果指定了位置，则在指定位置生成卡牌
+            // 如果指定了位置，使用指定位置
             if (entry.positions != null && entry.positions.Length > 0)
             {
-                int positionIndex = 0;
+                int count = Mathf.Min(entry.count, entry.positions.Length);
                 for (int i = 0; i < count; i++)
                 {
-                    // 如果位置数组不够长，循环使用
-                    if (positionIndex >= entry.positions.Length)
-                    {
-                        positionIndex = 0;
-                    }
-                    
-                    Vector2Int position = entry.positions[positionIndex];
+                    Vector2Int position = entry.positions[i];
                     
                     // 决定这张卡是否正面朝上
                     bool cardIsFaceDown;
@@ -162,17 +204,15 @@ namespace ChessGame
                         cardIsFaceDown = (i >= entry.faceUpCount);
                     }
                     
-                    Debug.Log($"生成卡牌 ID:{entry.cardId}, 位置:{position}, 所有者:{ownerId}, 背面朝上:{cardIsFaceDown}, " +
-                              $"配置:{entry.isFaceDown}, faceUpCount:{entry.faceUpCount}, 索引:{i}");
+                    Debug.Log($"在指定位置生成卡牌 ID:{entry.cardId}, 位置:{position}, 所有者:{ownerId}, 背面朝上:{cardIsFaceDown}");
                     
-                    cardInitializer.SpawnCardAt(position, entry.cardId, entry.ownerId, cardIsFaceDown);
-                    positionIndex++;
+                    cardInitializer.SpawnCardAt(position, entry.cardId, ownerId, cardIsFaceDown);
                 }
             }
+            // 否则随机放置
             else
             {
-                // 随机生成卡牌
-                for (int i = 0; i < count; i++)
+                for (int i = 0; i < entry.count; i++)
                 {
                     Vector2Int position = GetRandomPosition(ownerId, boardWidth, boardHeight);
                     if (position.x >= 0) // 有效位置
@@ -190,10 +230,9 @@ namespace ChessGame
                             cardIsFaceDown = (i >= entry.faceUpCount);
                         }
                         
-                        Debug.Log($"随机生成卡牌 ID:{entry.cardId}, 位置:{position}, 所有者:{ownerId}, 背面朝上:{cardIsFaceDown}, " +
-                                  $"配置:{entry.isFaceDown}, faceUpCount:{entry.faceUpCount}, 索引:{i}");
+                        Debug.Log($"随机生成卡牌 ID:{entry.cardId}, 位置:{position}, 所有者:{ownerId}, 背面朝上:{cardIsFaceDown}");
                         
-                        cardInitializer.SpawnCardAt(position, entry.cardId, entry.ownerId, cardIsFaceDown);
+                        cardInitializer.SpawnCardAt(position, entry.cardId, ownerId, cardIsFaceDown);
                     }
                 }
             }
@@ -238,39 +277,6 @@ namespace ChessGame
             
             Debug.LogWarning("无法找到空闲位置");
             return new Vector2Int(-1, -1);
-        }
-
-        public void LoadLevelFromCSV()
-        {
-            Debug.Log("从CSV加载关卡配置");
-            
-            if (string.IsNullOrEmpty(levelCSVPath))
-            {
-                Debug.LogError("CSV文件路径未设置");
-                return;
-            }
-            
-            // 从CSV读取配置
-            LevelCardConfiguration csvConfig = LevelCardConfigurationCSVReader.ReadFromCSV(levelCSVPath);
-            
-            if (csvConfig != null)
-            {
-                // 临时保存原始配置
-                LevelCardConfiguration originalConfig = levelConfig;
-                
-                // 使用CSV配置
-                levelConfig = csvConfig;
-                
-                // 加载关卡
-                LoadLevel();
-                
-                // 恢复原始配置
-                levelConfig = originalConfig;
-            }
-            else
-            {
-                Debug.LogError("从CSV加载配置失败");
-            }
         }
     }
 } 

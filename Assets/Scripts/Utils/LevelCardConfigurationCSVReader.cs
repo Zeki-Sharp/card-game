@@ -19,13 +19,29 @@ namespace ChessGame
             // 读取所有卡牌条目
             List<LevelCardEntry> allEntries = ReadCardEntriesFromCSV(levelCSVPath);
             
-            // 分离玩家和敌方卡牌
+            // 分离玩家和敌方卡牌（使用CardDataProvider查询Faction）
             List<LevelCardEntry> playerCards = new List<LevelCardEntry>();
             List<LevelCardEntry> enemyCards = new List<LevelCardEntry>();
             
+            CardDataProvider cardDataProvider = Object.FindObjectOfType<CardDataProvider>();
+            if (cardDataProvider == null)
+            {
+                Debug.LogError("找不到CardDataProvider，无法分离玩家和敌方卡牌");
+                return null;
+            }
+            
             foreach (var entry in allEntries)
             {
-                if (entry.ownerId == 0)
+                // 获取卡牌数据
+                CardData cardData = cardDataProvider.GetCardDataById(entry.cardId);
+                if (cardData == null)
+                {
+                    Debug.LogWarning($"找不到ID为 {entry.cardId} 的卡牌数据，跳过此条目");
+                    continue;
+                }
+                
+                // 根据Faction分类
+                if (cardData.Faction == 0)
                     playerCards.Add(entry);
                 else
                     enemyCards.Add(entry);
@@ -81,7 +97,6 @@ namespace ChessGame
                 if (values.Length == 0 || values[0].Trim() == "") continue;
                 
                 LevelCardEntry entry = new LevelCardEntry();
-                entry.ownerId = 0; // 默认为玩家
                 
                 for (int j = 0; j < headers.Length && j < values.Length; j++)
                 {
@@ -97,11 +112,6 @@ namespace ChessGame
                         case "count":
                             if (int.TryParse(value, out int count))
                                 entry.count = count;
-                            break;
-                            
-                        case "ownerid":
-                            if (int.TryParse(value, out int ownerId))
-                                entry.ownerId = ownerId;
                             break;
                             
                         case "isfacedown":
