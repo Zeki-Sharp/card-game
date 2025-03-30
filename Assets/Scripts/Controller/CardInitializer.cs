@@ -21,18 +21,7 @@ namespace ChessGame
         
         private void Awake()
         {
-            // 如果已经存在实例，销毁当前对象
-            if (_instance != null && _instance != this)
-            {
-                Debug.LogWarning($"场景中存在多个CardInitializer实例，销毁重复的: {gameObject.name}");
-                Destroy(gameObject);
-                return;
-            }
-            
-            // 设置单例实例
-            _instance = this;
-            
-            // 初始化引用
+            // 查找必要组件
             if (cardManager == null)
                 cardManager = FindObjectOfType<CardManager>();
                 
@@ -41,7 +30,7 @@ namespace ChessGame
         }
         
         // 在指定位置生成卡牌
-        public void SpawnCardAt(Vector2Int position, int cardId, int ownerId = 0, bool isFaceDown = true)
+        /*public void SpawnCardAt(Vector2Int position, int cardId, int ownerId = 0, bool isFaceDown = true)
         {
             if (cardManager == null || cardDataProvider == null)
             {
@@ -71,6 +60,6 @@ namespace ChessGame
             cardManager.AddCard(card, position);
             
             Debug.Log($"在位置 {position} 生成卡牌: {cardData.Name}, 所有者: {ownerId}, 背面: {isFaceDown}");
-        }
+        }*/
     }
 } 

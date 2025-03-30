@@ -6,7 +6,7 @@ namespace ChessGame
     public class LevelDataLoader : MonoBehaviour
     {
         [SerializeField] private CardDataProvider cardDataProvider;
-        [SerializeField] private CardInitializer cardInitializer;
+        [SerializeField] private CardManager cardManager;
         [SerializeField] private string levelCSVPathFormat = "Levels/Level{0}"; // 关卡CSV路径格式，{0}将被替换为关卡索引
         [SerializeField] private int currentLevelIndex = 1; // 当前关卡索引
         
@@ -34,12 +34,12 @@ namespace ChessGame
                 }
             }
             
-            if (cardInitializer == null)
+            if (cardManager == null)
             {
-                cardInitializer = FindObjectOfType<CardInitializer>();
-                if (cardInitializer == null)
+                cardManager = FindObjectOfType<CardManager>();
+                if (cardManager == null)
                 {
-                    Debug.LogError("找不到CardInitializer组件");
+                    Debug.LogError("找不到CardManager组件");
                     return;
                 }
             }
@@ -129,12 +129,6 @@ namespace ChessGame
                 cardManager.ClearAllCards();
             }
             
-            // 禁用CardInitializer的自动初始化
-            if (cardInitializer != null)
-            {
-                Debug.Log("禁用CardInitializer的自动初始化");
-                cardInitializer.enabled = false;
-            }
             
             // 加载玩家卡牌
             Debug.Log("开始加载玩家卡牌");
@@ -206,7 +200,7 @@ namespace ChessGame
                     
                     Debug.Log($"在指定位置生成卡牌 ID:{entry.cardId}, 位置:{position}, 所有者:{ownerId}, 背面朝上:{cardIsFaceDown}");
                     
-                    cardInitializer.SpawnCardAt(position, entry.cardId, ownerId, cardIsFaceDown);
+                    cardManager.SpawnCardAt(position, entry.cardId, ownerId, cardIsFaceDown);
                 }
             }
             // 否则随机放置
@@ -232,7 +226,7 @@ namespace ChessGame
                         
                         Debug.Log($"随机生成卡牌 ID:{entry.cardId}, 位置:{position}, 所有者:{ownerId}, 背面朝上:{cardIsFaceDown}");
                         
-                        cardInitializer.SpawnCardAt(position, entry.cardId, ownerId, cardIsFaceDown);
+                        cardManager.SpawnCardAt(position, entry.cardId, ownerId, cardIsFaceDown);
                     }
                 }
             }

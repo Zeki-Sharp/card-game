@@ -333,7 +333,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 375010347}
-  - component: {fileID: 375010346}
+  - component: {fileID: 375010348}
   m_Layer: 0
   m_Name: LevelDataLoader
   m_TagString: Untagged
@@ -341,7 +341,22 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &375010346
+--- !u!4 &375010347
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 375010345}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -1.0088749, y: -2.101361, z: -0.2593894}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1023976013}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &375010348
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -353,25 +368,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 752c6b66b89a92c4bbc257ec576d4117, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cardDataProvider: {fileID: 1404373183}
-  cardInitializer: {fileID: 908457769}
+  cardDataProvider: {fileID: 522177358}
+  cardManager: {fileID: 908457767}
   levelCSVPathFormat: Levels/Level{0}
-  currentLevelIndex: 2
---- !u!4 &375010347
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 375010345}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.497994, y: -2.2499533, z: -0.25004676}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  currentLevelIndex: 1
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -464,6 +464,51 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: -45, y: 0, z: 0}
+--- !u!1 &522177357
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 522177359}
+  - component: {fileID: 522177358}
+  m_Layer: 0
+  m_Name: CardDataProvider
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &522177358
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 522177357}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8679a99636fc174f832b236415f3153, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  csvFilePath: CardData
+--- !u!4 &522177359
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 522177357}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.026637614, y: 0.44224182, z: -0.01384264}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1023976013}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &583560098
 GameObject:
   m_ObjectHideFlags: 0
@@ -726,7 +771,6 @@ GameObject:
   m_Component:
   - component: {fileID: 908457768}
   - component: {fileID: 908457767}
-  - component: {fileID: 908457769}
   m_Layer: 0
   m_Name: CardManager
   m_TagString: Untagged
@@ -749,7 +793,7 @@ MonoBehaviour:
   cardPrefab: {fileID: 4574850051752094561, guid: a754ac1801a2f504fb802f34cfd7e6e3, type: 3}
   board: {fileID: 619939636}
   cardImages: []
-  cardDataProvider: {fileID: 1404373183}
+  cardDataProvider: {fileID: 522177358}
   turnManager: {fileID: 861603162}
 --- !u!4 &908457768
 Transform:
@@ -766,20 +810,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1023976013}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &908457769
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 908457766}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 72ec61ab8252b264a8560bfad60bbd31, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cardManager: {fileID: 908457767}
-  cardDataProvider: {fileID: 1404373183}
 --- !u!1 &1023976012
 GameObject:
   m_ObjectHideFlags: 0
@@ -814,6 +844,8 @@ Transform:
   - {fileID: 583560099}
   - {fileID: 861603163}
   - {fileID: 770383907}
+  - {fileID: 375010347}
+  - {fileID: 522177359}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1057230896
@@ -1156,7 +1188,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1404373182}
   - component: {fileID: 1404373181}
-  - component: {fileID: 1404373183}
   m_Layer: 0
   m_Name: GameController
   m_TagString: Untagged
@@ -1182,7 +1213,7 @@ MonoBehaviour:
   aiController: {fileID: 770383906}
   gameStateManager: {fileID: 583560100}
   initialCardCount: 24
-  cardInitializer: {fileID: 908457769}
+  cardInitializer: {fileID: 0}
 --- !u!4 &1404373182
 Transform:
   m_ObjectHideFlags: 0
@@ -1198,21 +1229,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1023976013}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1404373183
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1404373180}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a8679a99636fc174f832b236415f3153, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cardDataCollection: {fileID: 11400000, guid: 6956a269858cb5f4f84dfa7c07578dbf, type: 2}
-  csvFilePath: CardData
-  useCSV: 1
 --- !u!1 &2077239992
 GameObject:
   m_ObjectHideFlags: 0
@@ -1357,4 +1373,3 @@ SceneRoots:
   - {fileID: 260428337}
   - {fileID: 1023976013}
   - {fileID: 669802241}
-  - {fileID: 375010347}

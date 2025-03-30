@@ -373,8 +373,6 @@ namespace ChessGame
             return addAction.Execute();
         }
 
-
-
         // 获取所有卡牌视图的字典
         public Dictionary<Vector2Int, CardView> GetAllCardViews()
         {
@@ -415,19 +413,39 @@ namespace ChessGame
             }
         }
 
-        // 添加到CardManager类中
-        public Vector3 GetWorldPosition(Vector2Int gridPosition)
+        // 在指定位置生成卡牌
+        public void SpawnCardAt(Vector2Int position, int cardId, int ownerId = 0, bool isFaceDown = true)
         {
-            // 计算棋盘中心偏移
-            float offsetX = -((BoardWidth - 1) * 1f) / 2f;
-            float offsetY = -((BoardHeight - 1) * 1f) / 2f;
+            if (this == null || cardDataProvider == null)
+            {
+                Debug.LogError("CardManager或CardDataProvider未设置");
+                return;
+            }
             
-            return new Vector3(
-                gridPosition.x * 1f + offsetX,
-                gridPosition.y * 1f + offsetY,
-                0f
-            );
+            // 检查位置是否已被占用
+            if (GetCard(position) != null)
+            {
+                Debug.LogWarning($"位置 {position} 已被占用，无法生成卡牌");
+                return;
+            }
+            
+            // 获取卡牌数据
+            CardData cardData = cardDataProvider.GetCardDataById(cardId);
+            if (cardData == null)
+            {
+                Debug.LogError($"找不到ID为 {cardId} 的卡牌数据");
+                return;
+            }
+            
+            // 创建卡牌
+            Card card = new Card(cardData, position, ownerId, isFaceDown);
+            
+            // 添加到卡牌管理器
+            AddCard(card, position);
+            
+            Debug.Log($"在位置 {position} 生成卡牌: {cardData.Name}, 所有者: {ownerId}, 背面: {isFaceDown}");
         }
+        
 
         // 翻开指定位置的卡牌
         public void FlipCard(Vector2Int position)
