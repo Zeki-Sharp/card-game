@@ -8,6 +8,8 @@ namespace ChessGame
         [SerializeField] private CardDataProvider cardDataProvider;
         [SerializeField] private CardInitializer cardInitializer;
         [SerializeField] private LevelCardConfiguration levelConfig;
+        [SerializeField] private string levelCSVPath;
+        [SerializeField] private bool useCSV = false;
         
         private static LevelDataLoader _instance;
 
@@ -46,6 +48,13 @@ namespace ChessGame
         public void LoadLevel()
         {
             Debug.Log("LevelDataLoader.LoadLevel 开始执行");
+            
+            // 如果启用了CSV且未指定levelConfig，尝试从CSV加载
+            if (useCSV && levelConfig == null)
+            {
+                LoadLevelFromCSV();
+                return;
+            }
             
             if (levelConfig == null)
             {
@@ -229,6 +238,39 @@ namespace ChessGame
             
             Debug.LogWarning("无法找到空闲位置");
             return new Vector2Int(-1, -1);
+        }
+
+        public void LoadLevelFromCSV()
+        {
+            Debug.Log("从CSV加载关卡配置");
+            
+            if (string.IsNullOrEmpty(levelCSVPath))
+            {
+                Debug.LogError("CSV文件路径未设置");
+                return;
+            }
+            
+            // 从CSV读取配置
+            LevelCardConfiguration csvConfig = LevelCardConfigurationCSVReader.ReadFromCSV(levelCSVPath);
+            
+            if (csvConfig != null)
+            {
+                // 临时保存原始配置
+                LevelCardConfiguration originalConfig = levelConfig;
+                
+                // 使用CSV配置
+                levelConfig = csvConfig;
+                
+                // 加载关卡
+                LoadLevel();
+                
+                // 恢复原始配置
+                levelConfig = originalConfig;
+            }
+            else
+            {
+                Debug.LogError("从CSV加载配置失败");
+            }
         }
     }
 } 
