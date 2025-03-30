@@ -103,7 +103,7 @@ namespace ChessGame
                 
                 // 执行攻击和反击
                 attackerCard.Attack(targetCard);
-                attackerCard.AntiAttack(targetCard);
+                attackerCard.ShouldReceiveCounterAttack(targetCard, CardManager.GetAllCards());
                 
                 // 记录攻击后的生命值，用于调试
                 int attackerHealthAfter = attackerCard.Data.Health;
@@ -115,19 +115,19 @@ namespace ChessGame
                 // 标记攻击者已行动
                 attackerCard.HasActed = true;
                 
-                // 立即更新双方卡牌视图
-                CardView attackerView = CardManager.GetCardView(_attackerPosition);
+                // 更新被攻击者的视图，以及触发受伤事件
                 CardView targetView = CardManager.GetCardView(_targetPosition);
-                
-                if (attackerView != null) attackerView.UpdateVisuals();
                 if (targetView != null) targetView.UpdateVisuals();
-                
-                // 触发攻击事件
                 GameEventSystem.Instance.NotifyCardAttacked(_attackerPosition, _targetPosition);
-                
-                // 触发受伤事件
                 GameEventSystem.Instance.NotifyCardDamaged(_targetPosition);
-                GameEventSystem.Instance.NotifyCardDamaged(_attackerPosition); // 别忘了攻击者也可能受伤
+
+                // 更新攻击者的视图，以及触发受伤事件
+                if (attackerCard.ShouldReceiveCounterAttack(targetCard, CardManager.GetAllCards()))
+                {
+                    CardView attackerView = CardManager.GetCardView(_attackerPosition);
+                    if (attackerView != null) attackerView.UpdateVisuals();
+                    GameEventSystem.Instance.NotifyCardDamaged(_attackerPosition); // 别忘了攻击者也可能受伤
+                }
                 
                 // 检查目标卡牌是否死亡
                 if (targetCard.Data.Health <= 0)

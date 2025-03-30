@@ -54,23 +54,18 @@ namespace ChessGame
             return true;
         }
 
-        // 反击方法
-        public bool AntiAttack(Card target)
+        // 添加一个新方法，判断是否应该受到反伤
+        public bool ShouldReceiveCounterAttack(Card attacker, Dictionary<Vector2Int, Card> allCards)
         {
-            if (target == null) return false;
+            // 获取被攻击者的可攻击位置
+            List<Vector2Int> attackablePositions = this.GetAttackablePositions(100, 100, allCards);
             
-            // 计算反伤
-            int damage = target.Data.Attack;
+            // 检查攻击者的位置是否在被攻击者的可攻击范围内
+            bool canCounter = attackablePositions.Contains(attacker.Position);
             
-            // 记录反击前的生命值
-            int myHealthBefore = this.Data.Health;
+            Debug.Log($"判断反伤: {this.Data.Name} {(canCounter ? "可以" : "不能")}反击 {attacker.Data.Name}");
             
-            // 应用反伤
-            this.Data.Health -= damage;
-            
-            Debug.Log($"卡牌 {this.Data.Name} 受到反伤 {damage} 点，生命值: {myHealthBefore} -> {this.Data.Health}");
-            
-            return true;
+            return canCounter;
         }
 
         // 检查卡牌是否存活

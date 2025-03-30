@@ -20,5 +20,5 @@ MonoBehaviour:
   faction: 1
   moveRange: 1
   attackRange: 1
-  movementType: 4
+  movementType: 1
   attackType: 0
