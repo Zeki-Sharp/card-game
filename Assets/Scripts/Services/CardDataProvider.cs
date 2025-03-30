@@ -5,7 +5,7 @@ namespace ChessGame
 {
     public class CardDataProvider : MonoBehaviour
     {
-        [SerializeField] private string csvFilePath = "CardData"; // CSV文件路径（相对于Resources文件夹）
+        [SerializeField] private string resourcesPath = "CardData"; // ScriptableObject资源路径
         
         private List<CardData> _availableCards = new List<CardData>();
         private bool _isInitialized = false;
@@ -19,9 +19,16 @@ namespace ChessGame
         public void LoadCardData()
         {
             _availableCards.Clear();
-                // 从CSV文件加载数据
-                _availableCards = CSVReader.ReadCardDataFromCSV(csvFilePath);
-                Debug.Log($"从CSV文件加载了 {_availableCards.Count} 张卡牌");
+            
+            // 从ScriptableObject加载数据
+            CardDataSO[] cardDataSOs = Resources.LoadAll<CardDataSO>(resourcesPath);
+            
+            foreach (CardDataSO cardDataSO in cardDataSOs)
+            {
+                _availableCards.Add(cardDataSO.ToCardData());
+            }
+            
+            Debug.Log($"从ScriptableObject加载了 {_availableCards.Count} 张卡牌");
             
             _isInitialized = true;
         }

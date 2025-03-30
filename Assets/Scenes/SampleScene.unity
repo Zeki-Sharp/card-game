@@ -555,7 +555,7 @@ MonoBehaviour:
   cardDataProvider: {fileID: 522177358}
   cardManager: {fileID: 908457767}
   levelCSVPathFormat: Levels/Level{0}
-  currentLevelIndex: 2
+  currentLevelIndex: 1
 --- !u!1 &392744847
 GameObject:
   m_ObjectHideFlags: 0
@@ -714,7 +714,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a8679a99636fc174f832b236415f3153, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  csvFilePath: CardData
+  resourcesPath: CardData
 --- !u!4 &522177359
 Transform:
   m_ObjectHideFlags: 0
