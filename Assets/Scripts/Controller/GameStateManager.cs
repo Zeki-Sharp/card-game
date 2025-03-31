@@ -207,8 +207,6 @@ namespace ChessGame
         {
             return playerFaceUpCards.Count + playerFaceDownCards.Count;
         }
-
-        
         
         // 获取敌方正面卡牌列表
         public List<CardStateInfo> GetEnemyFaceUpCards()

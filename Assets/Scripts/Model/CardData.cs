@@ -22,6 +22,11 @@ namespace ChessGame
         public int Faction => faction;
         public int MoveRange => moveRange;
         public int AttackRange => attackRange;
+        public int MaxHealth => health;
+        public int CurrentHealth => health;
+
+        public int MaxAttack => attack;
+        public int CurrentAttack => attack;
         
         // 默认构造函数，用于序列化
         public CardData() { }

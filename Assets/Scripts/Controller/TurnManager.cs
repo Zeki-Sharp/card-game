@@ -22,6 +22,9 @@ namespace ChessGame
         // 回合变化事件
         public event Action<TurnState> OnTurnChanged;
         
+        // 回合开始事件
+        public event System.Action<int> OnTurnStarted;
+        
         // 当前回合属性
         public TurnState CurrentTurn => _currentTurn;
         
@@ -67,18 +70,21 @@ namespace ChessGame
         // 开始玩家回合
         public void StartPlayerTurn()
         {
-            Debug.Log("开始玩家回合");
             _currentTurn = TurnState.PlayerTurn;
-            
-            // 增加回合计数
             _turnCount++;
-            Debug.Log($"当前回合: {_turnCount}");
+            Debug.Log($"玩家回合开始，当前回合数: {_turnCount}");
             
-            // 重置所有卡牌的行动状态
-            _cardManager.ResetAllCardActions();
+            // 重置所有玩家卡牌的行动状态
+            if (_cardManager != null)
+            {
+                _cardManager.ResetPlayerCardActions();
+            }
             
             // 触发回合变化事件
             OnTurnChanged?.Invoke(_currentTurn);
+            
+            // 触发回合开始事件，传递玩家ID (0)
+            OnTurnStarted?.Invoke(0);
         }
         
         // 结束玩家回合
@@ -108,33 +114,19 @@ namespace ChessGame
         // 开始敌方回合
         public void StartEnemyTurn()
         {
-            Debug.Log("TurnManager.StartEnemyTurn: 开始敌方回合");
             _currentTurn = TurnState.EnemyTurn;
+            Debug.Log("敌方回合开始");
             
             // 触发回合变化事件
             OnTurnChanged?.Invoke(_currentTurn);
             
-            // 让AI执行行动
+            // 触发回合开始事件，传递敌方ID (1)
+            OnTurnStarted?.Invoke(1);
+            
+            // 启动AI行动
             if (_aiController != null)
             {
-                Debug.Log("TurnManager.StartEnemyTurn: 调用AI执行行动");
-                
-                // 使用Invoke延迟调用，确保UI更新完成
-                Invoke("CallAIExecuteTurn", 0.1f);
-            }
-            else
-            {
-                Debug.LogWarning("TurnManager.StartEnemyTurn: AIController未找到，自动结束敌方回合");
-                EndEnemyTurn();
-            }
-        }
-        
-        // 添加一个新方法来调用AI执行回合
-        private void CallAIExecuteTurn()
-        {
-            if (_aiController != null)
-            {
-                _aiController.ExecuteAITurn();
+                StartCoroutine(_aiController.ExecuteAITurn());
             }
         }
         

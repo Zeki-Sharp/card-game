@@ -167,6 +167,33 @@ namespace ChessGame
                 cardView.UpdateVisuals();
             }
         }
+
+        // 重置玩家卡牌的行动状态
+        public void ResetPlayerCardActions()
+        {
+            foreach (var card in _cards.Values)
+            {
+                if (card.OwnerId == 0) // 玩家卡牌  
+                {
+                    card.ResetAction();
+                }
+            }
+        }
+
+        // 重置敌方卡牌的行动状态
+        public void ResetEnemyCardActions()
+        {
+            foreach (var card in _cards.Values)
+            {
+                if (card.OwnerId == 1) // 敌方卡牌
+                {
+                    card.ResetAction();
+                }
+            }
+        }
+        
+        
+        
         
         // 处理单元格点击
         public void HandleCellClick(Vector2Int position)
@@ -229,7 +256,11 @@ namespace ChessGame
         // 获取所有卡牌的字典
         public Dictionary<Vector2Int, Card> GetAllCards()
         {
-            // 返回实际引用，而不是副本
+            Debug.Log($"刺客攻击检查cardmanager：获取所有卡牌，数量：{_cards.Count}");
+            foreach (var pair in _cards)
+            {
+                Debug.Log($"刺客攻击检查cardmanager：位置 {pair.Key}：卡牌 {pair.Value.Data.Name}，背面状态：{pair.Value.IsFaceDown}");
+            }
             return _cards;
         }
 

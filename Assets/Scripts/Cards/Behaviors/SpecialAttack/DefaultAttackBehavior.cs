@@ -35,7 +35,7 @@ namespace ChessGame.Cards
                     {
                         Card targetCard = allCards[newPos];
                         // 只能攻击敌方卡牌
-                        if (targetCard.OwnerId != card.OwnerId)
+                        if (targetCard.OwnerId != card.OwnerId || targetCard.IsFaceDown)
                         {
                             positions.Add(newPos);
                         }

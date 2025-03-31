@@ -132,7 +132,10 @@ namespace ChessGame
             List<Vector2Int> attackablePositions = GetAttackablePositions(100, 100, allCards); // 使用足够大的棋盘尺寸
             
             // 检查目标位置是否在可攻击位置列表中
-            return attackablePositions.Contains(targetPosition);
+            bool canAttack = attackablePositions.Contains(targetPosition);
+            Debug.Log($"刺客攻击检查：卡牌 {Data.Name} {(canAttack ? "可以" : "不能")}攻击位置 {targetPosition}，目标卡牌：{targetCard.Data.Name}，背面状态：{targetCard.IsFaceDown}");
+            
+            return canAttack;
         }
         
         // 获取可移动的位置列表
@@ -228,6 +231,23 @@ namespace ChessGame
             Debug.Log($"[Card] 卡牌 {Data.Id}({Data.Name}) 行为修改后的可攻击位置，位置数量: {attackablePositions.Count}");
             
             return attackablePositions;
+        }
+
+        // 实现反击方法
+        public void AntiAttack(Card attacker)
+        {
+            if (attacker == null) return;
+            
+            // 计算反伤伤害
+            int damage = this.Data.Attack;
+            
+            // 记录反击前的生命值
+            int attackerHealthBefore = attacker.Data.Health;
+            
+            // 应用伤害
+            attacker.Data.Health -= damage;
+            
+            Debug.Log($"卡牌 {this.Data.Name}(攻击力:{this.Data.Attack}) 反击 {attacker.Data.Name}，造成 {damage} 点伤害，目标生命值: {attackerHealthBefore} -> {attacker.Data.Health}");
         }
     }
 } 

@@ -70,7 +70,6 @@ namespace ChessGame
                 // 触发翻面事件
                 GameEventSystem.Instance.NotifyCardFlipped(_targetPosition, false);
                 
-                
                 // 执行攻击
                 attackerCard.Attack(targetCard);
                 
@@ -101,9 +100,20 @@ namespace ChessGame
                 int attackerHealthBefore = attackerCard.Data.Health;
                 int targetHealthBefore = targetCard.Data.Health;
                 
-                // 执行攻击和反击
+                // 执行攻击
                 attackerCard.Attack(targetCard);
-                attackerCard.ShouldReceiveCounterAttack(targetCard, CardManager.GetAllCards());
+                
+                // 判断是否应该受到反伤
+                if (targetCard.ShouldReceiveCounterAttack(attackerCard, CardManager.GetAllCards()))
+                {
+                    // 执行反击
+                    targetCard.AntiAttack(attackerCard);
+                    Debug.Log($"卡牌 {targetCard.Data.Name} 对 {attackerCard.Data.Name} 进行反击");
+                }
+                else
+                {
+                    Debug.Log($"卡牌 {attackerCard.Data.Name} 不在 {targetCard.Data.Name} 的攻击范围内，不受反伤");
+                }
                 
                 // 记录攻击后的生命值，用于调试
                 int attackerHealthAfter = attackerCard.Data.Health;
@@ -122,12 +132,9 @@ namespace ChessGame
                 GameEventSystem.Instance.NotifyCardDamaged(_targetPosition);
 
                 // 更新攻击者的视图，以及触发受伤事件
-                if (attackerCard.ShouldReceiveCounterAttack(targetCard, CardManager.GetAllCards()))
-                {
-                    CardView attackerView = CardManager.GetCardView(_attackerPosition);
-                    if (attackerView != null) attackerView.UpdateVisuals();
-                    GameEventSystem.Instance.NotifyCardDamaged(_attackerPosition); // 别忘了攻击者也可能受伤
-                }
+                CardView attackerView = CardManager.GetCardView(_attackerPosition);
+                if (attackerView != null) attackerView.UpdateVisuals();
+                GameEventSystem.Instance.NotifyCardDamaged(_attackerPosition); // 别忘了攻击者也可能受伤
                 
                 // 检查目标卡牌是否死亡
                 if (targetCard.Data.Health <= 0)
@@ -148,7 +155,6 @@ namespace ChessGame
                     
                     // 移除攻击者卡牌
                     CardManager.RemoveCard(_attackerPosition);
-                    
                 }
                     
                 Debug.Log($"卡牌 {attackerCard.Data.Name} 攻击 {targetCard.Data.Name} 成功");
