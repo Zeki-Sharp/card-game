@@ -21,88 +21,18 @@ namespace ChessGame.Cards
         /// <returns>是否满足条件</returns>
         public bool CheckCondition(string condition, Card card, Vector2Int targetPosition, CardManager cardManager)
         {
-            // 如果没有条件，默认可以触发
-            if (string.IsNullOrEmpty(condition) || condition == "Always")
-                return true;
-                
+            // 添加调试信息
+            Debug.Log($"解析条件: {condition}, 卡牌: {card.Data.Name}, 目标位置: {targetPosition}");
+            
+            // 替换变量
+            string resolvedCondition = ReplaceVariables(condition, card, targetPosition, cardManager);
+            Debug.Log($"替换变量后的条件: {resolvedCondition}");
+            
             // 解析条件表达式
-            if (condition.StartsWith("Distance=="))
-            {
-                int requiredDistance = int.Parse(condition.Substring("Distance==".Length));
-                int actualDistance = Mathf.Abs(targetPosition.x - card.Position.x) + 
-                                    Mathf.Abs(targetPosition.y - card.Position.y);
-                return actualDistance == requiredDistance;
-            }
+            bool result = EvaluateExpression(resolvedCondition);
+            Debug.Log($"条件解析结果: {result}");
             
-            if (condition.StartsWith("Distance>="))
-            {
-                int requiredDistance = int.Parse(condition.Substring("Distance>=".Length));
-                int actualDistance = Mathf.Abs(targetPosition.x - card.Position.x) + 
-                                    Mathf.Abs(targetPosition.y - card.Position.y);
-                return actualDistance >= requiredDistance;
-            }
-            
-            if (condition.StartsWith("Distance<="))
-            {
-                int requiredDistance = int.Parse(condition.Substring("Distance<=".Length));
-                int actualDistance = Mathf.Abs(targetPosition.x - card.Position.x) + 
-                                    Mathf.Abs(targetPosition.y - card.Position.y);
-                return actualDistance <= requiredDistance;
-            }
-            
-            if (condition.StartsWith("Cooldown=="))
-            {
-                int cardId = card.Data.Id;
-                string abilityName = condition.Split(':')[1]; // 格式: "Cooldown==0:AbilityName"
-                int requiredCooldown = int.Parse(condition.Substring("Cooldown==".Length).Split(':')[0]);
-                int currentCooldown = GetAbilityCooldown(cardId, abilityName);
-                return currentCooldown == requiredCooldown;
-            }
-            
-            if (condition.StartsWith("Health<="))
-            {
-                int percentage = int.Parse(condition.Substring("Health<=".Length));
-                float healthPercentage = (float)card.Data.Health / card.Data.MaxHealth * 100f;
-                return healthPercentage <= percentage;
-            }
-            
-            if (condition.StartsWith("IsEnemy"))
-            {
-                Card targetCard = cardManager.GetCard(targetPosition);
-                return targetCard != null && targetCard.OwnerId != card.OwnerId;
-            }
-            
-            if (condition.StartsWith("IsFaceDown"))
-            {
-                Card targetCard = cardManager.GetCard(targetPosition);
-                return targetCard != null && targetCard.IsFaceDown;
-            }
-            
-            // 组合条件（使用AND和OR）
-            if (condition.Contains("&&"))
-            {
-                string[] subConditions = condition.Split(new string[] { "&&" }, System.StringSplitOptions.None);
-                foreach (var subCondition in subConditions)
-                {
-                    if (!CheckCondition(subCondition.Trim(), card, targetPosition, cardManager))
-                        return false;
-                }
-                return true;
-            }
-            
-            if (condition.Contains("||"))
-            {
-                string[] subConditions = condition.Split(new string[] { "||" }, System.StringSplitOptions.None);
-                foreach (var subCondition in subConditions)
-                {
-                    if (CheckCondition(subCondition.Trim(), card, targetPosition, cardManager))
-                        return true;
-                }
-                return false;
-            }
-            
-            Debug.LogWarning($"未知条件: {condition}");
-            return false;
+            return result;
         }
         
         /// <summary>
@@ -145,6 +75,159 @@ namespace ChessGame.Cards
                     }
                 }
             }
+        }
+
+        private string ReplaceVariables(string condition, Card card, Vector2Int targetPosition, CardManager cardManager)
+        {
+            // 替换MoveRange
+            condition = condition.Replace("MoveRange", card.MoveRange.ToString());
+            
+            // 替换AttackRange
+            condition = condition.Replace("AttackRange", card.AttackRange.ToString());
+            
+            // 替换Distance
+            int distance = Mathf.Abs(targetPosition.x - card.Position.x) + Mathf.Abs(targetPosition.y - card.Position.y);
+            condition = condition.Replace("Distance", distance.ToString());
+            
+            // 替换Empty
+            bool isEmpty = !cardManager.HasCardAt(targetPosition);
+            condition = condition.Replace("Empty", isEmpty.ToString().ToLower());
+            
+            // 替换Enemy
+            bool isEnemy = false;
+            Card targetCard = cardManager.GetCardAt(targetPosition);
+            if (targetCard != null)
+            {
+                isEnemy = targetCard.OwnerId != card.OwnerId;
+            }
+            condition = condition.Replace("Enemy", isEnemy.ToString().ToLower());
+            
+            // 替换FaceDown
+            bool isFaceDown = false;
+            if (targetCard != null)
+            {
+                isFaceDown = targetCard.IsFaceDown;
+            }
+            condition = condition.Replace("FaceDown", isFaceDown.ToString().ToLower());
+            
+            return condition;
+        }
+
+        private bool EvaluateExpression(string expression)
+        {
+            // 处理括号
+            if (expression.Contains("(") && expression.Contains(")"))
+            {
+                int startIndex = expression.IndexOf('(');
+                int endIndex = expression.LastIndexOf(')');
+                if (startIndex < endIndex)
+                {
+                    string innerExpression = expression.Substring(startIndex + 1, endIndex - startIndex - 1);
+                    bool innerResult = EvaluateExpression(innerExpression);
+                    string newExpression = expression.Substring(0, startIndex) + innerResult.ToString().ToLower() + expression.Substring(endIndex + 1);
+                    return EvaluateExpression(newExpression);
+                }
+            }
+            
+            // 处理逻辑运算符
+            if (expression.Contains("&&"))
+            {
+                string[] parts = expression.Split(new string[] { "&&" }, System.StringSplitOptions.None);
+                bool result = true;
+                foreach (string part in parts)
+                {
+                    result = result && EvaluateExpression(part.Trim());
+                    if (!result) return false; // 短路求值
+                }
+                return result;
+            }
+            
+            if (expression.Contains("||"))
+            {
+                string[] parts = expression.Split(new string[] { "||" }, System.StringSplitOptions.None);
+                bool result = false;
+                foreach (string part in parts)
+                {
+                    result = result || EvaluateExpression(part.Trim());
+                    if (result) return true; // 短路求值
+                }
+                return result;
+            }
+            
+            // 处理比较运算符
+            if (expression.Contains("<="))
+            {
+                string[] parts = expression.Split(new string[] { "<=" }, System.StringSplitOptions.None);
+                float left = float.Parse(parts[0].Trim());
+                float right = float.Parse(parts[1].Trim());
+                return left <= right;
+            }
+            
+            if (expression.Contains(">="))
+            {
+                string[] parts = expression.Split(new string[] { ">=" }, System.StringSplitOptions.None);
+                float left = float.Parse(parts[0].Trim());
+                float right = float.Parse(parts[1].Trim());
+                return left >= right;
+            }
+            
+            if (expression.Contains("<"))
+            {
+                string[] parts = expression.Split(new string[] { "<" }, System.StringSplitOptions.None);
+                float left = float.Parse(parts[0].Trim());
+                float right = float.Parse(parts[1].Trim());
+                return left < right;
+            }
+            
+            if (expression.Contains(">"))
+            {
+                string[] parts = expression.Split(new string[] { ">" }, System.StringSplitOptions.None);
+                float left = float.Parse(parts[0].Trim());
+                float right = float.Parse(parts[1].Trim());
+                return left > right;
+            }
+            
+            if (expression.Contains("=="))
+            {
+                string[] parts = expression.Split(new string[] { "==" }, System.StringSplitOptions.None);
+                string left = parts[0].Trim();
+                string right = parts[1].Trim();
+                
+                // 尝试解析为数字
+                float leftNum, rightNum;
+                if (float.TryParse(left, out leftNum) && float.TryParse(right, out rightNum))
+                {
+                    return leftNum == rightNum;
+                }
+                
+                // 否则作为字符串比较
+                return left == right;
+            }
+            
+            if (expression.Contains("!="))
+            {
+                string[] parts = expression.Split(new string[] { "!=" }, System.StringSplitOptions.None);
+                string left = parts[0].Trim();
+                string right = parts[1].Trim();
+                
+                // 尝试解析为数字
+                float leftNum, rightNum;
+                if (float.TryParse(left, out leftNum) && float.TryParse(right, out rightNum))
+                {
+                    return leftNum != rightNum;
+                }
+                
+                // 否则作为字符串比较
+                return left != right;
+            }
+            
+            // 处理布尔值
+            if (expression.Trim() == "true") return true;
+            if (expression.Trim() == "false") return false;
+            
+            // 无法解析的表达式
+            Debug.LogError($"无法解析的表达式: {expression}");
+            return false;
         }
     }
 } 

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   abilityName: "\u57FA\u672C\u653B\u51FB"
   description: "\u653B\u51FB\u76F8\u90BB\u654C\u65B9\u5355\u4F4D"
-  triggerCondition: Distance<=1&&Enemy
+  triggerCondition: Distance <= AttackRange && (Enemy || FaceDown)
   actionSequence:
   - actionType: 1
     targetSelector: Target

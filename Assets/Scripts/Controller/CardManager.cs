@@ -418,39 +418,6 @@ namespace ChessGame
             return _cardViews;
         }
 
-        // 更新卡牌位置
-        public void UpdateCardPosition(Vector2Int fromPosition, Vector2Int toPosition)
-        {
-            if (_cards.ContainsKey(fromPosition))
-            {
-                Card card = _cards[fromPosition];
-                _cards.Remove(fromPosition);
-                card.Position = toPosition;
-                _cards[toPosition] = card;
-                Debug.Log($"CardManager: 更新卡牌数据位置 从 {fromPosition} 到 {toPosition}");
-            }
-            else
-            {
-                Debug.LogError($"CardManager: 找不到位置 {fromPosition} 的卡牌");
-            }
-        }
-
-        // 更新卡牌视图位置
-        public void UpdateCardViewPosition(Vector2Int fromPosition, Vector2Int toPosition)
-        {
-            if (_cardViews.ContainsKey(fromPosition))
-            {
-                CardView cardView = _cardViews[fromPosition];
-                _cardViews.Remove(fromPosition);
-                _cardViews[toPosition] = cardView;
-                Debug.Log($"CardManager: 更新卡牌视图位置 从 {fromPosition} 到 {toPosition}");
-            }
-            else
-            {
-                Debug.LogError($"CardManager: 找不到位置 {fromPosition} 的卡牌视图");
-            }
-        }
-
         // 在指定位置生成卡牌
         public void SpawnCardAt(Vector2Int position, int cardId, int ownerId = 0, bool isFaceDown = true)
         {
@@ -535,46 +502,16 @@ namespace ChessGame
             Debug.Log("已清空所有卡牌");
         }
 
-        // 创建卡牌时设置行为
-        // private void SetCardBehavior(Card card)
-        // {
-        //     if (cardDataProvider != null)
-        //     {
-        //         int cardId = card.Data.Id;
-        //         MovementType movementType = cardDataProvider.GetCardMovementType(cardId);
-        //         AttackType attackType = cardDataProvider.GetCardAttackType(cardId);
-        //         
-        //         Debug.Log($"[CardManager] 为卡牌 {cardId}({card.Data.Name}) 获取行为类型: 移动={movementType}, 攻击={attackType}");
-        //         
-        //         // 使用行为管理器设置卡牌行为
-        //         CardBehaviorManager.Instance.SetCardBehaviors(card, movementType, attackType);
-        //     }
-        //     else
-        //     {
-        //         Debug.LogWarning($"[CardManager] cardDataProvider 为空，无法设置卡牌 {card.Data.Id}({card.Data.Name}) 的行为");
-        //     }
-        // }
-
-        // 修改现有的创建卡牌方法，添加行为设置
-        public Card CreateCard(CardData cardData, Vector2Int position, int ownerId = 0, bool isFaceDown = true)
+        public bool HasCardAt(Vector2Int position)
         {
-            Debug.Log($"[CardManager] 创建卡牌 {cardData.Id}({cardData.Name}) 在位置 ({position.x},{position.y})");
-            
-            // 创建卡牌
-            Card card = new Card(cardData, position, ownerId, isFaceDown);
-            
-            // 设置卡牌行为
-            // SetCardBehavior(card);
-            
-            // 添加到卡牌管理器
-            _cards[position] = card;
-            
-            // 创建卡牌视图
-            CreateCardView(card, position);
-            
-            return card;
+            return _cards.ContainsKey(position);
+        }  
+        
+        public Card GetCardAt(Vector2Int position)
+        {
+            return _cards.ContainsKey(position) ? _cards[position] : null;
         }
-
+        
     }
 
 

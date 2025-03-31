@@ -31,6 +31,11 @@ namespace ChessGame.Cards
             _conditionResolver = new AbilityConditionResolver();
             
             // 在Start中初始化，确保CardManager已经存在
+            
+            // 设置脚本执行顺序
+            DontDestroyOnLoad(gameObject);
+            
+            Debug.Log("AbilityManager初始化完成，时间: " + Time.time);
         }
         
         private void Start()
@@ -112,11 +117,23 @@ namespace ChessGame.Cards
         /// </summary>
         public void RegisterAbility(int cardTypeId, AbilityConfiguration ability)
         {
+            if (ability == null)
+            {
+                Debug.LogError($"尝试为卡牌类型 {cardTypeId} 注册空能力");
+                return;
+            }
+            
             if (!_cardTypeAbilities.ContainsKey(cardTypeId))
             {
                 _cardTypeAbilities[cardTypeId] = new List<AbilityConfiguration>();
             }
-            _cardTypeAbilities[cardTypeId].Add(ability);
+            
+            // 避免重复添加相同能力
+            if (!_cardTypeAbilities[cardTypeId].Contains(ability))
+            {
+                _cardTypeAbilities[cardTypeId].Add(ability);
+                Debug.Log($"为卡牌类型 {cardTypeId} 注册能力: {ability.abilityName}");
+            }
         }
         
         /// <summary>
@@ -124,11 +141,20 @@ namespace ChessGame.Cards
         /// </summary>
         public List<AbilityConfiguration> GetCardAbilities(Card card)
         {
-            int cardTypeId = card.Data.Id;
-            if (_cardTypeAbilities.TryGetValue(cardTypeId, out var abilities))
+            if (card == null)
             {
+                Debug.LogError("尝试获取空卡牌的能力");
+                return new List<AbilityConfiguration>();
+            }
+            
+            int cardTypeId = card.Data.Id;
+            if (_cardTypeAbilities.TryGetValue(cardTypeId, out List<AbilityConfiguration> abilities))
+            {
+                Debug.Log($"获取卡牌 {card.Data.Name}(ID:{cardTypeId}) 的能力，数量: {abilities.Count}");
                 return abilities;
             }
+            
+            Debug.Log($"卡牌 {card.Data.Name}(ID:{cardTypeId}) 没有注册能力");
             return new List<AbilityConfiguration>();
         }
         
