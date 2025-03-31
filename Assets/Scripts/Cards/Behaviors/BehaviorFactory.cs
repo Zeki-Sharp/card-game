@@ -2,34 +2,26 @@ using UnityEngine;
 
 namespace ChessGame.Cards
 {
-    public static class BehaviorFactory
+    // 临时保留的类，将逐步移除
+    public class BehaviorFactory
     {
-        // 创建移动行为
+        // 空方法，不执行任何操作
         public static IMovementBehavior CreateMovementBehavior(MovementType type)
         {
-            switch (type)
-            {
-                case MovementType.Assassin:
-                    return new AssassinMovementBehavior();
-                case MovementType.Default:
-                default:
-                    return new DefaultMovementBehavior();
-            }
+            return new DefaultMovementBehavior();
         }
         
-        // 创建攻击行为
+        // 空方法，不执行任何操作
         public static IAttackBehavior CreateAttackBehavior(AttackType type)
         {
-            switch (type)
-            {
-                case AttackType.Archer:
-                    return new ArcherAttackBehavior();
-                case AttackType.Assassin:
-                    return new AssassinAttackBehavior();
-                case AttackType.Default:
-                default:
-                    return new DefaultAttackBehavior();
-            }
+            return new DefaultAttackBehavior();
         }
     }
+    
+    // 临时接口和实现类
+    public interface IMovementBehavior {}
+    public interface IAttackBehavior {}
+    
+    public class DefaultMovementBehavior : IMovementBehavior {}
+    public class DefaultAttackBehavior : IAttackBehavior {}
 } 

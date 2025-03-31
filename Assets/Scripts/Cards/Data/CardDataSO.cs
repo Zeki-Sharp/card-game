@@ -17,7 +17,8 @@ namespace ChessGame
         public int moveRange = 1;
         public int attackRange = 1;
         
-        [Header("行为类型")]
+        // 完全移除行为类型
+        // [Header("行为类型")]
         public MovementType movementType = MovementType.Default;
         public AttackType attackType = AttackType.Default;
         

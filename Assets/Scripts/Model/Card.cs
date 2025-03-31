@@ -90,52 +90,84 @@ namespace ChessGame
             }
         }
         
-
-
-        // 判断是否可以移动到指定位置
-        public virtual bool CanMoveTo(Vector2Int targetPosition, Dictionary<Vector2Int, Card> allCards)
+        // 修改CanMoveTo方法
+        public bool CanMoveTo(Vector2Int position, Dictionary<Vector2Int, Card> allCards)
         {
-            // 如果卡牌已经行动过或是背面状态，不能移动
-            if (HasActed || IsFaceDown)
-                return false;
+            // 如果卡牌已经行动过，不能再次行动
+            if (HasActed) return false;
             
-            // 检查目标位置是否已有卡牌
-            if (allCards.ContainsKey(targetPosition))
-                return false;
+            // 如果是背面状态，不能移动
+            if (IsFaceDown) return false;
             
-            // 使用 GetMovablePositions 方法获取可移动位置
-            List<Vector2Int> movablePositions = GetMovablePositions(100, 100, allCards); // 使用足够大的棋盘尺寸
+            // 使用能力系统检查是否可以移动到目标位置
+            List<AbilityConfiguration> abilities = GetAbilities();
+            foreach (var ability in abilities)
+            {
+                // 检查是否是移动类型的能力
+                if (ability.actionSequence.Count > 0 && 
+                    ability.actionSequence[0].actionType == AbilityActionConfig.ActionType.Move)
+                {
+                    // 使用能力系统检查是否可以移动到目标位置
+                    CardManager cardManager = GameObject.FindObjectOfType<CardManager>();
+                    if (cardManager != null && CanTriggerAbility(ability, position, cardManager))
+                    {
+                        return true;
+                    }
+                }
+            }
             
-            // 检查目标位置是否在可移动位置列表中
-            return movablePositions.Contains(targetPosition);
-        }
-        
-        // 判断是否可以攻击指定位置
-        public virtual bool CanAttack(Vector2Int targetPosition, Dictionary<Vector2Int, Card> allCards)
-        {
-            // 如果卡牌已经行动过或是背面状态，不能攻击
-            if (HasActed || IsFaceDown)
-                return false;
+            // 如果没有找到可用的移动能力，使用基本移动逻辑
+            // 计算曼哈顿距离
+            int distance = Mathf.Abs(position.x - Position.x) + Mathf.Abs(position.y - Position.y);
+            
+            // 检查是否在移动范围内
+            if (distance > Data.MoveRange) return false;
             
             // 检查目标位置是否有卡牌
-            if (!allCards.ContainsKey(targetPosition))
-                return false;
+            if (allCards.ContainsKey(position)) return false;
             
-            // 获取目标卡牌
-            Card targetCard = allCards[targetPosition];
+            return true;
+        }
+        
+        // 修改CanAttack方法
+        public bool CanAttack(Vector2Int position, Dictionary<Vector2Int, Card> allCards)
+        {
+            // 如果卡牌已经行动过，不能再次行动
+            if (HasActed) return false;
             
-            // 不能攻击己方正面卡牌
-            if (targetCard.OwnerId == OwnerId && !targetCard.IsFaceDown)
-                return false;
+            // 如果是背面状态，不能攻击
+            if (IsFaceDown) return false;
             
-            // 使用 GetAttackablePositions 方法获取可攻击位置
-            List<Vector2Int> attackablePositions = GetAttackablePositions(100, 100, allCards); // 使用足够大的棋盘尺寸
+            // 使用能力系统检查是否可以攻击目标位置
+            List<AbilityConfiguration> abilities = GetAbilities();
+            foreach (var ability in abilities)
+            {
+                // 检查是否是攻击类型的能力
+                if (ability.actionSequence.Count > 0 && 
+                    ability.actionSequence[0].actionType == AbilityActionConfig.ActionType.Attack)
+                {
+                    // 使用能力系统检查是否可以攻击目标位置
+                    CardManager cardManager = GameObject.FindObjectOfType<CardManager>();
+                    if (cardManager != null && CanTriggerAbility(ability, position, cardManager))
+                    {
+                        return true;
+                    }
+                }
+            }
             
-            // 检查目标位置是否在可攻击位置列表中
-            bool canAttack = attackablePositions.Contains(targetPosition);
-            Debug.Log($"刺客攻击检查：卡牌 {Data.Name} {(canAttack ? "可以" : "不能")}攻击位置 {targetPosition}，目标卡牌：{targetCard.Data.Name}，背面状态：{targetCard.IsFaceDown}");
+            // 如果没有找到可用的攻击能力，使用基本攻击逻辑
+            // 计算曼哈顿距离
+            int distance = Mathf.Abs(position.x - Position.x) + Mathf.Abs(position.y - Position.y);
             
-            return canAttack;
+            // 检查是否在攻击范围内
+            if (distance > Data.AttackRange) return false;
+            
+            // 检查目标位置是否有卡牌
+            if (!allCards.ContainsKey(position)) return false;
+            
+            // 检查目标卡牌是否是敌方卡牌或背面卡牌
+            Card targetCard = allCards[position];
+            return targetCard.OwnerId != OwnerId || targetCard.IsFaceDown;
         }
         
         // 获取可移动的位置列表
@@ -176,10 +208,9 @@ namespace ChessGame
             
             Debug.Log($"[Card] 卡牌 {Data.Id}({Data.Name}) 计算可移动位置，位置数量: {movablePositions.Count}");
             
-            // 使用行为管理器修改可移动位置
-            CardBehaviorManager.Instance.ModifyMovablePositions(this, boardWidth, boardHeight, allCards, ref movablePositions);
-            
-            Debug.Log($"[Card] 卡牌 {Data.Id}({Data.Name}) 行为修改后的可移动位置，位置数量: {movablePositions.Count}");
+            // 使用能力系统修改可移动位置
+            // 这里可以添加能力系统的逻辑，暂时注释掉行为管理器的引用
+            // CardBehaviorManager.Instance.ModifyMovablePositions(this, boardWidth, boardHeight, allCards, ref movablePositions);
             
             return movablePositions;
         }
@@ -225,10 +256,9 @@ namespace ChessGame
             
             Debug.Log($"[Card] 卡牌 {Data.Id}({Data.Name}) 计算可攻击位置，位置数量: {attackablePositions.Count}");
             
-            // 使用行为管理器修改可攻击位置
-            CardBehaviorManager.Instance.ModifyAttackablePositions(this, boardWidth, boardHeight, allCards, ref attackablePositions);
-            
-            Debug.Log($"[Card] 卡牌 {Data.Id}({Data.Name}) 行为修改后的可攻击位置，位置数量: {attackablePositions.Count}");
+            // 使用能力系统修改可攻击位置
+            // 这里可以添加能力系统的逻辑，暂时注释掉行为管理器的引用
+            // CardBehaviorManager.Instance.ModifyAttackablePositions(this, boardWidth, boardHeight, allCards, ref attackablePositions);
             
             return attackablePositions;
         }

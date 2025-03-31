@@ -1,8 +1,9 @@
 namespace ChessGame.Cards
 {
+    // 临时保留的枚举，将逐步移除
     public enum MovementType
     {
-        Default,    // 默认移动（上下左右）
-        Assassin,   // 刺客移动（距离为2）
+        Default,
+        Assassin
     }
 } 

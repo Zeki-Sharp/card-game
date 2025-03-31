@@ -479,7 +479,7 @@ namespace ChessGame
             Card card = new Card(cardData, position, ownerId, isFaceDown);
             
             // 设置卡牌行为
-            SetCardBehavior(card);
+            // SetCardBehavior(card);
             
             // 添加到卡牌管理器
             AddCard(card, position);
@@ -536,24 +536,24 @@ namespace ChessGame
         }
 
         // 创建卡牌时设置行为
-        private void SetCardBehavior(Card card)
-        {
-            if (cardDataProvider != null)
-            {
-                int cardId = card.Data.Id;
-                MovementType movementType = cardDataProvider.GetCardMovementType(cardId);
-                AttackType attackType = cardDataProvider.GetCardAttackType(cardId);
-                
-                Debug.Log($"[CardManager] 为卡牌 {cardId}({card.Data.Name}) 获取行为类型: 移动={movementType}, 攻击={attackType}");
-                
-                // 使用行为管理器设置卡牌行为
-                CardBehaviorManager.Instance.SetCardBehaviors(card, movementType, attackType);
-            }
-            else
-            {
-                Debug.LogWarning($"[CardManager] cardDataProvider 为空，无法设置卡牌 {card.Data.Id}({card.Data.Name}) 的行为");
-            }
-        }
+        // private void SetCardBehavior(Card card)
+        // {
+        //     if (cardDataProvider != null)
+        //     {
+        //         int cardId = card.Data.Id;
+        //         MovementType movementType = cardDataProvider.GetCardMovementType(cardId);
+        //         AttackType attackType = cardDataProvider.GetCardAttackType(cardId);
+        //         
+        //         Debug.Log($"[CardManager] 为卡牌 {cardId}({card.Data.Name}) 获取行为类型: 移动={movementType}, 攻击={attackType}");
+        //         
+        //         // 使用行为管理器设置卡牌行为
+        //         CardBehaviorManager.Instance.SetCardBehaviors(card, movementType, attackType);
+        //     }
+        //     else
+        //     {
+        //         Debug.LogWarning($"[CardManager] cardDataProvider 为空，无法设置卡牌 {card.Data.Id}({card.Data.Name}) 的行为");
+        //     }
+        // }
 
         // 修改现有的创建卡牌方法，添加行为设置
         public Card CreateCard(CardData cardData, Vector2Int position, int ownerId = 0, bool isFaceDown = true)
@@ -564,7 +564,7 @@ namespace ChessGame
             Card card = new Card(cardData, position, ownerId, isFaceDown);
             
             // 设置卡牌行为
-            SetCardBehavior(card);
+            // SetCardBehavior(card);
             
             // 添加到卡牌管理器
             _cards[position] = card;

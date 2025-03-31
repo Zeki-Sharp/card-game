@@ -22,3 +22,5 @@ MonoBehaviour:
   attackRange: 1
   movementType: 0
   attackType: 0
+  abilities:
+  - {fileID: 11400000, guid: 4e9fd0c32d7c2fc47913d30c0d9c34bb, type: 2}
