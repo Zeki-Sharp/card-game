@@ -20,5 +20,6 @@ MonoBehaviour:
   faction: 0
   moveRange: 1
   attackRange: 1
-  movementType: 0
+  movementType: 1
   attackType: 0
+  abilities: []

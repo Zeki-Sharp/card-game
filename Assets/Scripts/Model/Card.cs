@@ -249,5 +249,25 @@ namespace ChessGame
             
             Debug.Log($"卡牌 {this.Data.Name}(攻击力:{this.Data.Attack}) 反击 {attacker.Data.Name}，造成 {damage} 点伤害，目标生命值: {attackerHealthBefore} -> {attacker.Data.Health}");
         }
+
+        // 添加获取卡牌能力的方法
+        public List<AbilityConfiguration> GetAbilities()
+        {
+            if (AbilityManager.Instance != null)
+            {
+                return AbilityManager.Instance.GetCardAbilities(this);
+            }
+            return new List<AbilityConfiguration>();
+        }
+
+        // 添加检查能力是否可触发的方法
+        public bool CanTriggerAbility(AbilityConfiguration ability, Vector2Int targetPosition, CardManager cardManager)
+        {
+            if (AbilityManager.Instance != null)
+            {
+                return AbilityManager.Instance.CanTriggerAbility(ability, this, targetPosition, cardManager);
+            }
+            return false;
+        }
     }
 } 

@@ -1,5 +1,6 @@
 using UnityEngine;
 using ChessGame.Cards;
+using System.Collections.Generic;
 
 namespace ChessGame
 {
@@ -19,6 +20,9 @@ namespace ChessGame
         [Header("行为类型")]
         public MovementType movementType = MovementType.Default;
         public AttackType attackType = AttackType.Default;
+        
+        [Header("能力")]
+        public List<AbilityConfiguration> abilities = new List<AbilityConfiguration>();
         
         // 转换为现有的 CardData 结构
         public CardData ToCardData()

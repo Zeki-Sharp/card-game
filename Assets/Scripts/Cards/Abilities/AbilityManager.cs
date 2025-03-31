@@ -47,6 +47,9 @@ namespace ChessGame.Cards
             // 加载能力配置
             LoadAbilityConfigurations();
             
+            // 从CardDataSO加载能力
+            LoadAbilitiesFromCardDataSO();
+            
             // 订阅回合开始事件
             TurnManager turnManager = FindObjectOfType<TurnManager>();
             if (turnManager != null)
@@ -146,6 +149,25 @@ namespace ChessGame.Cards
             
             // 设置冷却
             _conditionResolver.SetAbilityCooldown(card.Data.Id, ability.abilityName, ability.cooldown);
+        }
+        
+        // 添加从CardDataSO加载能力的方法
+        private void LoadAbilitiesFromCardDataSO()
+        {
+            CardDataSO[] cardDataSOs = Resources.LoadAll<CardDataSO>("CardData");
+            Debug.Log($"从Resources/CardData加载了{cardDataSOs.Length}个卡牌数据");
+            
+            foreach (var cardDataSO in cardDataSOs)
+            {
+                if (cardDataSO.abilities != null && cardDataSO.abilities.Count > 0)
+                {
+                    Debug.Log($"卡牌 {cardDataSO.cardName}(ID:{cardDataSO.id}) 有 {cardDataSO.abilities.Count} 个能力");
+                    foreach (var ability in cardDataSO.abilities)
+                    {
+                        RegisterAbility(cardDataSO.id, ability);
+                    }
+                }
+            }
         }
     }
 } 

@@ -1,5 +1,7 @@
 using UnityEngine;
 using System;
+using System.Collections.Generic;
+using ChessGame.Cards;
 
 namespace ChessGame.FSM
 {
@@ -84,14 +86,24 @@ namespace ChessGame.FSM
         
         public override void HandleCardClick(Vector2Int position)
         {
-            Debug.Log($"SelectedState.HandleCardClick: 位置 {position}");
+            Debug.Log($"选中状态下点击卡牌: {position}");
             
+            // 获取选中的卡牌
             Card selectedCard = StateMachine.CardManager.GetSelectedCard();
-            Card targetCard = StateMachine.CardManager.GetCard(position);
-            
             if (selectedCard == null)
             {
-                Debug.LogError("选中状态下，但没有选中的卡牌");
+                Debug.LogError("选中状态下没有选中的卡牌");
+                CompleteState(CardState.Idle);
+                return;
+            }
+            
+            // 获取目标位置的卡牌
+            Card targetCard = StateMachine.CardManager.GetCard(position);
+            
+            // 如果卡牌已经行动过，不能再次行动
+            if (selectedCard.HasActed)
+            {
+                Debug.Log("卡牌已经行动过，不能再次行动");
                 CompleteState(CardState.Idle);
                 return;
             }
@@ -102,6 +114,37 @@ namespace ChessGame.FSM
                 Debug.Log("点击了已选中的卡牌，取消选择");
                 CompleteState(CardState.Idle);
                 return;
+            }
+            
+            // 检查是否可以触发能力
+            if (selectedCard.OwnerId == 0 && !selectedCard.IsFaceDown) // 只有玩家的正面卡牌可以使用能力
+            {
+                AbilityManager abilityManager = AbilityManager.Instance;
+                if (abilityManager != null)
+                {
+                    List<AbilityConfiguration> abilities = abilityManager.GetCardAbilities(selectedCard);
+                    foreach (var ability in abilities)
+                    {
+                        if (abilityManager.CanTriggerAbility(ability, selectedCard, position, StateMachine.CardManager))
+                        {
+                            Debug.Log($"触发能力: {ability.abilityName}");
+                            StateMachine.CardManager.SetTargetPosition(position);
+                            
+                            // 执行能力
+                            StateMachine.CardManager.StartCoroutine(abilityManager.ExecuteAbility(ability, selectedCard, position));
+                            
+                            // 标记卡牌已行动
+                            selectedCard.HasActed = true;
+                            
+                            // 更新卡牌视图
+                            CardView cardView = StateMachine.CardManager.GetCardView(selectedCard.Position);
+                            if (cardView != null) cardView.UpdateVisuals();
+                            
+                            CompleteState(CardState.Idle);
+                            return;
+                        }
+                    }
+                }
             }
             
             // 如果点击的是背面卡牌，且在攻击范围内 - 直接使用Card类的方法
