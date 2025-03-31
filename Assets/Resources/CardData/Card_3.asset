@@ -20,7 +20,5 @@ MonoBehaviour:
   faction: 0
   moveRange: 1
   attackRange: 1
-  movementType: 1
-  attackType: 0
   abilities:
   - {fileID: 11400000, guid: 0c477dcb9dba505409c92bf0e0c064e7, type: 2}

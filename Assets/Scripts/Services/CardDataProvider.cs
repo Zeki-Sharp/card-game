@@ -9,8 +9,6 @@ namespace ChessGame
         [SerializeField] private string resourcesPath = "CardData"; // ScriptableObject资源路径
         
         private List<CardData> _availableCards = new List<CardData>();
-        private Dictionary<int, MovementType> _cardMovementTypes = new Dictionary<int, MovementType>();
-        private Dictionary<int, AttackType> _cardAttackTypes = new Dictionary<int, AttackType>();
         private bool _isInitialized = false;
         
         private void Awake()
@@ -22,9 +20,6 @@ namespace ChessGame
         public void LoadCardData()
         {
             _availableCards.Clear();
-            _cardMovementTypes.Clear();
-            _cardAttackTypes.Clear();
-            
             // 从ScriptableObject加载数据
             CardDataSO[] cardDataSOs = Resources.LoadAll<CardDataSO>(resourcesPath);
             
@@ -32,10 +27,6 @@ namespace ChessGame
             {
                 // 添加基本卡牌数据
                 _availableCards.Add(cardDataSO.ToCardData());
-                
-                // 存储行为类型信息
-                _cardMovementTypes[cardDataSO.id] = cardDataSO.movementType;
-                _cardAttackTypes[cardDataSO.id] = cardDataSO.attackType;
             }
             
             Debug.Log($"从ScriptableObject加载了 {_availableCards.Count} 张卡牌");
@@ -73,24 +64,5 @@ namespace ChessGame
             return cardData.Clone();
         }
         
-        // 获取卡牌的移动类型
-        public MovementType GetCardMovementType(int id)
-        {
-            if (_cardMovementTypes.TryGetValue(id, out MovementType type))
-            {
-                return type;
-            }
-            return MovementType.Default;
-        }
-        
-        // 获取卡牌的攻击类型
-        public AttackType GetCardAttackType(int id)
-        {
-            if (_cardAttackTypes.TryGetValue(id, out AttackType type))
-            {
-                return type;
-            }
-            return AttackType.Default;
-        }
     }
 } 
