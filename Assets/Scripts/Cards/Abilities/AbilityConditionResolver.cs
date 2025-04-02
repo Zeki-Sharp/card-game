@@ -1,6 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
-
+using System.Text.RegularExpressions;
 namespace ChessGame.Cards
 {
     /// <summary>
@@ -21,12 +21,22 @@ namespace ChessGame.Cards
         /// <returns>是否满足条件</returns>
         public bool CheckCondition(string condition, Card card, Vector2Int targetPosition, CardManager cardManager)
         {
-            // 添加调试信息
-            Debug.Log($"解析条件: {condition}, 卡牌: {card.Data.Name}, 目标位置: {targetPosition}");
+            Debug.Log($"检查条件: {condition}, 卡牌: {card.Data.Name}, 位置: {card.Position}, 目标位置: {targetPosition}");
             
             // 替换变量
             string resolvedCondition = ReplaceVariables(condition, card, targetPosition, cardManager);
             Debug.Log($"替换变量后的条件: {resolvedCondition}");
+            
+            // 检查目标位置的卡牌
+            Card targetCard = cardManager.GetCard(targetPosition);
+            if (targetCard != null)
+            {
+                Debug.Log($"目标位置有卡牌: {targetCard.Data.Name}, 所有者: {targetCard.OwnerId}, 背面: {targetCard.IsFaceDown}");
+            }
+            else
+            {
+                Debug.Log($"目标位置没有卡牌");
+            }
             
             // 解析条件表达式
             bool result = EvaluateExpression(resolvedCondition);
@@ -79,38 +89,50 @@ namespace ChessGame.Cards
 
         private string ReplaceVariables(string condition, Card card, Vector2Int targetPosition, CardManager cardManager)
         {
-            // 替换MoveRange
-            condition = condition.Replace("MoveRange", card.MoveRange.ToString());
-            
-            // 替换AttackRange
-            condition = condition.Replace("AttackRange", card.AttackRange.ToString());
-            
-            // 替换Distance
-            int distance = Mathf.Abs(targetPosition.x - card.Position.x) + Mathf.Abs(targetPosition.y - card.Position.y);
-            condition = condition.Replace("Distance", distance.ToString());
-            
-            // 替换Empty
-            bool isEmpty = !cardManager.HasCardAt(targetPosition);
-            condition = condition.Replace("Empty", isEmpty.ToString().ToLower());
-            
-            // 替换Enemy
-            bool isEnemy = false;
-            Card targetCard = cardManager.GetCardAt(targetPosition);
-            if (targetCard != null)
+            try
             {
-                isEnemy = targetCard.OwnerId != card.OwnerId;
-            }
-            condition = condition.Replace("Enemy", isEnemy.ToString().ToLower());
+                // 使用正则表达式替换完整的变量名
+                // 替换StraightDistance - 检查是否在同一直线上（横向或纵向）
+                int dx1 = Mathf.Abs(targetPosition.x - card.Position.x); // 水平方向距离
+                int dy1 = Mathf.Abs(targetPosition.y - card.Position.y); // 垂直方向距离
+                bool isStraight = dy1 == 0 || dx1 == 0;
+                int straightDistance = isStraight ? Mathf.Max(dx1, dy1) : int.MaxValue;
+                condition = Regex.Replace(condition, @"\bStraightDistance\b", straightDistance.ToString());
+                
+                // 替换Distance - 曼哈顿距离（横向+纵向）
+                int manhattanDistance = dx1 + dy1;
+                condition = Regex.Replace(condition, @"\bDistance\b", manhattanDistance.ToString());
+                
+                // 替换DiagonalDistance - 对角线距离
+                bool isDiagonal = dx1 == dy1 && dx1 > 0;
+                int diagonalDistance = isDiagonal ? dx1 : int.MaxValue;
+                condition = Regex.Replace(condition, @"\bDiagonalDistance\b", diagonalDistance.ToString());
+                
+                // 替换MoveRange和AttackRange
+                condition = Regex.Replace(condition, @"\bMoveRange\b", card.MoveRange.ToString());
+                condition = Regex.Replace(condition, @"\bAttackRange\b", card.AttackRange.ToString());
+                
+                // 替换Enemy
+                Card targetCard = cardManager.GetCard(targetPosition);
+                bool isEnemy = targetCard != null && targetCard.OwnerId != card.OwnerId && !targetCard.IsFaceDown;
+                condition = Regex.Replace(condition, @"\bEnemy\b", isEnemy.ToString().ToLower());
+                
+                // 替换FaceDown
+                bool isFaceDown = targetCard != null && targetCard.IsFaceDown;
+                condition = Regex.Replace(condition, @"\bFaceDown\b", isFaceDown.ToString().ToLower());
+                
+                // 替换Empty
+                bool isEmpty = targetCard == null;
+                condition = Regex.Replace(condition, @"\bEmpty\b", isEmpty.ToString().ToLower());
             
-            // 替换FaceDown
-            bool isFaceDown = false;
-            if (targetCard != null)
+                
+                return condition;
+            }
+            catch (System.Exception e)
             {
-                isFaceDown = targetCard.IsFaceDown;
+                Debug.LogError($"替换变量时发生错误: {e.Message}\n{e.StackTrace}");
+                return "false";
             }
-            condition = condition.Replace("FaceDown", isFaceDown.ToString().ToLower());
-            
-            return condition;
         }
 
         private bool EvaluateExpression(string expression)

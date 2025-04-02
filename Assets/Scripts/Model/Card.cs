@@ -21,9 +21,27 @@ namespace ChessGame
         // 卡牌是否为背面状态
         public bool IsFaceDown { get; private set; }
         
+        // 移动类型枚举
+        public enum MoveType
+        {
+            Manhattan, // 曼哈顿距离（上下左右）
+            Diagonal   // 斜角移动（对角线）
+        }
+        
+        // 添加范围类型枚举
+        public enum RangeType
+        {
+            Manhattan, // 曼哈顿距离（上下左右）
+            Diagonal   // 斜角移动（对角线）
+        }
+        
         // 默认移动范围和攻击范围
         public virtual int MoveRange { get; protected set; } = 1;
         public virtual int AttackRange { get; protected set; } = 1;
+        
+        // 默认移动和攻击类型
+        public virtual MoveType MovementType { get; protected set; } = MoveType.Manhattan;
+        public virtual MoveType AttackType { get; protected set; } = MoveType.Manhattan;
 
         public Card(CardData data, Vector2Int position, int ownerId = 0, bool isFaceDown = true)
         {
@@ -137,16 +155,22 @@ namespace ChessGame
         public bool CanAttack(Vector2Int position, Dictionary<Vector2Int, Card> allCards)
         {
             // 如果卡牌已经行动过，不能再次行动
-            if (HasActed) return false;
+            if (HasActed)
+            {
+                Debug.Log($"卡牌 {Data.Name} 已经行动过，不能攻击");
+                return false;
+            }
             
             // 如果是背面状态，不能攻击
-            if (IsFaceDown) return false;
+            if (IsFaceDown)
+            {
+                Debug.Log($"卡牌 {Data.Name} 是背面状态，不能攻击");
+                return false;
+            }
             
             // 完全依赖能力系统
             List<AbilityConfiguration> abilities = GetAbilities();
-            
-            // 添加调试信息
-            Debug.Log($"卡牌 {Data.Name}(ID:{Data.Id}) 检查是否可以攻击 {position}，获取到 {abilities.Count} 个能力");
+            Debug.Log($"卡牌 {Data.Name} 检查是否可以攻击 {position}，获取到 {abilities.Count} 个能力");
             
             // 如果没有能力，不能攻击
             if (abilities.Count == 0)
@@ -162,20 +186,19 @@ namespace ChessGame
                 if (ability.actionSequence.Count > 0 && 
                     ability.actionSequence[0].actionType == AbilityActionConfig.ActionType.Attack)
                 {
-                    // 添加调试信息
                     Debug.Log($"检查攻击能力: {ability.abilityName}, 条件: {ability.triggerCondition}");
                     
                     // 使用能力系统检查是否可以攻击目标位置
                     CardManager cardManager = GameObject.FindObjectOfType<CardManager>();
                     if (cardManager != null && CanTriggerAbility(ability, position, cardManager))
                     {
-                        Debug.Log($"卡牌 {Data.Name} 使用能力 {ability.abilityName} 可以攻击 {position}");
+                        Debug.Log($"能力 {ability.abilityName} 可以攻击位置 {position}");
                         return true;
                     }
                 }
             }
             
-            Debug.Log($"卡牌 {Data.Name} 不能攻击 {position}");
+            Debug.Log($"卡牌 {Data.Name} 没有可用的攻击能力可以攻击位置 {position}");
             return false;
         }
         
@@ -222,6 +245,7 @@ namespace ChessGame
                         movablePositions.Add(targetPos);
                     }
                 }
+
             }
             
             Debug.Log($"[Card] 卡牌 {Data.Id}({Data.Name}) 使用能力系统计算可移动位置，位置数量: {movablePositions.Count}");
@@ -312,6 +336,36 @@ namespace ChessGame
                 return AbilityManager.Instance.CanTriggerAbility(ability, this, targetPosition, cardManager);
             }
             return false;
+        }
+
+        // 检查是否在曼哈顿距离范围内
+        public bool IsInManhattanRange(Vector2Int targetPosition, int range)
+        {
+            int distance = Mathf.Abs(targetPosition.x - Position.x) + 
+                          Mathf.Abs(targetPosition.y - Position.y);
+            return distance <= range;
+        }
+        
+        // 检查是否在斜角范围内
+        public bool IsInDiagonalRange(Vector2Int targetPosition, int range)
+        {
+            int dx = Mathf.Abs(targetPosition.x - Position.x);
+            int dy = Mathf.Abs(targetPosition.y - Position.y);
+            return dx == dy && dx <= range;
+        }
+        
+        // 检查是否在移动范围内（供能力系统使用）
+        public bool IsInMoveRange(Vector2Int targetPosition)
+        {
+            // 默认使用曼哈顿距离
+            return IsInManhattanRange(targetPosition, MoveRange);
+        }
+        
+        // 检查是否在攻击范围内（供能力系统使用）
+        public bool IsInAttackRange(Vector2Int targetPosition)
+        {
+            // 默认使用曼哈顿距离
+            return IsInManhattanRange(targetPosition, AttackRange);
         }
     }
 } 
