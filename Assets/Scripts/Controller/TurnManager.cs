@@ -1,7 +1,6 @@
 using UnityEngine;
-using System.Collections;
 using System;
-using System.Collections.Generic;
+using ChessGame.FSM.TurnState;
 
 namespace ChessGame
 {
@@ -13,181 +12,155 @@ namespace ChessGame
 
     public class TurnManager : MonoBehaviour
     {
-        [SerializeField] private float aiTurnDelay = 1.0f; // AI行动前的延迟时间
+        [SerializeField] private int maxTurnCount = 30;
         
-        private TurnState _currentTurn = TurnState.PlayerTurn;
-        private CardManager _cardManager;
-        private AIController _aiController;
+        // 回合状态
+        public TurnState CurrentTurn { get; private set; } = TurnState.PlayerTurn;
+        
+        // 回合计数
+        private int _turnCount = 1;
+        
+        // 回合状态机
+        private TurnStateMachine _turnStateMachine;
         
         // 回合变化事件
         public event Action<TurnState> OnTurnChanged;
         
-        // 回合开始事件
-        public event System.Action<int> OnTurnStarted;
-        
-        // 当前回合属性
-        public TurnState CurrentTurn => _currentTurn;
-        
-        // 添加一个标志，表示是否正在切换回合
-        private bool _isSwitchingTurn = false;
-        
-        // 添加回合计数属性
-        private int _turnCount = 0;
-        public int TurnCount => _turnCount;
+        // 回合计数变化事件
+        public event Action<int> OnTurnCountChanged;
         
         private void Awake()
         {
-            _cardManager = FindObjectOfType<CardManager>();
-            _aiController = FindObjectOfType<AIController>();
-            
-            if (_cardManager == null)
-                Debug.LogError("找不到CardManager组件");
-                
-            if (_aiController == null)
-            {
-                Debug.LogWarning("找不到AIController组件，尝试创建一个");
-                GameObject aiObject = new GameObject("AIController");
-                _aiController = aiObject.AddComponent<AIController>();
-            }
+            Debug.Log("TurnManager.Awake");
         }
         
         private void Start()
         {
-            // 开始游戏，默认玩家先行动
-            StartPlayerTurn();
-        }
-        
-        private void OnEnable()
-        {
-            Debug.Log("TurnManager.OnEnable: 组件启用");
-        }
-        
-        private void OnDisable()
-        {
-            Debug.Log("TurnManager.OnDisable: 组件禁用");
-        }
-        
-        // 开始玩家回合
-        public void StartPlayerTurn()
-        {
-            _currentTurn = TurnState.PlayerTurn;
-            _turnCount++;
-            Debug.Log($"玩家回合开始，当前回合数: {_turnCount}");
+            Debug.Log("TurnManager.Start");
             
-            // 重置所有玩家卡牌的行动状态
-            if (_cardManager != null)
+            // 等待CardManager初始化完成后再初始化回合状态机
+            CardManager cardManager = FindObjectOfType<CardManager>();
+            if (cardManager != null)
             {
-                _cardManager.ResetPlayerCardActions();
+                // 创建回合状态机
+                _turnStateMachine = new TurnStateMachine(this, cardManager);
+                
+                // 订阅回合阶段变化事件
+                _turnStateMachine.OnPhaseChanged += HandlePhaseChanged;
+                
+                // 启动回合状态机
+                _turnStateMachine.Start();
             }
+            else
+            {
+                Debug.LogError("找不到CardManager，无法初始化回合状态机");
+            }
+        }
+        
+        private void OnDestroy()
+        {
+            // 取消订阅事件
+            if (_turnStateMachine != null)
+            {
+                _turnStateMachine.OnPhaseChanged -= HandlePhaseChanged;
+            }
+        }
+        
+        private void Update()
+        {
+            // 更新回合状态机
+            if (_turnStateMachine != null)
+            {
+                TurnPhase currentPhase = _turnStateMachine.GetCurrentPhase();
+                if (_turnStateMachine._states.ContainsKey(currentPhase))
+                {
+                    ITurnState currentState = _turnStateMachine._states[currentPhase];
+                    currentState.Update();
+                }
+            }
+        }
+        
+        // 处理回合阶段变化
+        private void HandlePhaseChanged(TurnPhase phase)
+        {
+            Debug.Log($"回合阶段变化: {phase}");
             
-            // 触发回合变化事件
-            OnTurnChanged?.Invoke(_currentTurn);
-            
-            // 触发回合开始事件，传递玩家ID (0)
-            OnTurnStarted?.Invoke(0);
+            // 根据阶段更新回合状态
+            switch (phase)
+            {
+                case TurnPhase.PlayerTurnStart:
+                    // 玩家回合开始时增加回合计数
+                    _turnCount++;
+                    OnTurnCountChanged?.Invoke(_turnCount);
+                    
+                    // 更新回合状态
+                    CurrentTurn = TurnState.PlayerTurn;
+                    OnTurnChanged?.Invoke(CurrentTurn);
+                    break;
+                    
+                case TurnPhase.EnemyTurnStart:
+                    // 更新回合状态
+                    CurrentTurn = TurnState.EnemyTurn;
+                    OnTurnChanged?.Invoke(CurrentTurn);
+                    break;
+            }
         }
         
         // 结束玩家回合
         public void EndPlayerTurn()
         {
-            Debug.Log("TurnManager.EndPlayerTurn: 结束玩家回合");
+            Debug.Log("TurnManager.EndPlayerTurn");
             
-            // 确保所有玩家卡牌都标记为已行动，防止在敌方回合点击
-            CardManager cardManager = FindObjectOfType<CardManager>();
-            if (cardManager != null)
+            if (_turnStateMachine != null && _turnStateMachine.GetCurrentPhase() == TurnPhase.PlayerMainPhase)
             {
-                cardManager.MarkAllPlayerCardsAsActed();
-            }
-            
-            // 延迟一段时间后开始AI回合
-            StartCoroutine(StartEnemyTurnDelayed());
-        }
-        
-        // 延迟开始AI回合
-        private IEnumerator StartEnemyTurnDelayed()
-        {
-            Debug.Log("TurnManager.StartEnemyTurnDelayed: 延迟开始敌方回合...");
-            yield return new WaitForSeconds(aiTurnDelay);
-            StartEnemyTurn();
-        }
-        
-        // 开始敌方回合
-        public void StartEnemyTurn()
-        {
-            _currentTurn = TurnState.EnemyTurn;
-            Debug.Log("敌方回合开始");
-            
-            // 触发回合变化事件
-            OnTurnChanged?.Invoke(_currentTurn);
-            
-            // 触发回合开始事件，传递敌方ID (1)
-            OnTurnStarted?.Invoke(1);
-            
-            // 启动AI行动
-            if (_aiController != null)
-            {
-                StartCoroutine(_aiController.ExecuteAITurn());
+                _turnStateMachine.EndCurrentTurn();
             }
         }
         
         // 结束敌方回合
         public void EndEnemyTurn()
         {
-            // 如果已经在切换回合，则不再重复执行
-            if (_isSwitchingTurn)
+            Debug.Log("TurnManager.EndEnemyTurn");
+            
+            if (_turnStateMachine != null && _turnStateMachine.GetCurrentPhase() == TurnPhase.EnemyMainPhase)
             {
-                Debug.LogWarning("TurnManager.EndEnemyTurn: 已经在切换回合，忽略重复调用");
-                return;
+                _turnStateMachine.EndCurrentTurn();
             }
-            
-            Debug.Log("TurnManager.EndEnemyTurn被调用");
-            Debug.Log("结束敌方回合");
-            
-            _isSwitchingTurn = true;
-            
-            // 重置所有敌方卡牌的行动状态
-            if (_cardManager != null)
-            {
-                Debug.Log("重置所有敌方卡牌的行动状态");
-                Dictionary<Vector2Int, Card> allCards = _cardManager.GetAllCards();
-                foreach (var cardPair in allCards)
-                {
-                    Card card = cardPair.Value;
-                    if (card.OwnerId == 1) // 敌方卡牌
-                    {
-                        card.HasActed = false;
-                        Debug.Log($"重置敌方卡牌行动状态: 位置 {card.Position}");
-                    }
-                }
-            }
-            
-            // 使用Invoke延迟调用，确保当前帧处理完成
-            Invoke("StartPlayerTurnDelayed", 0.1f);
-        }
-        
-        // 添加一个新方法来延迟开始玩家回合
-        private void StartPlayerTurnDelayed()
-        {
-            _isSwitchingTurn = false;
-            StartPlayerTurn();
         }
         
         // 检查是否是玩家回合
         public bool IsPlayerTurn()
         {
-            return _currentTurn == TurnState.PlayerTurn;
+            return CurrentTurn == TurnState.PlayerTurn;
         }
         
-        // 添加重置回合计数的方法
+        // 获取当前回合计数
+        public int GetTurnCount()
+        {
+            return _turnCount;
+        }
+        
+        // 重置回合计数
         public void ResetTurnCount()
         {
             _turnCount = 0;
+            OnTurnCountChanged?.Invoke(_turnCount);
         }
-
+        
+        // 重置回合状态
         public void ResetTurns()
         {
-            _currentTurn = TurnState.PlayerTurn;
-            _turnCount = 0;
+            // 重新启动回合状态机
+            if (_turnStateMachine != null)
+            {
+                _turnStateMachine.Start();
+            }
+        }
+        
+        // 获取回合状态机
+        public TurnStateMachine GetTurnStateMachine()
+        {
+            return _turnStateMachine;
         }
     }
 } 

@@ -364,5 +364,7 @@ namespace ChessGame
             // 调用现有方法
             return GetAttackablePositions(cardManager.BoardWidth, cardManager.BoardHeight, allCards);
         }
+
     }
+
 } 

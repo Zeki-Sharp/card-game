@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using ChessGame;
+using ChessGame.FSM.TurnState;
+using System;
 
 namespace ChessGame.Cards
 {
@@ -19,6 +21,9 @@ namespace ChessGame.Cards
         
         private AbilityExecutor _abilityExecutor;
         private AbilityConditionResolver _conditionResolver;
+        private AbilityRangeCalculator _rangeCalculator;
+        
+        private GameEventSystem _gameEventSystem;
         
         public enum HighlightType
         {
@@ -36,9 +41,12 @@ namespace ChessGame.Cards
             }
             _instance = this;
             
+            _abilityExecutor = new AbilityExecutor(_cardManager);
             _conditionResolver = new AbilityConditionResolver();
+            _rangeCalculator = new AbilityRangeCalculator(_cardManager, _conditionResolver);
             
-            // 在Start中初始化，确保CardManager已经存在
+            _cardManager = FindObjectOfType<CardManager>();
+            _gameEventSystem = GameEventSystem.Instance;
             
             // 设置脚本执行顺序
             DontDestroyOnLoad(gameObject);
@@ -48,37 +56,22 @@ namespace ChessGame.Cards
         
         private void Start()
         {
-            // 查找并保存 CardManager 引用
-            _cardManager = FindObjectOfType<CardManager>();
-            if (_cardManager == null)
-            {
-                Debug.LogError("无法找到CardManager");
-                return;
-            }
-            
-            _abilityExecutor = new AbilityExecutor(_cardManager);
+            // 订阅回合开始事件
+            _gameEventSystem.OnTurnStarted += HandleTurnStarted;
             
             // 加载能力配置
             LoadAbilityConfigurations();
             
             // 从CardDataSO加载能力
             LoadAbilitiesFromCardDataSO();
-            
-            // 订阅回合开始事件
-            TurnManager turnManager = FindObjectOfType<TurnManager>();
-            if (turnManager != null)
-            {
-                turnManager.OnTurnStarted += HandleTurnStarted;
-            }
         }
         
         private void OnDestroy()
         {
             // 取消订阅事件
-            TurnManager turnManager = FindObjectOfType<TurnManager>();
-            if (turnManager != null)
+            if (_gameEventSystem != null)
             {
-                turnManager.OnTurnStarted -= HandleTurnStarted;
+                _gameEventSystem.OnTurnStarted -= HandleTurnStarted;
             }
         }
         
@@ -87,7 +80,10 @@ namespace ChessGame.Cards
         /// </summary>
         private void HandleTurnStarted(int playerId)
         {
-            _conditionResolver.ReduceCooldowns(playerId);
+            Debug.Log($"AbilityManager: 处理回合开始事件，玩家ID: {playerId}");
+            
+            // 这里可以添加回合开始时的能力触发逻辑
+            // 例如遍历所有卡牌，检查是否有回合开始触发的能力
         }
         
         /// <summary>

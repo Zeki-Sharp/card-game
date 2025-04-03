@@ -51,57 +51,54 @@ namespace ChessGame
             }
         }
         
-        // 执行AI回合
+        /// <summary>
+        /// 执行AI回合
+        /// </summary>
         public IEnumerator ExecuteAITurn()
         {
-            if (_isExecutingTurn)
-            {
-                Debug.LogWarning("AI已经在执行回合，忽略重复调用");
-                yield break;
-            }
+            Debug.Log("AIController.ExecuteAITurn");
             
+            // 标记AI正在执行回合
             _isExecutingTurn = true;
-            Debug.Log("AI开始执行回合");
             
-            // 重置所有敌方卡牌的行动状态
-            _cardManager.ResetAllCardActions();
+            // 等待一小段时间，让玩家看到回合开始
+            yield return new WaitForSeconds(actionDelay);
             
             // 获取所有敌方卡牌
             List<Card> enemyCards = GetEnemyCards();
-            Debug.Log($"找到 {enemyCards.Count} 张敌方卡牌");
             
-            // 随机排序敌方卡牌，使AI行为更加随机
-            ShuffleList(enemyCards);
-            
-            // 随机选择一张卡牌行动
-            Card selectedCard = enemyCards[0]; // 取第一张，因为已经随机排序过
-            Debug.Log($"AI选择卡牌 {selectedCard.Data.Name} 在位置 {selectedCard.Position} 行动");
-            
-            // 选中卡牌并高亮
-            _cardManager.SelectCard(selectedCard.Position);
-            
-            // 尝试攻击
-            bool hasActed = TryAttackRandomly(selectedCard);
-            
-            // 如果没有攻击，尝试移动
-            if (!hasActed)
+            // 如果没有敌方卡牌，直接结束回合
+            if (enemyCards.Count == 0)
             {
-                TryMoveRandomly(selectedCard);
+                Debug.Log("没有敌方卡牌，AI回合结束");
+                _isExecutingTurn = false;
+                yield break;
             }
             
-            // 无论是否行动成功，都标记该卡牌为已行动
-            selectedCard.HasActed = true;
+            // 为每张卡牌执行行动
+            foreach (Card card in enemyCards)
+            {
+                // 如果卡牌已经行动过，跳过
+                if (card.HasActed)
+                    continue;
+                    
+                // 尝试执行攻击
+                bool attacked = TryAttackWithCard(card);
+                
+                // 如果没有攻击，尝试移动
+                if (!attacked)
+                {
+                    TryMoveCard(card);
+                }
+                
+                // 等待一段时间，让玩家看清AI的行动
+                yield return new WaitForSeconds(actionDelay);
+            }
             
-            // 取消选中卡牌
-            _cardManager.DeselectCard();
+            // 标记AI回合执行完毕
+            _isExecutingTurn = false;
             
-            // 等待一小段时间
-            yield return new WaitForSeconds(actionDelay);
-            
-            // 结束AI回合
-            Debug.Log("AI行动完成，结束敌方回合");
-            _isExecutingTurn = false; // 重置执行状态
-            _turnManager.EndEnemyTurn();
+            Debug.Log("AI回合执行完毕");
         }
         
         // 获取所有敌方卡牌
@@ -136,10 +133,8 @@ namespace ChessGame
             }
         }
 
-
-
-        // 尝试随机攻击
-        private bool TryAttackRandomly(Card card)
+        // 尝试使用卡牌攻击
+        private bool TryAttackWithCard(Card card)
         {
             Debug.Log($"AI尝试攻击，位置: {card.Position}, 攻击范围: {card.AttackRange}");
             
@@ -157,85 +152,56 @@ namespace ChessGame
                 // 设置目标位置，这样会显示高亮
                 _cardManager.SetTargetPosition(targetPosition);
                 
-                // 等待一小段时间，让玩家看到目标高亮
-                StartCoroutine(DelayedAttack(card.Position, targetPosition));
+                // 执行攻击
+                bool success = _cardManager.AttackCard(card.Position, targetPosition);
                 
-                return true;
+                if (success)
+                {
+                    Debug.Log($"AI攻击成功: {card.Position} -> {targetPosition}");
+                    return true;
+                }
+                else
+                {
+                    Debug.LogWarning($"AI攻击失败: {card.Position} -> {targetPosition}");
+                }
             }
             
             Debug.Log("AI没有可攻击的位置");
             return false;
         }
         
-        // 延迟攻击，以便显示高亮效果
-        private IEnumerator DelayedAttack(Vector2Int attackerPosition, Vector2Int targetPosition)
-        {
-            yield return new WaitForSeconds(selectionDelay);
-            
-            // 直接使用CardManager的AttackCard方法
-            bool success = _cardManager.AttackCard(attackerPosition, targetPosition);
-            
-            if (success)
-            {
-                Debug.Log($"AI攻击成功: {attackerPosition} -> {targetPosition}");
-            }
-            else
-            {
-                Debug.LogWarning($"AI攻击失败: {attackerPosition} -> {targetPosition}");
-            }
-            
-            // 清除目标位置
-            _cardManager.ClearTargetPosition();
-        }
-        
-        // 尝试随机移动
-        private bool TryMoveRandomly(Card card)
+        // 尝试移动卡牌
+        private bool TryMoveCard(Card card)
         {
             Debug.Log($"AI尝试移动，位置: {card.Position}, 移动范围: {card.MoveRange}");
             
             // 获取可移动的位置
-            List<Vector2Int> movablePositions = card.GetMovablePositions(_cardManager.BoardWidth, _cardManager.BoardHeight, _cardManager.GetAllCards());
+            List<Vector2Int> movePositions = card.GetMovablePositions(_cardManager.BoardWidth, _cardManager.BoardHeight, _cardManager.GetAllCards());
             
-            Debug.Log($"找到 {movablePositions.Count} 个可移动位置");
+            Debug.Log($"找到 {movePositions.Count} 个可移动位置");
             
             // 如果有可移动的位置，随机选择一个进行移动
-            if (movablePositions.Count > 0)
+            if (movePositions.Count > 0)
             {
-                Vector2Int targetPosition = movablePositions[Random.Range(0, movablePositions.Count)];
+                Vector2Int targetPosition = movePositions[Random.Range(0, movePositions.Count)];
                 Debug.Log($"AI移动卡牌，从 {card.Position} 到 {targetPosition}");
                 
-                // 设置目标位置，这样会显示高亮
-                _cardManager.SetTargetPosition(targetPosition);
+                // 执行移动
+                bool success = _cardManager.MoveCard(card.Position, targetPosition);
                 
-                // 等待一小段时间，让玩家看到目标高亮
-                StartCoroutine(DelayedMove(card.Position, targetPosition));
-                
-                return true;
+                if (success)
+                {
+                    Debug.Log($"AI移动成功: {card.Position} -> {targetPosition}");
+                    return true;
+                }
+                else
+                {
+                    Debug.LogWarning($"AI移动失败: {card.Position} -> {targetPosition}");
+                }
             }
             
             Debug.Log("AI没有可移动的位置");
             return false;
-        }
-        
-        // 延迟移动，以便显示高亮效果
-        private IEnumerator DelayedMove(Vector2Int fromPosition, Vector2Int toPosition)
-        {
-            yield return new WaitForSeconds(selectionDelay);
-            
-            // 直接使用CardManager的MoveCard方法
-            bool success = _cardManager.MoveCard(fromPosition, toPosition);
-            
-            if (success)
-            {
-                Debug.Log($"AI移动成功: {fromPosition} -> {toPosition}");
-            }
-            else
-            {
-                Debug.LogWarning($"AI移动失败: {fromPosition} -> {toPosition}");
-            }
-            
-            // 清除目标位置
-            _cardManager.ClearTargetPosition();
         }
     }
 } 

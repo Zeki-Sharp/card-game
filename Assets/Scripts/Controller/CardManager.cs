@@ -168,26 +168,50 @@ namespace ChessGame
             }
         }
 
-        // 重置玩家卡牌的行动状态
+        /// <summary>
+        /// 重置所有玩家卡牌的行动状态
+        /// </summary>
         public void ResetPlayerCardActions()
         {
-            foreach (var card in _cards.Values)
+            Debug.Log("重置所有玩家卡牌的行动状态");
+            
+            foreach (var kvp in _cards)
             {
-                if (card.OwnerId == 0) // 玩家卡牌  
+                Card card = kvp.Value;
+                if (card.OwnerId == 0) // 玩家卡牌
                 {
-                    card.ResetAction();
+                    card.HasActed = false;
+                    
+                    // 更新卡牌视图
+                    CardView cardView = GetCardView(card.Position);
+                    if (cardView != null)
+                    {
+                        cardView.UpdateVisuals();
+                    }
                 }
             }
         }
 
-        // 重置敌方卡牌的行动状态
+        /// <summary>
+        /// 重置所有敌方卡牌的行动状态
+        /// </summary>
         public void ResetEnemyCardActions()
         {
-            foreach (var card in _cards.Values)
+            Debug.Log("重置所有敌方卡牌的行动状态");
+            
+            foreach (var kvp in _cards)
             {
+                Card card = kvp.Value;
                 if (card.OwnerId == 1) // 敌方卡牌
                 {
-                    card.ResetAction();
+                    card.HasActed = false;
+                    
+                    // 更新卡牌视图
+                    CardView cardView = GetCardView(card.Position);
+                    if (cardView != null)
+                    {
+                        cardView.UpdateVisuals();
+                    }
                 }
             }
         }
