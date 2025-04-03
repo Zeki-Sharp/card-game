@@ -163,10 +163,9 @@ namespace ChessGame
             // 遍历能力，检查是否有可用的攻击能力
             foreach (var ability in abilities)
             {
-                // 检查能力的第一个动作是否为Attack类型，或者是冲锋类型的能力
+                // 检查能力的第一个动作是否为Attack类型
                 if (ability.actionSequence.Count > 0 && 
-                    (ability.actionSequence[0].actionType == AbilityActionConfig.ActionType.Attack ||
-                     ability.abilityName == "冲锋")) // 特别检查冲锋能力
+                    ability.actionSequence[0].actionType == AbilityActionConfig.ActionType.Attack)
                 {
                     // 使用能力系统检查是否可以攻击目标位置
                     CardManager cardManager = GameObject.FindObjectOfType<CardManager>();
@@ -230,43 +229,6 @@ namespace ChessGame
             return movablePositions;
         }
         
-        // 获取可冲锋的位置
-        public List<Vector2Int> GetChargeablePositions(int boardWidth, int boardHeight, Dictionary<Vector2Int, Card> allCards)
-        {
-            List<Vector2Int> chargeablePositions = new List<Vector2Int>();
-            
-            // 基本检查
-            if (HasActed || IsFaceDown) return chargeablePositions;
-            
-            CardManager cardManager = GameObject.FindObjectOfType<CardManager>();
-            if (cardManager == null) return chargeablePositions;
-            
-            // 获取冲锋能力
-            List<AbilityConfiguration> abilities = GetAbilities();
-            AbilityConfiguration chargeAbility = abilities.Find(a => a.abilityName == "冲锋");
-            if (chargeAbility == null) return chargeablePositions;
-            
-            // 遍历棋盘上的所有位置
-            for (int x = 0; x < boardWidth; x++)
-            {
-                for (int y = 0; y < boardHeight; y++)
-                {
-                    Vector2Int targetPos = new Vector2Int(x, y);
-                    
-                    // 跳过当前位置
-                    if (targetPos == Position) continue;
-                    
-                    // 检查是否可以冲锋到该位置
-                    if (AbilityManager.Instance.GetConditionResolver().CanChargeToPosition(this, targetPos, cardManager))
-                    {
-                        chargeablePositions.Add(targetPos);
-                    }
-                }
-            }
-            
-            return chargeablePositions;
-        }
-        
         // 获取可攻击的位置
         public virtual List<Vector2Int> GetAttackablePositions(int boardWidth, int boardHeight, Dictionary<Vector2Int, Card> allCards)
         {
@@ -290,18 +252,6 @@ namespace ChessGame
                     {
                         attackablePositions.Add(targetPos);
                     }
-                }
-            }
-            
-            // 获取可冲锋的位置
-            List<Vector2Int> chargeablePositions = GetChargeablePositions(boardWidth, boardHeight, allCards);
-            
-            // 合并两个列表（去重）
-            foreach (var pos in chargeablePositions)
-            {
-                if (!attackablePositions.Contains(pos))
-                {
-                    attackablePositions.Add(pos);
                 }
             }
             

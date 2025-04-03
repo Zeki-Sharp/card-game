@@ -352,52 +352,5 @@ namespace ChessGame.Cards
             
             return false;
         }
-
-        /// <summary>
-        /// 检查是否可以冲锋到目标位置
-        /// </summary>
-        public bool CanChargeToPosition(Card card, Vector2Int targetPosition, CardManager cardManager)
-        {
-            // 基本检查
-            if (card.HasActed || card.IsFaceDown) return false;
-            
-            // 获取目标卡牌
-            Card targetCard = cardManager.GetCard(targetPosition);
-            if (targetCard == null) return false;
-            
-            // 检查目标是否为敌方或背面卡牌
-            bool isValidTarget = targetCard.OwnerId != card.OwnerId || targetCard.IsFaceDown;
-            if (!isValidTarget) return false;
-            
-            // 计算直线距离
-            int dx = Mathf.Abs(targetPosition.x - card.Position.x);
-            int dy = Mathf.Abs(targetPosition.y - card.Position.y);
-            bool isStraight = dx == 0 || dy == 0;
-            int straightDist = isStraight ? Mathf.Max(dx, dy) : int.MaxValue;
-            
-            // 检查距离是否在移动范围内但大于攻击范围
-            if (!isStraight || straightDist > card.MoveRange || straightDist <= card.AttackRange)
-                return false;
-            
-            // 检查路径是否被阻挡
-            if (CheckPathBlocked(card.Position, targetPosition, cardManager))
-                return false;
-            
-            // 检查前一格是否为空
-            Vector2Int direction = new Vector2Int(
-                (targetPosition.x - card.Position.x) / dx,
-                (targetPosition.y - card.Position.y) / dy
-            );
-            
-            Vector2Int previousPosition = new Vector2Int(
-                targetPosition.x - direction.x,
-                targetPosition.y - direction.y
-            );
-            
-            if (cardManager.GetCard(previousPosition) != null)
-                return false;
-            
-            return true;
-        }
     }
 } 

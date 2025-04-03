@@ -17,42 +17,6 @@ namespace ChessGame.Cards
         }
         
         /// <summary>
-        /// 执行冲锋能力
-        /// </summary>
-        public IEnumerator ExecuteChargeAbility(Card sourceCard, Vector2Int targetPosition)
-        {
-            Debug.Log($"执行冲锋能力: 从 {sourceCard.Position} 到 {targetPosition}");
-            
-            // 计算方向
-            Vector2Int direction = new Vector2Int(
-                targetPosition.x - sourceCard.Position.x,
-                targetPosition.y - sourceCard.Position.y
-            );
-            
-            // 标准化方向
-            if (direction.x != 0) direction.x = direction.x / Mathf.Abs(direction.x);
-            if (direction.y != 0) direction.y = direction.y / Mathf.Abs(direction.y);
-            
-            // 计算前一格位置
-            Vector2Int previousPosition = new Vector2Int(
-                targetPosition.x - direction.x,
-                targetPosition.y - direction.y
-            );
-            
-            // 先移动到前一格
-            _cardManager.ExecuteMove(sourceCard.Position, previousPosition);
-            yield return new WaitForSeconds(0.3f);
-            
-            // 然后攻击目标
-            _cardManager.ExecuteAttack(previousPosition, targetPosition);
-            
-            // 标记卡牌已行动
-            sourceCard.HasActed = true;
-            
-            Debug.Log($"冲锋能力执行完成");
-        }
-        
-        /// <summary>
         /// 执行能力
         /// </summary>
         /// <param name="ability">能力配置</param>
@@ -62,13 +26,6 @@ namespace ChessGame.Cards
         public IEnumerator ExecuteAbility(AbilityConfiguration ability, Card sourceCard, Vector2Int targetPosition)
         {
             Debug.Log($"执行能力: {ability.abilityName}");
-            
-            // 特殊处理冲锋能力
-            if (ability.abilityName == "冲锋")
-            {
-                yield return ExecuteChargeAbility(sourceCard, targetPosition);
-                yield break;
-            }
             
             // 存储执行过程中的临时数据
             Dictionary<string, object> executionContext = new Dictionary<string, object>();

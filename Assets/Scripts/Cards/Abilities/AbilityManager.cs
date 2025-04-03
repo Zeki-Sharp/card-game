@@ -203,13 +203,5 @@ namespace ChessGame.Cards
         {
             return _conditionResolver;
         }
-        
-        /// <summary>
-        /// 执行冲锋能力
-        /// </summary>
-        public IEnumerator ExecuteChargeAbility(Card sourceCard, Vector2Int targetPosition)
-        {
-            return _abilityExecutor.ExecuteChargeAbility(sourceCard, targetPosition);
-        }
     }
 } 
