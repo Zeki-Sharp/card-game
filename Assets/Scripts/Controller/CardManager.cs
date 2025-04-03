@@ -580,6 +580,21 @@ namespace ChessGame
             // 记录目标卡牌攻击前的生命值
             int targetHealthBefore = targetCard.Data.Health;
             
+            // 如果目标卡牌是面朝下的，保留至少1点生命值
+            if (targetCard.IsFaceDown)
+            {
+                // 确保伤害不会导致生命值低于1
+                damage = Mathf.Min(damage, targetCard.Data.Health - 1);
+                
+                // 如果伤害大于0，翻转卡牌
+                if (damage > 0)
+                {
+                    // 使用FlipCardAction翻转卡牌
+                    FlipCardAction flipAction = new FlipCardAction(this, targetPosition);
+                    flipAction.Execute();
+                }
+            }
+            
             // 应用伤害
             targetCard.Data.Health -= damage;
             
