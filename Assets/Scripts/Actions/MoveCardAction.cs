@@ -16,10 +16,34 @@ namespace ChessGame
         {
             _fromPosition = fromPosition;
             _toPosition = toPosition;
+            
+            // 确保CardManager不为空
+            if (CardManager == null)
+            {
+                Debug.LogError("MoveCardAction: CardManager 为空");
+                // 尝试再次从场景中获取
+                cardManager = GameObject.FindObjectOfType<CardManager>();
+                if (CardManager == null)
+                {
+                    Debug.LogError("MoveCardAction: 无法从场景中找到 CardManager");
+                }
+            }
         }
         
         public override bool CanExecute()
         {
+            // 检查CardManager是否为空
+            if (CardManager == null)
+            {
+                Debug.LogError("MoveCardAction.CanExecute: CardManager 为空");
+                // 最后一次尝试获取
+                CardManager = GameObject.FindObjectOfType<CardManager>();
+                if (CardManager == null)
+                {
+                    return false;
+                }
+            }
+            
             // 获取卡牌
             Card card = CardManager.GetCard(_fromPosition);
             if (card == null)
@@ -46,12 +70,28 @@ namespace ChessGame
         }
         
         public override bool Execute()
-        {    
+        {
+            // 检查是否可以执行
             if (!CanExecute())
+            {
                 return false;
-                
+            }
+            
+            // 检查CardManager是否为空
+            if (CardManager == null)
+            {
+                Debug.LogError("MoveCardAction.Execute: CardManager 为空");
+                return false;
+            }
+            
             // 获取卡牌和视图
             Card card = CardManager.GetCard(_fromPosition);
+            if (card == null)
+            {
+                Debug.LogError($"移动失败：起始位置 {_fromPosition} 没有卡牌");
+                return false;
+            }
+            
             CardView cardView = CardManager.GetCardView(_fromPosition);
             
             Debug.Log($"开始移动卡牌: {card.Data.Name}, 从 {_fromPosition} 到 {_toPosition}");

@@ -409,6 +409,9 @@ namespace ChessGame
         // 移动卡牌
         public bool MoveCard(Vector2Int fromPosition, Vector2Int toPosition)
         {
+            Debug.Log($"CardManager.MoveCard: 从 {fromPosition} 到 {toPosition}");
+            
+            // 确保自身引用正确传递
             MoveCardAction moveAction = new MoveCardAction(this, fromPosition, toPosition);
             return moveAction.Execute();
         }
@@ -416,6 +419,9 @@ namespace ChessGame
         // 攻击卡牌
         public bool AttackCard(Vector2Int attackerPosition, Vector2Int targetPosition)
         {
+            Debug.Log($"CardManager.AttackCard: 从 {attackerPosition} 攻击 {targetPosition}");
+            
+            // 确保自身引用正确传递
             AttackCardAction attackAction = new AttackCardAction(this, attackerPosition, targetPosition);
             return attackAction.Execute();
         }

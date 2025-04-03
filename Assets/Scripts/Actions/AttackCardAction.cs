@@ -16,10 +16,34 @@ namespace ChessGame
         {
             _attackerPosition = attackerPosition;
             _targetPosition = targetPosition;
+            
+            // 确保CardManager不为空
+            if (CardManager == null)
+            {
+                Debug.LogError("AttackCardAction: CardManager 为空");
+                // 尝试再次从场景中获取
+                CardManager = GameObject.FindObjectOfType<CardManager>();
+                if (CardManager == null)
+                {
+                    Debug.LogError("AttackCardAction: 无法从场景中找到 CardManager");
+                }
+            }
         }
         
         public override bool CanExecute()
         {
+            // 检查CardManager是否为空
+            if (CardManager == null)
+            {
+                Debug.LogError("AttackCardAction.CanExecute: CardManager 为空");
+                // 最后一次尝试获取
+                CardManager = GameObject.FindObjectOfType<CardManager>();
+                if (CardManager == null)
+                {
+                    return false;
+                }
+            }
+            
             // 获取攻击者卡牌
             Card attackerCard = CardManager.GetCard(_attackerPosition);
             if (attackerCard == null)

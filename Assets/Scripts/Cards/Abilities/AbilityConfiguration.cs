@@ -6,7 +6,7 @@ namespace ChessGame.Cards
     /// <summary>
     /// 能力配置 - 定义一个完整的能力
     /// </summary>
-    [CreateAssetMenu(fileName = "NewAbility", menuName = "ChessGame/Ability Configuration", order = 1)]
+    [CreateAssetMenu(fileName = "NewAbility", menuName = "ChessGame/Ability", order = 2)]
     public class AbilityConfiguration : ScriptableObject
     {
         // 能力名称

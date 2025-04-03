@@ -20,6 +20,11 @@ MonoBehaviour:
   - actionType: 0
     targetSelector: TargetDirection-1
     parameterList: []
+  - actionType: 4
+    targetSelector: 
+    parameterList:
+    - key: time
+      value: 0.1
   - actionType: 1
     targetSelector: Target
     parameterList: []

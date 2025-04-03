@@ -8,11 +8,23 @@ namespace ChessGame
     /// </summary>
     public abstract class CardAction
     {
-        protected CardManager CardManager { get; private set; }
+        public CardManager CardManager { get; protected set; }
         
-        public CardAction(CardManager cardManager)
+        protected CardAction(CardManager cardManager)
         {
             CardManager = cardManager;
+            
+            // 添加空检查
+            if (CardManager == null)
+            {
+                Debug.LogError("CardAction: CardManager 为空");
+                // 尝试从场景中获取
+                CardManager = GameObject.FindObjectOfType<CardManager>();
+                if (CardManager == null)
+                {
+                    Debug.LogError("CardAction: 无法从场景中找到 CardManager");
+                }
+            }
         }
         
         /// <summary>

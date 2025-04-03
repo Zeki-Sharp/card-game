@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace ChessGame
 {
-    [CreateAssetMenu(fileName = "NewCardData", menuName = "Chess Game/Card Data", order = 1)]
+    [CreateAssetMenu(fileName = "NewCardData", menuName = "ChessGame/Card Data", order = 1)]
     public class CardDataSO : ScriptableObject
     {
         [Header("基本信息")]

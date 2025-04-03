@@ -13,6 +13,10 @@ namespace ChessGame.Cards
         
         public AbilityExecutor(CardManager cardManager)
         {
+            if (cardManager == null)
+            {
+                Debug.LogError("AbilityExecutor 构造时传入的 CardManager 为 null！");
+            }
             _cardManager = cardManager;
         }
         

@@ -40,12 +40,14 @@ namespace ChessGame.Cards
                 return;
             }
             _instance = this;
-            
+
+            // 获取CardManager
+            _cardManager = FindObjectOfType<CardManager>();
+
             _abilityExecutor = new AbilityExecutor(_cardManager);
             _conditionResolver = new AbilityConditionResolver();
             _rangeCalculator = new AbilityRangeCalculator(_cardManager, _conditionResolver);
             
-            _cardManager = FindObjectOfType<CardManager>();
             _gameEventSystem = GameEventSystem.Instance;
             
             // 设置脚本执行顺序
