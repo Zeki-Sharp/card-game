@@ -19,7 +19,8 @@ namespace ChessGame
             None,
             Move,
             Selected,
-            Attack
+            Attack,
+            Charge
         }
 
         // 单元格点击事件
@@ -60,7 +61,7 @@ namespace ChessGame
 
             if (mainRenderer != null)
             {
-                switch (_highlightType)
+                switch (type)
                 {
                     case HighlightType.None:
                         mainRenderer.color = Color.white;
@@ -72,6 +73,9 @@ namespace ChessGame
                         mainRenderer.color = selectedHighlightColor;
                         break;
                     case HighlightType.Attack:
+                        mainRenderer.color = attackHighlightColor;
+                        break;
+                    case HighlightType.Charge:
                         mainRenderer.color = attackHighlightColor;
                         break;
                 }

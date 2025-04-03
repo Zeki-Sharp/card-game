@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Ability_BasicMove
   m_EditorClassIdentifier: 
   abilityName: "\u57FA\u672C\u79FB\u52A8"
-  description: "\u79FB\u52A8\u5230\u76F8\u90BB\u7A7A\u683C"
-  triggerCondition: Distance <= MoveRange && Empty
+  description: "\u79FB\u52A8\u5230\u79FB\u52A8\u8303\u56F4\u5185\u7A7A\u683C"
+  triggerCondition: Distance <= MoveRange && Empty && Blocked == false
   actionSequence:
   - actionType: 0
     targetSelector: Target

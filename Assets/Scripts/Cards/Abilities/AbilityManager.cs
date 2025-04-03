@@ -195,5 +195,21 @@ namespace ChessGame.Cards
                 }
             }
         }
+        
+        /// <summary>
+        /// 获取条件解析器
+        /// </summary>
+        public AbilityConditionResolver GetConditionResolver()
+        {
+            return _conditionResolver;
+        }
+        
+        /// <summary>
+        /// 执行冲锋能力
+        /// </summary>
+        public IEnumerator ExecuteChargeAbility(Card sourceCard, Vector2Int targetPosition)
+        {
+            return _abilityExecutor.ExecuteChargeAbility(sourceCard, targetPosition);
+        }
     }
 } 

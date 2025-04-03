@@ -160,5 +160,43 @@ namespace ChessGame
                 }
             }
         }
+        
+        /// <summary>
+        /// 高亮显示可攻击位置
+        /// </summary>
+        public void HighlightAttackablePositions(Vector2Int selectedPosition)
+        {
+            Card selectedCard = cardManager.GetCard(selectedPosition);
+            if (selectedCard == null) return;
+            
+            // 获取所有卡牌
+            Dictionary<Vector2Int, Card> allCards = cardManager.GetAllCards();
+            
+            // 获取可攻击位置
+            List<Vector2Int> attackablePositions = selectedCard.GetAttackablePositions(
+                cardManager.BoardWidth, cardManager.BoardHeight, allCards);
+            
+            // 获取可冲锋位置
+            List<Vector2Int> chargeablePositions = selectedCard.GetChargeablePositions(
+                cardManager.BoardWidth, cardManager.BoardHeight, allCards);
+            
+            // 高亮显示
+            foreach (var position in attackablePositions)
+            {
+                CellView cellView = board.GetCellView(position.x, position.y);
+                if (cellView != null)
+                {
+                    // 如果是可冲锋位置，使用特殊高亮
+                    if (chargeablePositions.Contains(position))
+                    {
+                        cellView.SetHighlight(CellView.HighlightType.Charge); // 需要添加一个新的高亮类型
+                    }
+                    else
+                    {
+                        cellView.SetHighlight(CellView.HighlightType.Attack);
+                    }
+                }
+            }
+        }
     }
 } 

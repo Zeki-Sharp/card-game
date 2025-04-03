@@ -512,6 +512,105 @@ namespace ChessGame
             return _cards.ContainsKey(position) ? _cards[position] : null;
         }
         
+        /// <summary>
+        /// 执行移动操作，不检查移动条件
+        /// </summary>
+        /// <param name="fromPosition">起始位置</param>
+        /// <param name="toPosition">目标位置</param>
+        /// <returns>是否成功移动</returns>
+        public bool ExecuteMove(Vector2Int fromPosition, Vector2Int toPosition)
+        {
+            // 获取卡牌
+            Card card = GetCard(fromPosition);
+            if (card == null)
+            {
+                Debug.LogError($"ExecuteMove: 位置 {fromPosition} 没有卡牌");
+                return false;
+            }
+            
+            // 检查目标位置是否为空
+            if (GetCard(toPosition) != null)
+            {
+                Debug.LogError($"ExecuteMove: 目标位置 {toPosition} 已有卡牌");
+                return false;
+            }
+            
+            // 执行移动
+            _cards.Remove(fromPosition);
+            card.Position = toPosition;
+            _cards[toPosition] = card;
+            
+            // 更新视图
+            CardView cardView = GetCardView(fromPosition);
+            if (cardView != null)
+            {
+                _cardViews.Remove(fromPosition);
+                _cardViews[toPosition] = cardView;
+                
+                // 触发移动事件
+                GameEventSystem.Instance.NotifyCardMoved(fromPosition, toPosition);
+            }
+            
+            Debug.Log($"ExecuteMove: 卡牌从 {fromPosition} 移动到 {toPosition}");
+            return true;
+        }
+
+        /// <summary>
+        /// 执行攻击操作，不检查攻击条件
+        /// </summary>
+        /// <param name="attackerPosition">攻击者位置</param>
+        /// <param name="targetPosition">目标位置</param>
+        /// <returns>是否成功攻击</returns>
+        public bool ExecuteAttack(Vector2Int attackerPosition, Vector2Int targetPosition)
+        {
+            // 获取攻击者和目标
+            Card attacker = GetCard(attackerPosition);
+            Card target = GetCard(targetPosition);
+            
+            if (attacker == null)
+            {
+                Debug.LogError($"ExecuteAttack: 位置 {attackerPosition} 没有攻击者");
+                return false;
+            }
+            
+            if (target == null)
+            {
+                Debug.LogError($"ExecuteAttack: 位置 {targetPosition} 没有目标");
+                return false;
+            }
+            
+            // 计算伤害
+            int damage = attacker.Data.Attack;
+            
+            // 应用伤害
+            target.Data.Health -= damage;
+            
+            // 触发攻击事件
+            GameEventSystem.Instance.NotifyCardAttacked(attackerPosition, targetPosition);
+            
+            // 检查目标是否死亡
+            if (target.Data.Health <= 0)
+            {
+                // 移除目标
+                RemoveCard(targetPosition);
+            }
+            
+            // 检查反伤
+            int counterDamage = target.Data.Attack / 2; // 反伤为攻击力的一半
+            if (counterDamage > 0)
+            {
+                attacker.Data.Health -= counterDamage;
+                
+                // 检查攻击者是否死亡
+                if (attacker.Data.Health <= 0)
+                {
+                    RemoveCard(attackerPosition);
+                }
+            }
+            
+            Debug.Log($"ExecuteAttack: {attacker.Data.Name} 攻击 {target.Data.Name}，造成 {damage} 点伤害");
+            return true;
+        }
     }
 
 

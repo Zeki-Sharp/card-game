@@ -154,51 +154,29 @@ namespace ChessGame
         // 修改CanAttack方法，移除基础逻辑
         public bool CanAttack(Vector2Int position, Dictionary<Vector2Int, Card> allCards)
         {
-            // 如果卡牌已经行动过，不能再次行动
-            if (HasActed)
-            {
-                Debug.Log($"卡牌 {Data.Name} 已经行动过，不能攻击");
-                return false;
-            }
+            // 基本检查
+            if (HasActed || IsFaceDown) return false;
             
-            // 如果是背面状态，不能攻击
-            if (IsFaceDown)
-            {
-                Debug.Log($"卡牌 {Data.Name} 是背面状态，不能攻击");
-                return false;
-            }
-            
-            // 完全依赖能力系统
+            // 获取卡牌能力
             List<AbilityConfiguration> abilities = GetAbilities();
-            Debug.Log($"卡牌 {Data.Name} 检查是否可以攻击 {position}，获取到 {abilities.Count} 个能力");
             
-            // 如果没有能力，不能攻击
-            if (abilities.Count == 0)
-            {
-                Debug.Log($"卡牌 {Data.Name} 没有能力，不能攻击");
-                return false;
-            }
-            
-            // 使用能力系统检查是否可以攻击目标位置
+            // 遍历能力，检查是否有可用的攻击能力
             foreach (var ability in abilities)
             {
-                // 检查是否是攻击类型的能力
+                // 检查能力的第一个动作是否为Attack类型，或者是冲锋类型的能力
                 if (ability.actionSequence.Count > 0 && 
-                    ability.actionSequence[0].actionType == AbilityActionConfig.ActionType.Attack)
+                    (ability.actionSequence[0].actionType == AbilityActionConfig.ActionType.Attack ||
+                     ability.abilityName == "冲锋")) // 特别检查冲锋能力
                 {
-                    Debug.Log($"检查攻击能力: {ability.abilityName}, 条件: {ability.triggerCondition}");
-                    
                     // 使用能力系统检查是否可以攻击目标位置
                     CardManager cardManager = GameObject.FindObjectOfType<CardManager>();
                     if (cardManager != null && CanTriggerAbility(ability, position, cardManager))
                     {
-                        Debug.Log($"能力 {ability.abilityName} 可以攻击位置 {position}");
                         return true;
                     }
                 }
             }
             
-            Debug.Log($"卡牌 {Data.Name} 没有可用的攻击能力可以攻击位置 {position}");
             return false;
         }
         
@@ -252,34 +230,52 @@ namespace ChessGame
             return movablePositions;
         }
         
-        // 修改GetAttackablePositions方法，移除基础逻辑
+        // 获取可冲锋的位置
+        public List<Vector2Int> GetChargeablePositions(int boardWidth, int boardHeight, Dictionary<Vector2Int, Card> allCards)
+        {
+            List<Vector2Int> chargeablePositions = new List<Vector2Int>();
+            
+            // 基本检查
+            if (HasActed || IsFaceDown) return chargeablePositions;
+            
+            CardManager cardManager = GameObject.FindObjectOfType<CardManager>();
+            if (cardManager == null) return chargeablePositions;
+            
+            // 获取冲锋能力
+            List<AbilityConfiguration> abilities = GetAbilities();
+            AbilityConfiguration chargeAbility = abilities.Find(a => a.abilityName == "冲锋");
+            if (chargeAbility == null) return chargeablePositions;
+            
+            // 遍历棋盘上的所有位置
+            for (int x = 0; x < boardWidth; x++)
+            {
+                for (int y = 0; y < boardHeight; y++)
+                {
+                    Vector2Int targetPos = new Vector2Int(x, y);
+                    
+                    // 跳过当前位置
+                    if (targetPos == Position) continue;
+                    
+                    // 检查是否可以冲锋到该位置
+                    if (AbilityManager.Instance.GetConditionResolver().CanChargeToPosition(this, targetPos, cardManager))
+                    {
+                        chargeablePositions.Add(targetPos);
+                    }
+                }
+            }
+            
+            return chargeablePositions;
+        }
+        
+        // 获取可攻击的位置
         public virtual List<Vector2Int> GetAttackablePositions(int boardWidth, int boardHeight, Dictionary<Vector2Int, Card> allCards)
         {
             List<Vector2Int> attackablePositions = new List<Vector2Int>();
             
-            // 如果卡牌已经行动过或是背面状态，不能攻击
-            if (HasActed || IsFaceDown)
-                return attackablePositions;
+            // 基本检查
+            if (HasActed || IsFaceDown) return attackablePositions;
             
-            // 获取卡牌的所有能力
-            List<AbilityConfiguration> abilities = GetAbilities();
-            
-            // 如果没有能力，返回空列表
-            if (abilities.Count == 0)
-            {
-                Debug.Log($"[Card] 卡牌 {Data.Id}({Data.Name}) 没有能力，不能攻击");
-                return attackablePositions;
-            }
-            
-            // 使用能力系统计算可攻击位置
-            CardManager cardManager = GameObject.FindObjectOfType<CardManager>();
-            if (cardManager == null)
-            {
-                Debug.LogError("找不到CardManager实例");
-                return attackablePositions;
-            }
-            
-            // 遍历棋盘上的所有位置
+            // 获取普通攻击范围内的位置
             for (int x = 0; x < boardWidth; x++)
             {
                 for (int y = 0; y < boardHeight; y++)
@@ -297,7 +293,18 @@ namespace ChessGame
                 }
             }
             
-            Debug.Log($"[Card] 卡牌 {Data.Id}({Data.Name}) 使用能力系统计算可攻击位置，位置数量: {attackablePositions.Count}");
+            // 获取可冲锋的位置
+            List<Vector2Int> chargeablePositions = GetChargeablePositions(boardWidth, boardHeight, allCards);
+            
+            // 合并两个列表（去重）
+            foreach (var pos in chargeablePositions)
+            {
+                if (!attackablePositions.Contains(pos))
+                {
+                    attackablePositions.Add(pos);
+                }
+            }
+            
             return attackablePositions;
         }
 
@@ -335,37 +342,8 @@ namespace ChessGame
             {
                 return AbilityManager.Instance.CanTriggerAbility(ability, this, targetPosition, cardManager);
             }
+            Debug.Log($"卡牌 {Data.Name} 没有能力管理器实例，不能触发能力");
             return false;
-        }
-
-        // 检查是否在曼哈顿距离范围内
-        public bool IsInManhattanRange(Vector2Int targetPosition, int range)
-        {
-            int distance = Mathf.Abs(targetPosition.x - Position.x) + 
-                          Mathf.Abs(targetPosition.y - Position.y);
-            return distance <= range;
-        }
-        
-        // 检查是否在斜角范围内
-        public bool IsInDiagonalRange(Vector2Int targetPosition, int range)
-        {
-            int dx = Mathf.Abs(targetPosition.x - Position.x);
-            int dy = Mathf.Abs(targetPosition.y - Position.y);
-            return dx == dy && dx <= range;
-        }
-        
-        // 检查是否在移动范围内（供能力系统使用）
-        public bool IsInMoveRange(Vector2Int targetPosition)
-        {
-            // 默认使用曼哈顿距离
-            return IsInManhattanRange(targetPosition, MoveRange);
-        }
-        
-        // 检查是否在攻击范围内（供能力系统使用）
-        public bool IsInAttackRange(Vector2Int targetPosition)
-        {
-            // 默认使用曼哈顿距离
-            return IsInManhattanRange(targetPosition, AttackRange);
         }
     }
 } 

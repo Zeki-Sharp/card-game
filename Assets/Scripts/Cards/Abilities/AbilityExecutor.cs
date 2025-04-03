@@ -17,6 +17,42 @@ namespace ChessGame.Cards
         }
         
         /// <summary>
+        /// 执行冲锋能力
+        /// </summary>
+        public IEnumerator ExecuteChargeAbility(Card sourceCard, Vector2Int targetPosition)
+        {
+            Debug.Log($"执行冲锋能力: 从 {sourceCard.Position} 到 {targetPosition}");
+            
+            // 计算方向
+            Vector2Int direction = new Vector2Int(
+                targetPosition.x - sourceCard.Position.x,
+                targetPosition.y - sourceCard.Position.y
+            );
+            
+            // 标准化方向
+            if (direction.x != 0) direction.x = direction.x / Mathf.Abs(direction.x);
+            if (direction.y != 0) direction.y = direction.y / Mathf.Abs(direction.y);
+            
+            // 计算前一格位置
+            Vector2Int previousPosition = new Vector2Int(
+                targetPosition.x - direction.x,
+                targetPosition.y - direction.y
+            );
+            
+            // 先移动到前一格
+            _cardManager.ExecuteMove(sourceCard.Position, previousPosition);
+            yield return new WaitForSeconds(0.3f);
+            
+            // 然后攻击目标
+            _cardManager.ExecuteAttack(previousPosition, targetPosition);
+            
+            // 标记卡牌已行动
+            sourceCard.HasActed = true;
+            
+            Debug.Log($"冲锋能力执行完成");
+        }
+        
+        /// <summary>
         /// 执行能力
         /// </summary>
         /// <param name="ability">能力配置</param>
@@ -26,6 +62,13 @@ namespace ChessGame.Cards
         public IEnumerator ExecuteAbility(AbilityConfiguration ability, Card sourceCard, Vector2Int targetPosition)
         {
             Debug.Log($"执行能力: {ability.abilityName}");
+            
+            // 特殊处理冲锋能力
+            if (ability.abilityName == "冲锋")
+            {
+                yield return ExecuteChargeAbility(sourceCard, targetPosition);
+                yield break;
+            }
             
             // 存储执行过程中的临时数据
             Dictionary<string, object> executionContext = new Dictionary<string, object>();
@@ -58,14 +101,14 @@ namespace ChessGame.Cards
             
             switch (actionConfig.actionType)
             {
-                case AbilityActionConfig.ActionType.Move:
-                    ExecuteMoveAction(sourceCard.Position, targetPosition);
+                case AbilityActionConfig.ActionType.Attack:
+                    // 普通攻击
+                    int damageDealt = ExecuteAttackAction(sourceCard.Position, targetPosition);
+                    context["dealtDamage"] = damageDealt;
                     break;
                     
-                case AbilityActionConfig.ActionType.Attack:
-                    int damageDealt = ExecuteAttackAction(sourceCard.Position, targetPosition);
-                    // 存储造成的伤害，供后续动作使用
-                    context["dealtDamage"] = damageDealt;
+                case AbilityActionConfig.ActionType.Move:
+                    ExecuteMoveAction(sourceCard.Position, targetPosition);
                     break;
                     
                 case AbilityActionConfig.ActionType.Heal:
@@ -89,14 +132,14 @@ namespace ChessGame.Cards
         /// <summary>
         /// 解析目标位置
         /// </summary>
-        private Vector2Int ResolveTargetPosition(string targetSelector, Vector2Int sourcePos, Vector2Int clickedPos)
+        private Vector2Int ResolveTargetPosition(string targetSelector, Vector2Int sourcePosition, Vector2Int targetPosition)
         {
             // 解析目标选择器
             if (string.IsNullOrEmpty(targetSelector) || targetSelector == "Self")
-                return sourcePos;
+                return sourcePosition;
                 
             if (targetSelector == "Target")
-                return clickedPos;
+                return targetPosition;
                 
             if (targetSelector.StartsWith("TargetPosition"))
             {
@@ -107,7 +150,7 @@ namespace ChessGame.Cards
                     string[] parts = offsetStr.Split(',');
                     int offsetX = int.Parse(parts[0]);
                     int offsetY = int.Parse(parts[1]);
-                    return new Vector2Int(clickedPos.x + offsetX, clickedPos.y + offsetY);
+                    return new Vector2Int(targetPosition.x + offsetX, targetPosition.y + offsetY);
                 }
                 catch (System.Exception e)
                 {
@@ -115,7 +158,7 @@ namespace ChessGame.Cards
                 }
             }
             
-            return clickedPos; // 默认
+            return targetPosition; // 默认返回原始目标位置
         }
         
         /// <summary>

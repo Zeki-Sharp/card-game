@@ -120,11 +120,30 @@ namespace ChessGame.Cards
                 // 替换FaceDown
                 bool isFaceDown = targetCard != null && targetCard.IsFaceDown;
                 condition = Regex.Replace(condition, @"\bFaceDown\b", isFaceDown.ToString().ToLower());
+
+                // 替换EnemyOrFaceDown
+                bool isEnemyOrFaceDown = targetCard != null && (targetCard.OwnerId != card.OwnerId || targetCard.IsFaceDown);
+                condition = Regex.Replace(condition, @"\bEnemyOrFaceDown\b", isEnemyOrFaceDown.ToString().ToLower());
                 
                 // 替换Empty
                 bool isEmpty = targetCard == null;
                 condition = Regex.Replace(condition, @"\bEmpty\b", isEmpty.ToString().ToLower());
             
+                // 添加路径遮挡检查
+                bool isPathBlocked = CheckPathBlocked(card.Position, targetPosition, cardManager);
+                condition = Regex.Replace(condition, @"\bPathBlocked\b", isPathBlocked.ToString().ToLower());
+                
+                // 添加对角线遮挡检查
+                bool isDiagonalBlocked = CheckDiagonalBlocked(card.Position, targetPosition, cardManager);
+                condition = Regex.Replace(condition, @"\bDiagonalBlocked\b", isDiagonalBlocked.ToString().ToLower());
+
+                // 替换Blocked
+                bool isBlocked = isPathBlocked || isDiagonalBlocked;
+                condition = Regex.Replace(condition, @"\bBlocked\b", isBlocked.ToString().ToLower());
+                
+                // 添加更详细的日志
+                Debug.Log($"- PathBlocked: {isPathBlocked}");
+                Debug.Log($"- DiagonalBlocked: {isDiagonalBlocked}");
                 
                 return condition;
             }
@@ -250,6 +269,135 @@ namespace ChessGame.Cards
             // 无法解析的表达式
             Debug.LogError($"无法解析的表达式: {expression}");
             return false;
+        }
+
+        // 检查直线路径上是否有遮挡
+        private bool CheckPathBlocked(Vector2Int start, Vector2Int end, CardManager cardManager)
+        {
+            // 如果不是在同一直线上，返回true（视为被阻挡）
+            if (start.x != end.x && start.y != end.y)
+                return true;
+            
+            // 计算方向
+            int dx = end.x - start.x;
+            int dy = end.y - start.y;
+            
+            // 标准化方向
+            if (dx != 0) dx = dx / Mathf.Abs(dx);
+            if (dy != 0) dy = dy / Mathf.Abs(dy);
+            
+            // 检查路径上的每个格子
+            Vector2Int current = start;
+            while (current != end)
+            {
+                current.x += dx;
+                current.y += dy;
+                
+                // 如果到达目标位置，跳过检查（目标位置可以有卡牌）
+                if (current == end)
+                    continue;
+                
+                // 检查当前位置是否有卡牌
+                if (cardManager.GetCard(current) != null)
+                {
+                    Debug.Log($"路径被阻挡: 位置 {current} 有卡牌");
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
+        // 检查对角线路径上是否有遮挡
+        private bool CheckDiagonalBlocked(Vector2Int start, Vector2Int end, CardManager cardManager)
+        {
+            // 如果不是对角线移动，返回false
+            int dx = Mathf.Abs(end.x - start.x);
+            int dy = Mathf.Abs(end.y - start.y);
+            if (dx != dy || dx == 0)
+                return false;
+            
+            // 计算方向
+            int dirX = (end.x - start.x) / dx;
+            int dirY = (end.y - start.y) / dy;
+            
+            // 检查路径上的每个格子
+            Vector2Int current = start;
+            while (current != end)
+            {
+                current.x += dirX;
+                current.y += dirY;
+                
+                // 如果到达目标位置，跳过检查
+                if (current == end)
+                    continue;
+                
+                // 检查当前位置是否有卡牌
+                if (cardManager.GetCard(current) != null)
+                {
+                    Debug.Log($"对角线路径被阻挡: 位置 {current} 有卡牌");
+                    return true;
+                }
+                
+                // 对角线移动时，还需要检查"拐角"位置
+                Vector2Int corner1 = new Vector2Int(start.x, current.y);
+                Vector2Int corner2 = new Vector2Int(current.x, start.y);
+                
+                if (cardManager.GetCard(corner1) != null && cardManager.GetCard(corner2) != null)
+                {
+                    Debug.Log($"对角线路径被拐角阻挡: 位置 {corner1} 和 {corner2} 都有卡牌");
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
+        /// <summary>
+        /// 检查是否可以冲锋到目标位置
+        /// </summary>
+        public bool CanChargeToPosition(Card card, Vector2Int targetPosition, CardManager cardManager)
+        {
+            // 基本检查
+            if (card.HasActed || card.IsFaceDown) return false;
+            
+            // 获取目标卡牌
+            Card targetCard = cardManager.GetCard(targetPosition);
+            if (targetCard == null) return false;
+            
+            // 检查目标是否为敌方或背面卡牌
+            bool isValidTarget = targetCard.OwnerId != card.OwnerId || targetCard.IsFaceDown;
+            if (!isValidTarget) return false;
+            
+            // 计算直线距离
+            int dx = Mathf.Abs(targetPosition.x - card.Position.x);
+            int dy = Mathf.Abs(targetPosition.y - card.Position.y);
+            bool isStraight = dx == 0 || dy == 0;
+            int straightDist = isStraight ? Mathf.Max(dx, dy) : int.MaxValue;
+            
+            // 检查距离是否在移动范围内但大于攻击范围
+            if (!isStraight || straightDist > card.MoveRange || straightDist <= card.AttackRange)
+                return false;
+            
+            // 检查路径是否被阻挡
+            if (CheckPathBlocked(card.Position, targetPosition, cardManager))
+                return false;
+            
+            // 检查前一格是否为空
+            Vector2Int direction = new Vector2Int(
+                (targetPosition.x - card.Position.x) / dx,
+                (targetPosition.y - card.Position.y) / dy
+            );
+            
+            Vector2Int previousPosition = new Vector2Int(
+                targetPosition.x - direction.x,
+                targetPosition.y - direction.y
+            );
+            
+            if (cardManager.GetCard(previousPosition) != null)
+                return false;
+            
+            return true;
         }
     }
 } 
