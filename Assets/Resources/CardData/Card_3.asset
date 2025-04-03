@@ -22,5 +22,5 @@ MonoBehaviour:
   attackRange: 1
   abilities:
   - {fileID: 11400000, guid: 4c6aa755af272da4db5779284a894b9b, type: 2}
-  - {fileID: 11400000, guid: 0c477dcb9dba505409c92bf0e0c064e7, type: 2}
   - {fileID: 11400000, guid: 47e0e4ded7802f84881fcfeae55e3b08, type: 2}
+  - {fileID: 11400000, guid: 0c477dcb9dba505409c92bf0e0c064e7, type: 2}

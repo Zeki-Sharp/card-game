@@ -326,5 +326,43 @@ namespace ChessGame
             
             return targetPositions;
         }
+
+        /// <summary>
+        /// 获取卡牌可移动的范围
+        /// </summary>
+        public List<Vector2Int> GetMoveRange(Board board)
+        {
+            // 获取所有卡牌
+            Dictionary<Vector2Int, Card> allCards = new Dictionary<Vector2Int, Card>();
+            
+            // 从CardManager获取所有卡牌
+            CardManager cardManager = GameObject.FindObjectOfType<CardManager>();
+            if (cardManager != null)
+            {
+                allCards = cardManager.GetAllCards();
+            }
+            
+            // 调用现有方法
+            return GetMovablePositions(cardManager.BoardWidth, cardManager.BoardHeight, allCards);
+        }
+
+        /// <summary>
+        /// 获取卡牌可攻击的范围
+        /// </summary>
+        public List<Vector2Int> GetAttackRange(Board board)
+        {
+            // 获取所有卡牌
+            Dictionary<Vector2Int, Card> allCards = new Dictionary<Vector2Int, Card>();
+            
+            // 从CardManager获取所有卡牌
+            CardManager cardManager = GameObject.FindObjectOfType<CardManager>();
+            if (cardManager != null)
+            {
+                allCards = cardManager.GetAllCards();
+            }
+            
+            // 调用现有方法
+            return GetAttackablePositions(cardManager.BoardWidth, cardManager.BoardHeight, allCards);
+        }
     }
 } 

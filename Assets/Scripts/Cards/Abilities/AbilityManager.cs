@@ -20,6 +20,13 @@ namespace ChessGame.Cards
         private AbilityExecutor _abilityExecutor;
         private AbilityConditionResolver _conditionResolver;
         
+        public enum HighlightType
+        {
+            Move,
+            Attack,
+            Ability
+        }
+
         private void Awake()
         {
             if (_instance != null && _instance != this)
@@ -257,6 +264,44 @@ namespace ChessGame.Cards
             }
             
             return validPositions;
+        }
+        
+        /// <summary>
+        /// 获取能力的高亮类型
+        /// </summary>
+        public HighlightType GetAbilityHighlightType(AbilityConfiguration ability)
+        {
+            if (ability == null)
+            {
+                Debug.LogError("【能力管理器】传入的能力为空");
+                return HighlightType.Move;
+            }
+            
+            Debug.Log($"【能力管理器】获取能力 {ability.abilityName} 的高亮类型");
+            
+            // 检查能力的动作序列是否为空
+            if (ability.actionSequence == null || ability.actionSequence.Count == 0)
+            {
+                Debug.LogWarning($"【能力管理器】能力 {ability.abilityName} 的动作序列为空");
+                return HighlightType.Move;
+            }
+            
+            // 检查能力的动作序列
+            foreach (var action in ability.actionSequence)
+            {
+                Debug.Log($"【能力管理器】检查动作: {action.actionType}");
+                
+                // 如果包含攻击动作，使用攻击高亮
+                if (action.actionType == AbilityActionConfig.ActionType.Attack)
+                {
+                    Debug.Log($"【能力管理器】能力 {ability.abilityName} 包含攻击动作，使用攻击高亮");
+                    return HighlightType.Attack;
+                }
+            }
+            
+            Debug.Log($"【能力管理器】能力 {ability.abilityName} 不包含攻击动作，使用移动高亮");
+            // 默认使用移动高亮
+            return HighlightType.Move;
         }
     }
 } 

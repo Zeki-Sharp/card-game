@@ -32,13 +32,14 @@ namespace ChessGame
                 GameEventSystem.Instance.OnCardSelected += HighlightSelectedPosition;
                 GameEventSystem.Instance.OnCardSelected += HighlightMovablePositions;
                 GameEventSystem.Instance.OnCardDeselected += ClearAllHighlights;
-                
-                
             }
             else
             {
                 Debug.LogError("找不到GameEventSystem实例");
             }
+            
+            // 调用测试方法
+            Invoke("TestAbilityHighlight", 2f);
         }
         
         private void OnDestroy()
@@ -82,39 +83,11 @@ namespace ChessGame
             if (turnManager != null && !turnManager.IsPlayerTurn())
                 return;
                 
-            // 获取可移动的位置
-            List<Vector2Int> movablePositions = card.GetMovablePositions(
-                cardManager.BoardWidth, 
-                cardManager.BoardHeight, 
-                cardManager.GetAllCards()
-            );
+            // 使用新方法替代原有的高亮逻辑
+            HighlightTargetablePositions(card);
             
-            // 高亮可移动的格子
-            foreach (Vector2Int movablePos in movablePositions)
-            {
-                CellView cellView = board.GetCellView(movablePos.x, movablePos.y);
-                if (cellView != null)
-                {
-                    cellView.SetHighlight(CellView.HighlightType.Move);
-                }
-            }
-            
-            // 获取可攻击的位置
-            List<Vector2Int> attackablePositions = card.GetAttackablePositions(
-                cardManager.BoardWidth, 
-                cardManager.BoardHeight, 
-                cardManager.GetAllCards()
-            );
-            
-            // 高亮可攻击的格子
-            foreach (Vector2Int attackablePos in attackablePositions)
-            {
-                CellView cellView = board.GetCellView(attackablePos.x, attackablePos.y);
-                if (cellView != null)
-                {
-                    cellView.SetHighlight(CellView.HighlightType.Attack);
-                }
-            }
+            // 确保选中的卡牌仍然高亮
+            HighlightSelectedPosition(position);
         }
         
         // 高亮可攻击的卡牌
@@ -234,6 +207,147 @@ namespace ChessGame
                 {
                     // 使用攻击高亮（红色）而不是移动高亮（绿色）
                     cellView.SetHighlight(CellView.HighlightType.Attack);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 将AbilityManager.HighlightType转换为CellView.HighlightType
+        /// </summary>
+        private CellView.HighlightType ConvertHighlightType(AbilityManager.HighlightType highlightType)
+        {
+            switch (highlightType)
+            {
+                case AbilityManager.HighlightType.Attack:
+                    return CellView.HighlightType.Attack;
+                case AbilityManager.HighlightType.Move:
+                    return CellView.HighlightType.Move;
+                case AbilityManager.HighlightType.Ability:
+                    // 如果CellView.HighlightType中没有Ability类型，可以使用其他类型代替
+                    return CellView.HighlightType.Attack; // 或者其他合适的类型
+                default:
+                    return CellView.HighlightType.Move;
+            }
+        }
+
+        public void HighlightTargetablePositions(Card card)
+        {
+            if (card == null)
+            {
+                Debug.LogWarning("【高亮服务】传入的卡牌为空");
+                return;
+            }
+            
+            Debug.Log($"【高亮服务】为卡牌 {card.Data.Name} 高亮可作用位置，位置: {card.Position}");
+            
+            // 获取卡牌的所有能力
+            List<AbilityConfiguration> abilities = card.GetAbilities();
+            Debug.Log($"【高亮服务】卡牌 {card.Data.Name} 有 {abilities.Count} 个能力");
+            
+            // 保存选中卡牌的位置，以便稍后重新高亮
+            Vector2Int selectedPosition = card.Position;
+            
+            // 清除之前的高亮
+            ClearAllHighlights();
+            
+            // 重新高亮选中的卡牌
+            CellView selectedCellView = board.GetCellView(selectedPosition.x, selectedPosition.y);
+            if (selectedCellView != null)
+            {
+                selectedCellView.SetHighlight(CellView.HighlightType.Selected);
+                Debug.Log($"【高亮服务】重新高亮选中的卡牌，位置: {selectedPosition}");
+            }
+            
+            // 如果卡牌已经行动过，只显示选中高亮，不显示其他高亮
+            if (card.HasActed)
+            {
+                Debug.Log($"【高亮服务】卡牌 {card.Data.Name} 已行动，只显示选中高亮");
+                return;
+            }
+            
+            // 获取可移动位置
+            List<Vector2Int> movePositions = card.GetMoveRange(board);
+            
+            // 获取可攻击位置
+            List<Vector2Int> attackPositions = card.GetAttackRange(board);
+            
+            // 高亮显示可移动位置（绿色）
+            foreach (var pos in movePositions)
+            {
+                CellView cellView = board.GetCellView(pos.x, pos.y);
+                if (cellView != null)
+                {
+                    cellView.SetHighlight(CellView.HighlightType.Move);
+                }
+            }
+            
+            // 高亮显示可攻击位置（红色）
+            foreach (var pos in attackPositions)
+            {
+                CellView cellView = board.GetCellView(pos.x, pos.y);
+                if (cellView != null)
+                {
+                    cellView.SetHighlight(CellView.HighlightType.Attack);
+                }
+            }
+            
+            // 高亮显示能力可作用的位置
+            foreach (var ability in card.GetAbilities())
+            {
+                Debug.Log($"【高亮服务】处理能力: {ability.abilityName}");
+                
+                // 获取能力的高亮类型
+                AbilityManager.HighlightType abilityHighlightType = AbilityManager.Instance.GetAbilityHighlightType(ability);
+                CellView.HighlightType highlightType = ConvertHighlightType(abilityHighlightType);
+                
+                // 获取能力可作用的位置
+                List<Vector2Int> abilityPositions = AbilityManager.Instance.GetAbilityRange(ability, card, cardManager);
+                
+                Debug.Log($"【高亮服务】能力 {ability.abilityName} 可作用位置数量: {abilityPositions.Count}, 高亮类型: {highlightType}");
+                
+                // 高亮显示
+                foreach (var pos in abilityPositions)
+                {
+                    CellView cellView = board.GetCellView(pos.x, pos.y);
+                    if (cellView != null)
+                    {
+                        cellView.SetHighlight(highlightType);
+                    }
+                }
+            }
+        }
+
+        // 添加一个测试方法
+        private void TestAbilityHighlight()
+        {
+            Debug.Log("【测试】开始测试能力高亮");
+            
+            // 获取所有卡牌
+            Dictionary<Vector2Int, Card> allCards = cardManager.GetAllCards();
+            
+            // 遍历所有卡牌
+            foreach (var kvp in allCards)
+            {
+                Card card = kvp.Value;
+                
+                // 获取卡牌的所有能力
+                List<AbilityConfiguration> abilities = card.GetAbilities();
+                
+                // 如果卡牌有能力
+                if (abilities.Count > 0)
+                {
+                    Debug.Log($"【测试】卡牌 {card.Data.Name} 有 {abilities.Count} 个能力");
+                    
+                    // 遍历所有能力
+                    foreach (var ability in abilities)
+                    {
+                        Debug.Log($"【测试】能力: {ability.abilityName}");
+                        
+                        // 获取能力的高亮类型
+                        AbilityManager.HighlightType highlightType = AbilityManager.Instance.GetAbilityHighlightType(ability);
+                        
+                        Debug.Log($"【测试】能力 {ability.abilityName} 的高亮类型: {highlightType}");
+                    }
                 }
             }
         }
