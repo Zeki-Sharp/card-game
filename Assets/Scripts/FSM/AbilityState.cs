@@ -47,7 +47,7 @@ namespace ChessGame.FSM
             
             if (_sourceCard == null)
             {
-                Debug.LogError("能力状态：选中位置没有卡牌");
+                Debug.LogError("能力状态：没有选中的卡牌");
                 CompleteState(CardState.Idle);
                 return;
             }
@@ -64,34 +64,26 @@ namespace ChessGame.FSM
             
             if (_currentAbility == null)
             {
-                Debug.LogError("能力状态：没有找到可触发的能力");
+                Debug.LogError("能力状态：没有当前能力");
                 CompleteState(CardState.Idle);
                 return;
             }
             
+            Debug.Log($"能力状态：执行能力 {_currentAbility.abilityName}，源卡牌：{_sourceCard.Data.Name}，目标位置：{_targetPosition}");
+            
             // 开始执行能力
             _isExecuting = true;
             CoroutineManager.Instance.StartCoroutineEx(ExecuteAbility());
-            
-            // 添加测试代码
-            // TestDirectAttack();
         }
         
         private IEnumerator ExecuteAbility()
         {
-            Debug.Log($"【能力状态】开始执行能力: {_currentAbility.abilityName}, 源卡牌: {_sourceCard.Data.Name}, 目标位置: {_targetPosition}");
-            
-            // 打印能力的动作序列
-            for (int i = 0; i < _currentAbility.actionSequence.Count; i++)
-            {
-                var action = _currentAbility.actionSequence[i];
-                Debug.Log($"【能力状态】动作 {i+1}/{_currentAbility.actionSequence.Count}: {action.actionType}, 目标选择器: {action.targetSelector}");
-            }
+            Debug.Log($"开始执行能力: {_currentAbility.abilityName}");
             
             // 执行能力
             yield return AbilityManager.Instance.ExecuteAbility(_currentAbility, _sourceCard, _targetPosition);
             
-            Debug.Log($"【能力状态】能力执行完成: {_currentAbility.abilityName}");
+            Debug.Log($"能力执行完成: {_currentAbility.abilityName}");
             
             // 标记卡牌已行动
             _sourceCard.HasActed = true;
@@ -133,25 +125,6 @@ namespace ChessGame.FSM
         public override void Update()
         {
             // 能力状态不需要特殊更新
-        }
-        
-        // 添加一个测试方法，直接执行攻击
-        private void TestDirectAttack()
-        {
-            Debug.Log($"【测试】直接执行攻击: 从 {_sourceCard.Position} 到 {_targetPosition}");
-            
-            // 获取目标卡牌
-            Card targetCard = StateMachine.CardManager.GetCard(_targetPosition);
-            if (targetCard != null)
-            {
-                // 执行攻击
-                int damage = StateMachine.CardManager.ExecuteAttack(_sourceCard.Position, _targetPosition);
-                Debug.Log($"【测试】攻击完成，造成伤害: {damage}");
-            }
-            else
-            {
-                Debug.LogError($"【测试】攻击失败: 目标位置 {_targetPosition} 没有卡牌");
-            }
         }
     }
 } 

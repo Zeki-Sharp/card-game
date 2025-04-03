@@ -63,13 +63,13 @@ namespace ChessGame.Cards
         {
             Dictionary<string, object> parameters = actionConfig.GetParameters();
             
-            Debug.Log($"【能力执行器】开始执行动作: {actionConfig.actionType}, 目标位置: {targetPosition}");
+            Debug.Log($"执行动作: {actionConfig.actionType}, 目标位置: {targetPosition}");
             
             switch (actionConfig.actionType)
             {
                 case AbilityActionConfig.ActionType.Attack:
                     // 普通攻击
-                    Debug.Log($"【能力执行器】执行攻击动作: 从 {sourceCard.Position} 到 {targetPosition}");
+                    Debug.Log($"执行攻击动作: 从 {sourceCard.Position} 到 {targetPosition}");
                     
                     // 确保目标位置有卡牌
                     Card targetCard = _cardManager.GetCard(targetPosition);
@@ -78,11 +78,11 @@ namespace ChessGame.Cards
                         // 执行攻击
                         int damageDealt = _cardManager.ExecuteAttack(sourceCard.Position, targetPosition);
                         context["dealtDamage"] = damageDealt;
-                        Debug.Log($"【能力执行器】攻击完成，造成伤害: {damageDealt}");
+                        Debug.Log($"攻击完成，造成伤害: {damageDealt}");
                     }
                     else
                     {
-                        Debug.LogError($"【能力执行器】攻击失败: 目标位置 {targetPosition} 没有卡牌");
+                        Debug.LogError($"攻击失败: 目标位置 {targetPosition} 没有卡牌");
                     }
                     break;
                     
@@ -110,9 +110,7 @@ namespace ChessGame.Cards
             }
             
             // 确保每个动作执行后有足够的时间让游戏状态更新
-            Debug.Log($"【能力执行器】动作 {actionConfig.actionType} 额外等待时间");
             yield return new WaitForSeconds(0.1f);
-            Debug.Log($"【能力执行器】动作 {actionConfig.actionType} 完全完成");
         }
         
         /// <summary>

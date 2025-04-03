@@ -26,8 +26,6 @@ namespace ChessGame
             // 订阅GameEventSystem的事件
             if (GameEventSystem.Instance != null)
             {
-                Debug.Log("CardHighlightService: 订阅GameEventSystem事件");
-                
                 // 订阅事件
                 GameEventSystem.Instance.OnCardSelected += HighlightSelectedPosition;
                 GameEventSystem.Instance.OnCardSelected += HighlightMovablePositions;
@@ -37,9 +35,6 @@ namespace ChessGame
             {
                 Debug.LogError("找不到GameEventSystem实例");
             }
-            
-            // 调用测试方法
-            Invoke("TestAbilityHighlight", 2f);
         }
         
         private void OnDestroy()
@@ -232,17 +227,7 @@ namespace ChessGame
 
         public void HighlightTargetablePositions(Card card)
         {
-            if (card == null)
-            {
-                Debug.LogWarning("【高亮服务】传入的卡牌为空");
-                return;
-            }
-            
-            Debug.Log($"【高亮服务】为卡牌 {card.Data.Name} 高亮可作用位置，位置: {card.Position}");
-            
-            // 获取卡牌的所有能力
-            List<AbilityConfiguration> abilities = card.GetAbilities();
-            Debug.Log($"【高亮服务】卡牌 {card.Data.Name} 有 {abilities.Count} 个能力");
+            if (card == null) return;
             
             // 保存选中卡牌的位置，以便稍后重新高亮
             Vector2Int selectedPosition = card.Position;
@@ -255,15 +240,10 @@ namespace ChessGame
             if (selectedCellView != null)
             {
                 selectedCellView.SetHighlight(CellView.HighlightType.Selected);
-                Debug.Log($"【高亮服务】重新高亮选中的卡牌，位置: {selectedPosition}");
             }
             
             // 如果卡牌已经行动过，只显示选中高亮，不显示其他高亮
-            if (card.HasActed)
-            {
-                Debug.Log($"【高亮服务】卡牌 {card.Data.Name} 已行动，只显示选中高亮");
-                return;
-            }
+            if (card.HasActed) return;
             
             // 获取可移动位置
             List<Vector2Int> movePositions = card.GetMoveRange(board);
@@ -294,16 +274,12 @@ namespace ChessGame
             // 高亮显示能力可作用的位置
             foreach (var ability in card.GetAbilities())
             {
-                Debug.Log($"【高亮服务】处理能力: {ability.abilityName}");
-                
                 // 获取能力的高亮类型
                 AbilityManager.HighlightType abilityHighlightType = AbilityManager.Instance.GetAbilityHighlightType(ability);
                 CellView.HighlightType highlightType = ConvertHighlightType(abilityHighlightType);
                 
                 // 获取能力可作用的位置
                 List<Vector2Int> abilityPositions = AbilityManager.Instance.GetAbilityRange(ability, card, cardManager);
-                
-                Debug.Log($"【高亮服务】能力 {ability.abilityName} 可作用位置数量: {abilityPositions.Count}, 高亮类型: {highlightType}");
                 
                 // 高亮显示
                 foreach (var pos in abilityPositions)
@@ -312,41 +288,6 @@ namespace ChessGame
                     if (cellView != null)
                     {
                         cellView.SetHighlight(highlightType);
-                    }
-                }
-            }
-        }
-
-        // 添加一个测试方法
-        private void TestAbilityHighlight()
-        {
-            Debug.Log("【测试】开始测试能力高亮");
-            
-            // 获取所有卡牌
-            Dictionary<Vector2Int, Card> allCards = cardManager.GetAllCards();
-            
-            // 遍历所有卡牌
-            foreach (var kvp in allCards)
-            {
-                Card card = kvp.Value;
-                
-                // 获取卡牌的所有能力
-                List<AbilityConfiguration> abilities = card.GetAbilities();
-                
-                // 如果卡牌有能力
-                if (abilities.Count > 0)
-                {
-                    Debug.Log($"【测试】卡牌 {card.Data.Name} 有 {abilities.Count} 个能力");
-                    
-                    // 遍历所有能力
-                    foreach (var ability in abilities)
-                    {
-                        Debug.Log($"【测试】能力: {ability.abilityName}");
-                        
-                        // 获取能力的高亮类型
-                        AbilityManager.HighlightType highlightType = AbilityManager.Instance.GetAbilityHighlightType(ability);
-                        
-                        Debug.Log($"【测试】能力 {ability.abilityName} 的高亮类型: {highlightType}");
                     }
                 }
             }
