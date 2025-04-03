@@ -558,58 +558,104 @@ namespace ChessGame
         /// <summary>
         /// 执行攻击操作，不检查攻击条件
         /// </summary>
-        /// <param name="attackerPosition">攻击者位置</param>
+        /// <param name="sourcePosition">攻击者位置</param>
         /// <param name="targetPosition">目标位置</param>
-        /// <returns>是否成功攻击</returns>
-        public bool ExecuteAttack(Vector2Int attackerPosition, Vector2Int targetPosition)
+        /// <returns>造成伤害</returns>
+        public int ExecuteAttack(Vector2Int sourcePosition, Vector2Int targetPosition)
         {
-            // 获取攻击者和目标
-            Card attacker = GetCard(attackerPosition);
-            Card target = GetCard(targetPosition);
+            Debug.Log($"CardManager.ExecuteAttack: 从 {sourcePosition} 攻击 {targetPosition}");
             
-            if (attacker == null)
-            {
-                Debug.LogError($"ExecuteAttack: 位置 {attackerPosition} 没有攻击者");
-                return false;
-            }
+            Card attackerCard = GetCard(sourcePosition);
+            Card targetCard = GetCard(targetPosition);
             
-            if (target == null)
+            if (attackerCard == null || targetCard == null)
             {
-                Debug.LogError($"ExecuteAttack: 位置 {targetPosition} 没有目标");
-                return false;
+                Debug.LogError($"攻击失败: 攻击者或目标不存在");
+                return 0;
             }
             
             // 计算伤害
-            int damage = attacker.Data.Attack;
+            int damage = attackerCard.Data.Attack;
+            
+            // 记录目标卡牌攻击前的生命值
+            int targetHealthBefore = targetCard.Data.Health;
             
             // 应用伤害
-            target.Data.Health -= damage;
+            targetCard.Data.Health -= damage;
             
-            // 触发攻击事件
-            GameEventSystem.Instance.NotifyCardAttacked(attackerPosition, targetPosition);
+            Debug.Log($"卡牌 {attackerCard.Data.Name}(攻击力:{attackerCard.Data.Attack}) 攻击 {targetCard.Data.Name}，造成 {damage} 点伤害，目标生命值: {targetHealthBefore} -> {targetCard.Data.Health}");
             
             // 检查目标是否死亡
-            if (target.Data.Health <= 0)
+            if (targetCard.Data.Health <= 0)
             {
-                // 移除目标
+                Debug.Log($"卡牌 {targetCard.Data.Name} 被击败");
                 RemoveCard(targetPosition);
             }
             
-            // 检查反伤
-            int counterDamage = target.Data.Attack / 2; // 反伤为攻击力的一半
-            if (counterDamage > 0)
+            // 标记攻击者已行动
+            attackerCard.HasActed = true;
+            
+            // 通知UI更新
+            GameEventSystem.Instance.NotifyCardAttacked(sourcePosition, targetPosition);
+            
+            return damage;
+        }
+
+        /// <summary>
+        /// 执行能力
+        /// </summary>
+        public IEnumerator ExecuteAbility(AbilityConfiguration ability, Card card, Vector2Int targetPosition)
+        {
+            Debug.Log($"CardManager.ExecuteAbility: {ability.abilityName}, 目标位置: {targetPosition}");
+            
+            if (AbilityManager.Instance == null)
             {
-                attacker.Data.Health -= counterDamage;
-                
-                // 检查攻击者是否死亡
-                if (attacker.Data.Health <= 0)
-                {
-                    RemoveCard(attackerPosition);
-                }
+                Debug.LogError("执行能力失败: AbilityManager实例为空");
+                yield break;
             }
             
-            Debug.Log($"ExecuteAttack: {attacker.Data.Name} 攻击 {target.Data.Name}，造成 {damage} 点伤害");
-            return true;
+            // 执行能力
+            yield return AbilityManager.Instance.ExecuteAbility(ability, card, targetPosition);
+            
+            // 能力执行完成后，检查游戏状态
+            CheckGameState();
+        }
+
+        /// <summary>
+        /// 检查游戏状态
+        /// </summary>
+        private void CheckGameState()
+        {
+            // 检查是否有卡牌被移除
+            // 检查是否游戏结束
+            // 其他状态检查...
+        }
+
+        /// <summary>
+        /// 触发卡牌能力
+        /// </summary>
+        public void TriggerCardAbility(AbilityConfiguration ability, Card card, Vector2Int targetPosition)
+        {
+            Debug.Log($"CardManager.TriggerCardAbility: 触发能力 {ability.abilityName}");
+            
+            // 启动协程执行能力
+            StartCoroutine(ExecuteCardAbility(ability, card, targetPosition));
+        }
+
+        /// <summary>
+        /// 执行卡牌能力的协程
+        /// </summary>
+        private IEnumerator ExecuteCardAbility(AbilityConfiguration ability, Card card, Vector2Int targetPosition)
+        {
+            Debug.Log($"CardManager.ExecuteCardAbility: 开始执行能力 {ability.abilityName}");
+            
+            // 执行能力
+            yield return AbilityManager.Instance.ExecuteAbility(ability, card, targetPosition);
+            
+            Debug.Log($"CardManager.ExecuteCardAbility: 能力 {ability.abilityName} 执行完成");
+            
+            // 检查游戏状态
+            CheckGameState();
         }
     }
 

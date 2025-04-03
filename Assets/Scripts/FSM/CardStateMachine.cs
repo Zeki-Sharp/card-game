@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System.Collections;
+using ChessGame.Utils;
 
 namespace ChessGame.FSM
 {
@@ -47,7 +49,12 @@ namespace ChessGame.FSM
                 _states[CardState.Attacking] = attackState;
                 Debug.Log("AttackState初始化成功");
                 
-                // 设置初始状态
+                var abilityState = new AbilityState(this);
+                abilityState.StateCompleted += OnStateCompleted;
+                _states[CardState.Ability] = abilityState;
+                Debug.Log("AbilityState初始化成功");
+                
+                // 设置初始状态 
                 Debug.Log("设置初始状态");
                 ChangeState(CardState.Idle);
                 
@@ -159,6 +166,18 @@ namespace ChessGame.FSM
                 GameEventSystem.Instance.OnCardSelected -= HandleCardSelected;
                 GameEventSystem.Instance.OnCardDeselected -= HandleCardDeselected;
             }
+        }
+
+        public Coroutine StartCoroutine(IEnumerator routine)
+        {
+            // 使用CoroutineManager启动协程
+            return CoroutineManager.Instance.StartCoroutineEx(routine);
+        }
+
+        public void StopCoroutine(Coroutine coroutine)
+        {
+            // 使用CoroutineManager停止协程
+            CoroutineManager.Instance.StopCoroutineEx(coroutine);
         }
     }
 } 

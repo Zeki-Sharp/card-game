@@ -14,7 +14,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   abilityName: "\u51B2\u950B"
   description: "\u5141\u8BB8\u5361\u724C\u79FB\u52A8\u540E\u7ACB\u523B\u653B\u51FB"
-  triggerCondition: CanCharge
-  actionSequence: []
+  triggerCondition: StraightDistance > AttackRange && StraightDistance <= MoveRange
+    && EnemyOrFaceDown && PathBlocked==false
+  actionSequence:
+  - actionType: 0
+    targetSelector: TargetDirection-1
+    parameterList: []
+  - actionType: 4
+    targetSelector: 
+    parameterList:
+    - key: time
+      value: 0.5
+  - actionType: 1
+    targetSelector: Target
+    parameterList: []
   cooldown: 0
   icon: {fileID: 0}

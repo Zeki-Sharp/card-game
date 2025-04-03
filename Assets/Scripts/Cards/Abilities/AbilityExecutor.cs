@@ -25,28 +25,35 @@ namespace ChessGame.Cards
         /// <returns>协程</returns>
         public IEnumerator ExecuteAbility(AbilityConfiguration ability, Card sourceCard, Vector2Int targetPosition)
         {
-            Debug.Log($"执行能力: {ability.abilityName}");
+            Debug.Log($"【能力执行器】开始执行能力: {ability.abilityName}, 动作数量: {ability.actionSequence.Count}");
             
             // 存储执行过程中的临时数据
             Dictionary<string, object> executionContext = new Dictionary<string, object>();
             
             // 执行动作序列
-            foreach (var actionConfig in ability.actionSequence)
+            for (int i = 0; i < ability.actionSequence.Count; i++)
             {
+                var actionConfig = ability.actionSequence[i];
+                Debug.Log($"【能力执行器】执行动作 {i+1}/{ability.actionSequence.Count}: {actionConfig.actionType}");
+                
                 // 解析目标位置
                 Vector2Int actualTargetPos = ResolveTargetPosition(actionConfig.targetSelector, sourceCard.Position, targetPosition);
+                Debug.Log($"【能力执行器】动作目标位置: {actualTargetPos}");
                 
                 // 执行动作
                 yield return ExecuteAction(actionConfig, sourceCard, actualTargetPos, executionContext);
                 
                 // 等待短暂时间让动画播放
+                Debug.Log($"【能力执行器】动作 {actionConfig.actionType} 等待动画播放");
                 yield return new WaitForSeconds(0.2f);
+                
+                Debug.Log($"【能力执行器】动作 {actionConfig.actionType} 执行完成");
             }
             
             // 标记卡牌已行动
             sourceCard.HasActed = true;
             
-            Debug.Log($"能力 {ability.abilityName} 执行完成");
+            Debug.Log($"【能力执行器】能力 {ability.abilityName} 执行完成");
         }
         
         /// <summary>
@@ -56,16 +63,33 @@ namespace ChessGame.Cards
         {
             Dictionary<string, object> parameters = actionConfig.GetParameters();
             
+            Debug.Log($"【能力执行器】开始执行动作: {actionConfig.actionType}, 目标位置: {targetPosition}");
+            
             switch (actionConfig.actionType)
             {
                 case AbilityActionConfig.ActionType.Attack:
                     // 普通攻击
-                    int damageDealt = ExecuteAttackAction(sourceCard.Position, targetPosition);
-                    context["dealtDamage"] = damageDealt;
+                    Debug.Log($"【能力执行器】执行攻击动作: 从 {sourceCard.Position} 到 {targetPosition}");
+                    
+                    // 确保目标位置有卡牌
+                    Card targetCard = _cardManager.GetCard(targetPosition);
+                    if (targetCard != null)
+                    {
+                        // 执行攻击
+                        int damageDealt = _cardManager.ExecuteAttack(sourceCard.Position, targetPosition);
+                        context["dealtDamage"] = damageDealt;
+                        Debug.Log($"【能力执行器】攻击完成，造成伤害: {damageDealt}");
+                    }
+                    else
+                    {
+                        Debug.LogError($"【能力执行器】攻击失败: 目标位置 {targetPosition} 没有卡牌");
+                    }
                     break;
                     
                 case AbilityActionConfig.ActionType.Move:
+                    Debug.Log($"【能力执行器】执行移动动作: 从 {sourceCard.Position} 到 {targetPosition}");
                     ExecuteMoveAction(sourceCard.Position, targetPosition);
+                    Debug.Log($"【能力执行器】移动完成，新位置: {sourceCard.Position}");
                     break;
                     
                 case AbilityActionConfig.ActionType.Heal:
@@ -75,7 +99,9 @@ namespace ChessGame.Cards
                     
                 case AbilityActionConfig.ActionType.Wait:
                     float waitTime = ResolveWaitTime(parameters);
+                    Debug.Log($"【能力执行器】执行等待动作: {waitTime}秒");
                     yield return new WaitForSeconds(waitTime);
+                    Debug.Log($"【能力执行器】等待完成");
                     break;
                     
                 case AbilityActionConfig.ActionType.ApplyEffect:
@@ -83,7 +109,10 @@ namespace ChessGame.Cards
                     break;
             }
             
-            yield return null;
+            // 确保每个动作执行后有足够的时间让游戏状态更新
+            Debug.Log($"【能力执行器】动作 {actionConfig.actionType} 额外等待时间");
+            yield return new WaitForSeconds(0.1f);
+            Debug.Log($"【能力执行器】动作 {actionConfig.actionType} 完全完成");
         }
         
         /// <summary>
@@ -114,6 +143,38 @@ namespace ChessGame.Cards
                     Debug.LogError($"解析目标位置失败: {targetSelector}, 错误: {e.Message}");
                 }
             }
+
+            // 处理特殊的目标选择器
+            if (targetSelector.StartsWith("TargetDirection"))
+            {
+                // 计算方向向量
+                Vector2Int direction = targetPosition - sourcePosition;
+                
+                // 标准化方向（保持方向，但长度为1）
+                if (direction.x != 0) direction.x = direction.x / Mathf.Abs(direction.x);
+                if (direction.y != 0) direction.y = direction.y / Mathf.Abs(direction.y);
+                
+                // 检查是否有距离修饰符
+                if (targetSelector.Contains("-"))
+                {
+                    string[] parts = targetSelector.Split('-');
+                    if (parts.Length == 2 && int.TryParse(parts[1], out int distanceModifier))
+                    {
+                        // 计算目标位置：源位置 + 方向 * (距离 - 修饰符)
+                        int distance = Mathf.Max(Mathf.Abs(targetPosition.x - sourcePosition.x), 
+                                                Mathf.Abs(targetPosition.y - sourcePosition.y));
+                        int adjustedDistance = distance - distanceModifier;
+                        
+                        // 确保距离至少为1
+                        adjustedDistance = Mathf.Max(1, adjustedDistance);
+                        
+                        return sourcePosition + direction * adjustedDistance;
+                    }
+                }
+                
+                // 如果没有修饰符，直接返回目标位置
+                return targetPosition;
+            }
             
             return targetPosition; // 默认返回原始目标位置
         }
@@ -125,36 +186,6 @@ namespace ChessGame.Cards
         {
             MoveCardAction moveAction = new MoveCardAction(_cardManager, fromPos, toPos);
             moveAction.Execute();
-        }
-        
-        /// <summary>
-        /// 执行攻击动作
-        /// </summary>
-        private int ExecuteAttackAction(Vector2Int fromPos, Vector2Int toPos)
-        {
-            // 记录目标卡牌攻击前的生命值
-            Card targetCard = _cardManager.GetCard(toPos);
-            int healthBefore = targetCard != null ? targetCard.Data.Health : 0;
-            
-            // 执行攻击
-            AttackCardAction attackAction = new AttackCardAction(_cardManager, fromPos, toPos);
-            attackAction.Execute();
-            
-            // 计算造成的伤害
-            int damageDealt = 0;
-            if (targetCard != null)
-            {
-                if (targetCard.Data.Health > 0)
-                {
-                    damageDealt = healthBefore - targetCard.Data.Health;
-                }
-                else
-                {
-                    damageDealt = healthBefore; // 目标被击杀
-                }
-            }
-            
-            return damageDealt;
         }
         
         /// <summary>

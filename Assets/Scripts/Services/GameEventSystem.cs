@@ -67,6 +67,9 @@ namespace ChessGame
         public event Action OnGameOver;
         public event Action<int> OnPlayerWon; // 参数为玩家ID
         
+        // 添加卡牌行动事件
+        public event Action<Vector2Int> OnCardActed;
+        
         // 通知卡牌选中
         public void NotifyCardSelected(Vector2Int position)
         {
@@ -182,6 +185,13 @@ namespace ChessGame
         {
             Debug.Log($"GameEventSystem: 玩家获胜事件 - 玩家 {playerId}");
             OnPlayerWon?.Invoke(playerId);
+        }
+        
+        // 通知卡牌已行动
+        public void NotifyCardActed(Vector2Int position)
+        {
+            Debug.Log($"GameEventSystem: 卡牌行动事件 - 位置 {position}");
+            OnCardActed?.Invoke(position);
         }
     }
 } 

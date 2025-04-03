@@ -15,33 +15,25 @@ namespace ChessGame.Cards
         /// 检查能力是否可以触发
         /// </summary>
         /// <param name="condition">条件表达式</param>
-        /// <param name="card">源卡牌</param>
+        /// <param name="sourceCard">源卡牌</param>
         /// <param name="targetPosition">目标位置</param>
         /// <param name="cardManager">卡牌管理器</param>
         /// <returns>是否满足条件</returns>
-        public bool CheckCondition(string condition, Card card, Vector2Int targetPosition, CardManager cardManager)
+        public bool CheckCondition(string condition, Card sourceCard, Vector2Int targetPosition, CardManager cardManager)
         {
-            Debug.Log($"检查条件: {condition}, 卡牌: {card.Data.Name}, 位置: {card.Position}, 目标位置: {targetPosition}");
+            Debug.Log($"【条件检查】检查条件: {condition}, 源卡牌: {sourceCard.Data.Name}, 目标位置: {targetPosition}");
             
-            // 替换变量
-            string resolvedCondition = ReplaceVariables(condition, card, targetPosition, cardManager);
-            Debug.Log($"替换变量后的条件: {resolvedCondition}");
-            
-            // 检查目标位置的卡牌
-            Card targetCard = cardManager.GetCard(targetPosition);
-            if (targetCard != null)
+            // 如果条件为空，默认为true
+            if (string.IsNullOrEmpty(condition))
             {
-                Debug.Log($"目标位置有卡牌: {targetCard.Data.Name}, 所有者: {targetCard.OwnerId}, 背面: {targetCard.IsFaceDown}");
-            }
-            else
-            {
-                Debug.Log($"目标位置没有卡牌");
+                Debug.Log("【条件检查】条件为空，返回true");
+                return true;
             }
             
             // 解析条件表达式
-            bool result = EvaluateExpression(resolvedCondition);
-            Debug.Log($"条件解析结果: {result}");
+            bool result = EvaluateCondition(condition, sourceCard, targetPosition, cardManager);
             
+            Debug.Log($"【条件检查】条件 {condition} 的结果: {result}");
             return result;
         }
         
@@ -352,5 +344,17 @@ namespace ChessGame.Cards
             
             return false;
         }
+
+        private bool EvaluateCondition(string condition, Card sourceCard, Vector2Int targetPosition, CardManager cardManager)
+        {
+            // 替换变量
+            string resolvedCondition = ReplaceVariables(condition, sourceCard, targetPosition, cardManager);
+            Debug.Log($"替换变量后的条件: {resolvedCondition}");
+            
+            // 检查条件
+            return EvaluateExpression(resolvedCondition);
+        }
     }
 } 
+
+ 

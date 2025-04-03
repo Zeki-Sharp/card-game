@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using ChessGame;
 
 namespace ChessGame.Cards
 {
@@ -12,6 +12,7 @@ namespace ChessGame.Cards
     {
         private static AbilityManager _instance;
         public static AbilityManager Instance => _instance;
+        public CardManager _cardManager { get; private set; }
         
         // 存储卡牌类型与能力配置的映射
         private Dictionary<int, List<AbilityConfiguration>> _cardTypeAbilities = new Dictionary<int, List<AbilityConfiguration>>();
@@ -40,14 +41,15 @@ namespace ChessGame.Cards
         
         private void Start()
         {
-            CardManager cardManager = FindObjectOfType<CardManager>();
-            if (cardManager == null)
+            // 查找并保存 CardManager 引用
+            _cardManager = FindObjectOfType<CardManager>();
+            if (_cardManager == null)
             {
                 Debug.LogError("无法找到CardManager");
                 return;
             }
             
-            _abilityExecutor = new AbilityExecutor(cardManager);
+            _abilityExecutor = new AbilityExecutor(_cardManager);
             
             // 加载能力配置
             LoadAbilityConfigurations();
@@ -171,10 +173,34 @@ namespace ChessGame.Cards
         /// </summary>
         public IEnumerator ExecuteAbility(AbilityConfiguration ability, Card card, Vector2Int targetPosition)
         {
+            Debug.Log($"AbilityManager.ExecuteAbility: 开始执行能力 {ability.abilityName}");
+            
+            // 确保卡牌管理器存在
+            if (_cardManager == null)
+            {
+                Debug.LogError("执行能力失败: 卡牌管理器为空");
+                yield break;
+            }
+            
+            // 执行能力前记录卡牌位置
+            Vector2Int originalPosition = card.Position;
+            
+            // 执行能力
             yield return _abilityExecutor.ExecuteAbility(ability, card, targetPosition);
             
             // 设置冷却
             _conditionResolver.SetAbilityCooldown(card.Data.Id, ability.abilityName, ability.cooldown);
+            
+            // 标记卡牌已行动
+            card.HasActed = true;
+            
+            Debug.Log($"AbilityManager.ExecuteAbility: 能力 {ability.abilityName} 执行完成");
+            
+            // 通知游戏事件系统能力执行完成
+            if (GameEventSystem.Instance != null)
+            {
+                GameEventSystem.Instance.NotifyCardActed(card.Position);
+            }
         }
         
         // 添加从CardDataSO加载能力的方法
@@ -202,6 +228,35 @@ namespace ChessGame.Cards
         public AbilityConditionResolver GetConditionResolver()
         {
             return _conditionResolver;
+        }
+        
+        /// <summary>
+        /// 获取能力可作用的范围
+        /// </summary>
+        public List<Vector2Int> GetAbilityRange(AbilityConfiguration ability, Card card, CardManager cardManager)
+        {
+            List<Vector2Int> validPositions = new List<Vector2Int>();
+            
+            // 遍历棋盘上所有位置
+            for (int x = 0; x < cardManager.BoardWidth; x++)
+            {
+                for (int y = 0; y < cardManager.BoardHeight; y++)
+                {
+                    Vector2Int targetPos = new Vector2Int(x, y);
+                    
+                    // 跳过源位置
+                    if (targetPos == card.Position)
+                        continue;
+                    
+                    // 检查能力是否可以在该位置触发
+                    if (_conditionResolver.CheckCondition(ability.triggerCondition, card, targetPos, cardManager))
+                    {
+                        validPositions.Add(targetPos);
+                    }
+                }
+            }
+            
+            return validPositions;
         }
     }
 } 

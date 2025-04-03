@@ -288,12 +288,43 @@ namespace ChessGame
         // 添加检查能力是否可触发的方法
         public bool CanTriggerAbility(AbilityConfiguration ability, Vector2Int targetPosition, CardManager cardManager)
         {
-            if (AbilityManager.Instance != null)
+            Debug.Log($"【能力检查】卡牌 {Data.Name} 检查能力 {ability.abilityName} 是否可触发，目标位置: {targetPosition}");
+            bool canTrigger = AbilityManager.Instance.CanTriggerAbility(ability, this, targetPosition, cardManager);
+            Debug.Log($"【能力检查】结果: {canTrigger}");
+            return canTrigger;
+        }
+
+        /// <summary>
+        /// 获取所有能力可作用的位置
+        /// </summary>
+        public List<Vector2Int> GetAbilityTargetPositions(int boardWidth, int boardHeight, Dictionary<Vector2Int, Card> allCards)
+        {
+            List<Vector2Int> targetPositions = new List<Vector2Int>();
+            
+            // 获取所有能力
+            List<AbilityConfiguration> abilities = GetAbilities();
+            
+            // 获取卡牌管理器
+            CardManager cardManager = GameObject.FindObjectOfType<CardManager>();
+            if (cardManager == null) return targetPositions;
+            
+            // 遍历所有能力
+            foreach (var ability in abilities)
             {
-                return AbilityManager.Instance.CanTriggerAbility(ability, this, targetPosition, cardManager);
+                // 获取能力可作用的位置
+                List<Vector2Int> abilityPositions = AbilityManager.Instance.GetAbilityRange(ability, this, cardManager);
+                
+                // 添加到结果中（去重）
+                foreach (var pos in abilityPositions)
+                {
+                    if (!targetPositions.Contains(pos))
+                    {
+                        targetPositions.Add(pos);
+                    }
+                }
             }
-            Debug.Log($"卡牌 {Data.Name} 没有能力管理器实例，不能触发能力");
-            return false;
+            
+            return targetPositions;
         }
     }
 } 

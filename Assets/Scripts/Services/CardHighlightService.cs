@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using ChessGame.Cards;
 
 namespace ChessGame
 {
@@ -176,12 +177,62 @@ namespace ChessGame
             List<Vector2Int> attackablePositions = selectedCard.GetAttackablePositions(
                 cardManager.BoardWidth, cardManager.BoardHeight, allCards);
             
+            // 获取能力可作用位置
+            List<Vector2Int> abilityPositions = selectedCard.GetAbilityTargetPositions(
+                cardManager.BoardWidth, cardManager.BoardHeight, allCards);
+            
+            // 合并两个列表（去重）
+            HashSet<Vector2Int> allTargetPositions = new HashSet<Vector2Int>(attackablePositions);
+            foreach (var pos in abilityPositions)
+            {
+                allTargetPositions.Add(pos);
+            }
+            
             // 高亮显示
-            foreach (var position in attackablePositions)
+            foreach (var position in allTargetPositions)
             {
                 CellView cellView = board.GetCellView(position.x, position.y);
                 if (cellView != null)
                 {
+                    cellView.SetHighlight(CellView.HighlightType.Attack);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// 高亮显示能力可作用的位置
+        /// </summary>
+        public void HighlightAbilityRange(Vector2Int selectedPosition)
+        {
+            Card selectedCard = cardManager.GetCard(selectedPosition);
+            if (selectedCard == null) return;
+            
+            // 获取卡牌的所有能力
+            List<AbilityConfiguration> abilities = selectedCard.GetAbilities();
+            
+            // 创建一个集合存储所有可作用位置
+            HashSet<Vector2Int> allValidPositions = new HashSet<Vector2Int>();
+            
+            // 遍历所有能力
+            foreach (var ability in abilities)
+            {
+                // 获取能力可作用的位置
+                List<Vector2Int> abilityPositions = AbilityManager.Instance.GetAbilityRange(ability, selectedCard, cardManager);
+                
+                // 添加到集合中
+                foreach (var pos in abilityPositions)
+                {
+                    allValidPositions.Add(pos);
+                }
+            }
+            
+            // 高亮显示所有可作用位置
+            foreach (var position in allValidPositions)
+            {
+                CellView cellView = board.GetCellView(position.x, position.y);
+                if (cellView != null)
+                {
+                    // 使用攻击高亮（红色）而不是移动高亮（绿色）
                     cellView.SetHighlight(CellView.HighlightType.Attack);
                 }
             }

@@ -1,7 +1,9 @@
 using UnityEngine;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using ChessGame.Cards;
+using ChessGame.Utils;
 
 namespace ChessGame.FSM
 {
@@ -60,28 +62,60 @@ namespace ChessGame.FSM
         
         public override void HandleCellClick(Vector2Int position)
         {
-            Debug.Log($"SelectedState.HandleCellClick: 位置 {position}");
-            
             // 获取选中的卡牌
-            Card selectedCard = StateMachine.CardManager.GetSelectedCard();
+            Vector2Int? selectedPosition = StateMachine.CardManager.GetSelectedPosition();
+            if (!selectedPosition.HasValue) return;
+            
+            Card selectedCard = StateMachine.CardManager.GetCard(selectedPosition.Value);
             if (selectedCard == null) return;
             
-            // 检查是否是可移动的位置 - 直接使用Card类的方法
-            if (selectedCard.CanMoveTo(position, StateMachine.CardManager.GetAllCards()))
+            // 获取所有卡牌
+            Dictionary<Vector2Int, Card> allCards = StateMachine.CardManager.GetAllCards();
+            
+            // 首先检查是否可以触发能力（提高能力触发的优先级）
+            List<AbilityConfiguration> abilities = selectedCard.GetAbilities();
+            foreach (var ability in abilities)
             {
-                Debug.Log($"移动到位置: {position}");
+                Debug.Log($"【状态机】检查能力: {ability.abilityName}");
+                
+                if (selectedCard.CanTriggerAbility(ability, position, StateMachine.CardManager))
+                {
+                    Debug.Log($"【状态机】能力可触发: {ability.abilityName}，切换到能力状态");
+                    
+                    // 设置目标位置
+                    StateMachine.CardManager.SetTargetPosition(position);
+                    
+                    // 切换到能力状态
+                    CompleteState(CardState.Ability);
+                    return;
+                }
+            }
+            
+            // 然后检查是否可以攻击该位置
+            if (selectedCard.CanAttack(position, allCards))
+            {
                 // 设置目标位置
                 StateMachine.CardManager.SetTargetPosition(position);
-                // 切换到移动状态
-                Debug.Log("切换到移动状态");
-                CompleteState(CardState.Moving);
+                
+                // 切换到攻击状态
+                CompleteState(CardState.Attacking);
+                return;
             }
-            else
+            
+            // 最后检查是否可以移动到该位置
+            if (selectedCard.CanMoveTo(position, allCards))
             {
-                Debug.Log("取消选择");
-                // 取消选择
-                CompleteState(CardState.Idle);
+                // 设置目标位置
+                StateMachine.CardManager.SetTargetPosition(position);
+                
+                // 切换到移动状态
+                CompleteState(CardState.Moving);
+                return;
             }
+            
+            // 如果点击的位置不可交互，取消选中
+            StateMachine.CardManager.DeselectCard();
+            CompleteState(CardState.Idle);
         }
         
         public override void HandleCardClick(Vector2Int position)
@@ -184,6 +218,136 @@ namespace ChessGame.FSM
         public override void Update()
         {
             // 选中状态下不需要特殊更新
+        }
+        
+        // 添加新的协程方法
+        private IEnumerator ExecuteAbilityAndCompleteState(AbilityConfiguration ability, Card card, Vector2Int targetPosition)
+        {
+            Debug.Log($"协程检查：开始执行能力协程: {ability.abilityName}");
+            
+            // 等待能力执行完成
+            yield return AbilityManager.Instance.ExecuteAbility(ability, card, targetPosition);
+            
+            Debug.Log($"协程检查：能力执行完成，切换到空闲状态");
+            
+            // 能力执行完成后，切换到空闲状态
+            CompleteState(CardState.Idle);
+        }
+        
+        // 添加新方法
+        private IEnumerator ExecuteAbilityDirectly(AbilityConfiguration ability, Card card, Vector2Int targetPosition)
+        {
+            Debug.Log($"【状态机】开始直接执行能力: {ability.abilityName}");
+            
+            // 执行能力
+            yield return AbilityManager.Instance.ExecuteAbility(ability, card, targetPosition);
+            
+            Debug.Log($"【状态机】能力执行完成: {ability.abilityName}");
+            
+            // 完成状态
+            CompleteState(CardState.Idle);
+        }
+        
+        // 添加解析目标位置的方法
+        private Vector2Int ResolveTargetPosition(string targetSelector, Vector2Int sourcePosition, Vector2Int targetPosition)
+        {
+            // 解析目标选择器
+            if (string.IsNullOrEmpty(targetSelector) || targetSelector == "Self")
+                return sourcePosition;
+            
+            if (targetSelector == "Target")
+                return targetPosition;
+            
+            if (targetSelector.StartsWith("TargetDirection"))
+            {
+                // 计算方向向量
+                Vector2Int direction = targetPosition - sourcePosition;
+                
+                // 标准化方向（保持方向，但长度为1）
+                if (direction.x != 0) direction.x = direction.x / Mathf.Abs(direction.x);
+                if (direction.y != 0) direction.y = direction.y / Mathf.Abs(direction.y);
+                
+                // 检查是否有距离修饰符
+                if (targetSelector.Contains("-"))
+                {
+                    string[] parts = targetSelector.Split('-');
+                    if (parts.Length == 2 && int.TryParse(parts[1], out int distanceModifier))
+                    {
+                        // 计算目标位置：源位置 + 方向 * (距离 - 修饰符)
+                        int distance = Mathf.Max(Mathf.Abs(targetPosition.x - sourcePosition.x), 
+                                                Mathf.Abs(targetPosition.y - sourcePosition.y));
+                        int adjustedDistance = distance - distanceModifier;
+                        
+                        // 确保距离至少为1
+                        adjustedDistance = Mathf.Max(1, adjustedDistance);
+                        
+                        return sourcePosition + direction * adjustedDistance;
+                    }
+                }
+                
+                // 如果没有修饰符，直接返回目标位置
+                return targetPosition;
+            }
+            
+            return targetPosition; // 默认返回原始目标位置
+        }
+        
+        // 添加新方法
+        private IEnumerator ExecuteAbilityActions(AbilityConfiguration ability, Card card, Vector2Int targetPosition)
+        {
+            Debug.Log($"【状态机】开始执行能力动作: {ability.abilityName}");
+            
+            // 遍历能力的每个动作
+            for (int i = 0; i < ability.actionSequence.Count; i++)
+            {
+                var action = ability.actionSequence[i];
+                Debug.Log($"【状态机】执行动作 {i+1}/{ability.actionSequence.Count}: {action.actionType}");
+                
+                // 根据动作类型执行不同的操作
+                switch (action.actionType)
+                {
+                    case AbilityActionConfig.ActionType.Move:
+                        // 切换到移动状态
+                        StateMachine.CardManager.SetTargetPosition(ResolveTargetPosition(action.targetSelector, card.Position, targetPosition));
+                        CompleteState(CardState.Moving);
+                        
+                        // 等待移动完成
+                        yield return new WaitUntil(() => StateMachine.GetCurrentStateType() == CardState.Idle);
+                        break;
+                        
+                    case AbilityActionConfig.ActionType.Attack:
+                        // 切换到攻击状态
+                        StateMachine.CardManager.SetTargetPosition(ResolveTargetPosition(action.targetSelector, card.Position, targetPosition));
+                        CompleteState(CardState.Attacking);
+                        
+                        // 等待攻击完成
+                        yield return new WaitUntil(() => StateMachine.GetCurrentStateType() == CardState.Idle);
+                        break;
+                        
+                    case AbilityActionConfig.ActionType.Wait:
+                        // 等待指定时间
+                        float waitTime = 0.5f; // 默认值
+                        if (action.GetParameters().TryGetValue("time", out object timeObj))
+                        {
+                            float.TryParse(timeObj.ToString(), out waitTime);
+                        }
+                        
+                        Debug.Log($"【状态机】等待 {waitTime} 秒");
+                        yield return new WaitForSeconds(waitTime);
+                        break;
+                        
+                    // 其他动作类型...
+                }
+                
+                // 等待短暂时间确保状态切换完成
+                yield return new WaitForSeconds(0.1f);
+            }
+            
+            // 标记卡牌已行动
+            card.HasActed = true;
+            
+            // 完成状态
+            CompleteState(CardState.Idle);
         }
     }
 } 
