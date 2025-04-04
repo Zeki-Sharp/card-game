@@ -25,12 +25,23 @@ namespace ChessGame.Cards
         
         private GameEventSystem _gameEventSystem;
         
+        // 添加一个静态标志来指示是否正在执行能力
+        private static bool _isExecutingAbility = false;
+        
+        // 添加公共属性来访问这个标志
+        public static bool IsExecutingAbility
+        {
+            get { return _isExecutingAbility; }
+        }
+
         public enum HighlightType
         {
             Move,
             Attack,
             Ability
         }
+
+        private TurnManager _turnManager;
 
         private void Awake()
         {
@@ -49,6 +60,9 @@ namespace ChessGame.Cards
             _rangeCalculator = new AbilityRangeCalculator(_cardManager, _conditionResolver);
             
             _gameEventSystem = GameEventSystem.Instance;
+            
+            // 获取TurnManager
+            _turnManager = FindObjectOfType<TurnManager>();
             
             // 设置脚本执行顺序
             DontDestroyOnLoad(gameObject);
@@ -86,7 +100,14 @@ namespace ChessGame.Cards
         /// </summary>
         private void HandleTurnStarted(int playerId)
         {
-            Debug.Log($"AbilityManager: 处理回合开始事件，玩家ID: {playerId}");
+            // 获取当前回合阶段
+            TurnPhase currentPhase = TurnPhase.PlayerTurnStart;
+            if (_turnManager != null && _turnManager.GetTurnStateMachine() != null)
+            {
+                currentPhase = _turnManager.GetTurnStateMachine().GetCurrentPhase();
+            }
+            
+            Debug.Log($"AbilityManager: 处理回合开始事件，玩家ID: {playerId}，当前回合阶段: {currentPhase}");
             
             // 获取所有卡牌
             Dictionary<Vector2Int, Card> allCards = _cardManager.GetAllCards();
@@ -106,11 +127,11 @@ namespace ChessGame.Cards
                     if (ability.triggerCondition.Contains("TurnCounter"))
                     {
                         string abilityId = ability.abilityName;
-                        int oldCount = card.GetTurnCounter(abilityId);
-                        card.IncrementTurnCounter(abilityId);
-                        int currentCount = card.GetTurnCounter(abilityId);
                         
-                        Debug.Log($"卡牌 {card.Data.Name} 的能力 {abilityId} 计数器从 {oldCount} 增加到 {currentCount}");
+                        // 增加计数器
+                        card.IncrementTurnCounter(abilityId);
+                        int count = card.GetTurnCounter(abilityId);
+                        Debug.Log($"增加卡牌 {card.Data.Name} 的能力 {abilityId} 计数器，当前值: {count}");
                         
                         // 检查是否满足触发条件
                         bool conditionMet = _conditionResolver.CheckCondition(ability.triggerCondition, card, card.Position, _cardManager);
@@ -122,10 +143,9 @@ namespace ChessGame.Cards
                             
                             try
                             {
-                                // 执行能力
-                                var coroutine = _abilityExecutor.ExecuteAbility(ability, card, card.Position);
+                                // 执行能力，但不标记为已行动
+                                var coroutine = ExecuteAbility(ability, card, card.Position);
                                 StartCoroutine(coroutine);
-                                Debug.Log($"成功启动能力执行协程: {abilityId}");
                             }
                             catch (Exception e)
                             {
@@ -252,17 +272,30 @@ namespace ChessGame.Cards
         /// </summary>
         public IEnumerator ExecuteAbility(AbilityConfiguration ability, Card card, Vector2Int targetPosition)
         {
-            Debug.Log($"AbilityManager.ExecuteAbility: 开始执行能力 {ability.abilityName}");
+            // 设置标志为true
+            _isExecutingAbility = true;
+            
+            Debug.Log($"开始执行能力: {ability.abilityName}, 禁用玩家输入");
             
             // 确保卡牌管理器存在
             if (_cardManager == null)
             {
                 Debug.LogError("执行能力失败: 卡牌管理器为空");
+                _isExecutingAbility = false;
                 yield break;
             }
             
-            // 执行能力前记录卡牌位置
+            // 执行能力前记录卡牌位置和当前回合阶段
             Vector2Int originalPosition = card.Position;
+            
+            // 获取当前回合阶段并记录
+            TurnPhase executionStartPhase = TurnPhase.PlayerMainPhase;
+            if (_turnManager != null && _turnManager.GetTurnStateMachine() != null)
+            {
+                executionStartPhase = _turnManager.GetTurnStateMachine().GetCurrentPhase();
+            }
+            
+            Debug.Log($"能力 {ability.abilityName} 开始执行时的回合阶段: {executionStartPhase}");
             
             // 执行能力
             yield return _abilityExecutor.ExecuteAbility(ability, card, targetPosition);
@@ -270,16 +303,22 @@ namespace ChessGame.Cards
             // 设置冷却
             _conditionResolver.SetAbilityCooldown(card.Data.Id, ability.abilityName, ability.cooldown);
             
-            // 标记卡牌已行动
-            card.HasActed = true;
-            
-            Debug.Log($"AbilityManager.ExecuteAbility: 能力 {ability.abilityName} 执行完成");
-            
-            // 通知游戏事件系统能力执行完成
-            if (GameEventSystem.Instance != null)
+            // 使用记录的回合阶段来判断是否标记卡牌为已行动
+            if (executionStartPhase == TurnPhase.PlayerMainPhase || executionStartPhase == TurnPhase.EnemyMainPhase)
             {
-                GameEventSystem.Instance.NotifyCardActed(card.Position);
+                Debug.Log($"能力 {ability.abilityName} 在主回合阶段触发，标记卡牌 {card.Data.Name} 为已行动");
+                card.HasActed = true;
             }
+            else
+            {
+                card.HasActed = false;
+                Debug.Log($"能力 {ability.abilityName} 在非主回合阶段触发，不标记卡牌 {card.Data.Name} 为已行动, card.HasActed: {card.HasActed}");
+            }
+            
+            // 能力执行完毕，重置标志
+            _isExecutingAbility = false;
+            
+            Debug.Log($"能力 {ability.abilityName} 执行完毕，恢复玩家输入");
         }
         
         // 添加从CardDataSO加载能力的方法

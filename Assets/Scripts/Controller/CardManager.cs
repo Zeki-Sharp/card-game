@@ -222,21 +222,27 @@ namespace ChessGame
         // 处理单元格点击
         public void HandleCellClick(Vector2Int position)
         {
+            // 检查是否正在执行能力
+            if (AbilityManager.IsExecutingAbility)
+            {
+                Debug.Log("正在执行能力，忽略玩家输入");
+                return;
+            }
+            
+            // 检查当前回合状态是否允许玩家输入
+            if (turnManager != null && turnManager.GetTurnStateMachine() != null && 
+                !turnManager.GetTurnStateMachine().AllowPlayerInput)
+            {
+                Debug.Log("当前回合阶段不允许玩家输入");
+                return;
+            }
+            
             Debug.Log($"CardManager.HandleCellClick: 位置 {position}, 当前状态: {_stateMachine.GetCurrentStateType().ToString()}");
             
             if (_stateMachine == null)
             {
-                Debug.LogWarning("状态机未初始化，尝试重新初始化");
-                try
-                {
-                    _stateMachine = new CardStateMachine(this);
-                    Debug.Log("状态机重新初始化成功");
-                }
-                catch (System.Exception e)
-                {
-                    Debug.LogError($"状态机重新初始化失败: {e.Message}\n{e.StackTrace}");
-                    return;
-                }
+                Debug.LogError("CardManager.HandleCellClick: 状态机为空");
+                return;
             }
             
             // 检查是否有卡牌在该位置

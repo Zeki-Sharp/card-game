@@ -27,6 +27,16 @@ namespace ChessGame.FSM.TurnState
         // 回合阶段变化事件
         public event Action<TurnPhase> OnPhaseChanged;
         
+        // 添加一个标志来指示是否允许玩家输入
+        private bool _allowPlayerInput = false;
+        
+        // 添加公共属性来访问这个标志
+        public bool AllowPlayerInput
+        {
+            get { return _allowPlayerInput; }
+            private set { _allowPlayerInput = value; }
+        }
+        
         public TurnStateMachine(TurnManager turnManager, CardManager cardManager)
         {
             Debug.Log("TurnStateMachine构造函数开始执行");
@@ -108,12 +118,24 @@ namespace ChessGame.FSM.TurnState
                 _currentState.Exit();
             }
             
-            // 更新当前状态
+            // 更新当前阶段
             _currentPhase = newPhase;
-            _currentState = _states[newPhase];
             
-            // 进入新状态
-            _currentState.Enter();
+            // 获取新状态
+            if (_states.TryGetValue(newPhase, out ITurnState newState))
+            {
+                _currentState = newState;
+                _currentState.Enter();
+            }
+            else
+            {
+                Debug.LogError($"找不到回合阶段 {newPhase} 对应的状态");
+            }
+            
+            // 更新玩家输入标志 - 只有在玩家主要回合阶段允许输入
+            _allowPlayerInput = (newPhase == TurnPhase.PlayerMainPhase);
+            
+            Debug.Log($"回合阶段变更为 {newPhase}，玩家输入状态: {(_allowPlayerInput ? "允许" : "禁止")}");
             
             // 触发阶段变化事件
             OnPhaseChanged?.Invoke(newPhase);
