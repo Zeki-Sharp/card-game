@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 namespace ChessGame.Cards
 {
@@ -114,7 +115,7 @@ namespace ChessGame.Cards
                     
                 case AbilityActionConfig.ActionType.ModifyStat:
                     // 修改卡牌属性
-                    yield return ModifyCardStat(sourceCard, targetPosition, parameters);
+                    yield return ModifyStat(sourceCard, parameters);
                     break;
                     
                 case AbilityActionConfig.ActionType.ResetCounter:
@@ -280,66 +281,47 @@ namespace ChessGame.Cards
         /// <summary>
         /// 修改卡牌属性
         /// </summary>
-        private IEnumerator ModifyCardStat(Card sourceCard, Vector2Int targetPosition, Dictionary<string, object> parameters)
+        private IEnumerator ModifyStat(Card sourceCard, Dictionary<string, object> parameters)
         {
-            // 获取目标卡牌
-            Card targetCard = null;
+            // 获取要修改的属性类型
+            string statType = parameters.ContainsKey("statType") ? (string)parameters["statType"] : "attack";
             
-            if (targetPosition == sourceCard.Position)
-            {
-                // 目标是自己
-                targetCard = sourceCard;
-            }
-            else
-            {
-                // 目标是其他卡牌
-                targetCard = _cardManager.GetCard(targetPosition);
-            }
+            // 获取修改的数值
+            int amount = parameters.ContainsKey("amount") ? Convert.ToInt32(parameters["amount"]) : 1;
             
-            if (targetCard == null)
-            {
-                Debug.LogWarning($"修改属性失败：目标位置 {targetPosition} 没有卡牌");
-                yield break;
-            }
+            Debug.Log($"修改卡牌属性: {sourceCard.Data.Name}, 属性类型: {statType}, 数值: {amount}");
             
-            // 获取参数
-            string statType = parameters.ContainsKey("statType") ? (string)parameters["statType"] : "";
-            int amount = parameters.ContainsKey("amount") ? int.Parse((string)parameters["amount"]) : 0;
-            
-            Debug.Log($"修改卡牌属性: {targetCard.Data.Name}, 属性: {statType}, 数值: {amount}");
-            
-            // 修改属性
+            // 根据属性类型修改卡牌属性
             switch (statType.ToLower())
             {
                 case "attack":
-                    targetCard.Data.Attack += amount;
-                    Debug.Log($"卡牌 {targetCard.Data.Name} 攻击力从 {targetCard.Data.Attack - amount} 增加到 {targetCard.Data.Attack}");
+                    sourceCard.Data.Attack += amount;
+                    Debug.Log($"卡牌 {sourceCard.Data.Name} 的攻击力从 {sourceCard.Data.Attack - amount} 增加到 {sourceCard.Data.Attack}");
                     break;
-                    
                 case "health":
-                    targetCard.Data.Health += amount;
-                    Debug.Log($"卡牌 {targetCard.Data.Name} 生命值从 {targetCard.Data.Health - amount} 增加到 {targetCard.Data.Health}");
+                    sourceCard.Data.Health += amount;
+                    Debug.Log($"卡牌 {sourceCard.Data.Name} 的生命值从 {sourceCard.Data.Health - amount} 增加到 {sourceCard.Data.Health}");
                     break;
-                    
                 case "both":
-                    targetCard.Data.Attack += amount;
-                    targetCard.Data.Health += amount;
-                    Debug.Log($"卡牌 {targetCard.Data.Name} 攻击力从 {targetCard.Data.Attack - amount} 增加到 {targetCard.Data.Attack}, 生命值从 {targetCard.Data.Health - amount} 增加到 {targetCard.Data.Health}");
+                    sourceCard.Data.Attack += amount;
+                    sourceCard.Data.Health += amount;
+                    Debug.Log($"卡牌 {sourceCard.Data.Name} 的攻击力和生命值都增加了 {amount}，现在为 {sourceCard.Data.Attack}/{sourceCard.Data.Health}");
                     break;
-                    
                 default:
                     Debug.LogWarning($"未知的属性类型: {statType}");
                     break;
             }
             
-            // 更新卡牌视图
-            CardView cardView = _cardManager.GetCardView(targetPosition);
-            if (cardView != null)
+            // 播放成长动画
+            if (amount > 0 && CardAnimationService.Instance != null)
             {
-                cardView.UpdateVisuals();
+                yield return CardAnimationService.Instance.PlayGrowAnimation(sourceCard.Position);
             }
-            
-            yield return new WaitForSeconds(0.5f);
+            else
+            {
+                // 如果没有动画或者是减少属性，等待一小段时间
+                yield return new WaitForSeconds(0.2f);
+            }
         }
         
         /// <summary>

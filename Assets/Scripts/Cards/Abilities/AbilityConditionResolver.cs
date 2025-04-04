@@ -353,24 +353,7 @@ namespace ChessGame.Cards
             return EvaluateExpression(resolvedCondition);
         }
 
-        
-        
-        /// <summary>
-        /// 从条件表达式中提取能力ID
-        /// </summary>
-        private string ExtractAbilityId(string expression)
-        {
-            // 格式: TurnCounter[abilityId]
-            int startIndex = expression.IndexOf('[');
-            int endIndex = expression.IndexOf(']');
-            
-            if (startIndex >= 0 && endIndex > startIndex)
-            {
-                return expression.Substring(startIndex + 1, endIndex - startIndex - 1);
-            }
-            
-            return "default";
-        }
+    
 
         private string ReplaceBool(string condition, string keyword, bool value)
         {       

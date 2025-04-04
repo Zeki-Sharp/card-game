@@ -9,10 +9,24 @@ namespace ChessGame
     /// </summary>
     public class CardAnimationService : MonoBehaviour
     {
+        private static CardAnimationService _instance;
+        public static CardAnimationService Instance => _instance;
+
         [SerializeField] private CardManager cardManager;
+        [SerializeField] private float moveAnimationDuration = 0.5f;
+        [SerializeField] private float attackAnimationDuration = 0.3f;
+        [SerializeField] private float removeAnimationDuration = 0.5f;
+        [SerializeField] private float flipAnimationDuration = 0.5f;
         
         private void Awake()
         {
+            if (_instance != null && _instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            _instance = this;
+
             if (cardManager == null)
                 cardManager = FindObjectOfType<CardManager>();
         }
@@ -249,6 +263,60 @@ namespace ChessGame
                 gridPosition.y * 1f + offsetY,
                 0f
             );
+        }
+        
+        /// <summary>
+        /// 播放卡牌成长动画
+        /// </summary>
+        /// <param name="position">卡牌位置</param>
+        /// <param name="duration">动画持续时间</param>
+        /// <param name="scaleMultiplier">最大缩放倍数</param>
+        /// <returns>协程</returns>
+        public IEnumerator PlayGrowAnimation(Vector2Int position, float duration = 0.5f, float scaleMultiplier = 1.2f)
+        {
+            Debug.Log($"播放卡牌成长动画: 位置 {position}, 持续时间 {duration}, 缩放倍数 {scaleMultiplier}");
+            
+            // 获取卡牌视图
+            CardView cardView = cardManager.GetCardView(position);
+            if (cardView == null)
+            {
+                Debug.LogWarning($"找不到位置 {position} 的卡牌视图，无法播放成长动画");
+                yield break;
+            }
+            
+            // 记录原始缩放
+            Vector3 originalScale = cardView.transform.localScale;
+            Vector3 targetScale = originalScale * scaleMultiplier;
+            
+            // 放大阶段
+            float elapsed = 0f;
+            while (elapsed < duration / 2)
+            {
+                float t = elapsed / (duration / 2);
+                cardView.transform.localScale = Vector3.Lerp(originalScale, targetScale, t);
+                
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            // 确保达到最大缩放
+            cardView.transform.localScale = targetScale;
+            
+            // 缩小阶段
+            elapsed = 0f;
+            while (elapsed < duration / 2)
+            {
+                float t = elapsed / (duration / 2);
+                cardView.transform.localScale = Vector3.Lerp(targetScale, originalScale, t);
+                
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            // 确保恢复原始缩放
+            cardView.transform.localScale = originalScale;
+            
+            Debug.Log($"卡牌成长动画完成: 位置 {position}");
         }
     }
 } 
