@@ -1,5 +1,6 @@
 CardId,Count,IsFaceDown,FaceUpCount,Position
-3,3,0,1,
+1,3,0,1,
 4,3,0,1,
+3,1,0,1,
 8,3,0,1,
 9,3,0,1,

@@ -16,7 +16,9 @@ namespace ChessGame.Cards
             Attack,     // 攻击
             Heal,       // 治疗
             ApplyEffect, // 应用效果
-            Wait        // 等待
+            Wait,       // 等待
+            ModifyStat,  // 新增：修改卡牌属性
+            ResetCounter // 新增：重置计数器
         }
         
         // 动作类型

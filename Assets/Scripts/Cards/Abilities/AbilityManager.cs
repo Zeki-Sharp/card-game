@@ -61,6 +61,9 @@ namespace ChessGame.Cards
             // 订阅回合开始事件
             _gameEventSystem.OnTurnStarted += HandleTurnStarted;
             
+            // 订阅卡牌翻面事件
+            _gameEventSystem.OnCardFlipped += HandleCardFlipped;
+            
             // 加载能力配置
             LoadAbilityConfigurations();
             
@@ -74,6 +77,7 @@ namespace ChessGame.Cards
             if (_gameEventSystem != null)
             {
                 _gameEventSystem.OnTurnStarted -= HandleTurnStarted;
+                _gameEventSystem.OnCardFlipped -= HandleCardFlipped;
             }
         }
         
@@ -84,8 +88,78 @@ namespace ChessGame.Cards
         {
             Debug.Log($"AbilityManager: 处理回合开始事件，玩家ID: {playerId}");
             
-            // 这里可以添加回合开始时的能力触发逻辑
-            // 例如遍历所有卡牌，检查是否有回合开始触发的能力
+            // 获取所有卡牌
+            Dictionary<Vector2Int, Card> allCards = _cardManager.GetAllCards();
+            
+            // 遍历所有卡牌
+            foreach (var kvp in allCards)
+            {
+                Card card = kvp.Value;
+                
+                // 只处理当前回合玩家的卡牌，并且只处理正面的卡牌
+                if (card.OwnerId != playerId || card.IsFaceDown)
+                    continue;
+                    
+                // 增加回合计数器
+                foreach (var ability in GetCardAbilities(card))
+                {
+                    if (ability.triggerCondition.Contains("TurnCounter"))
+                    {
+                        string abilityId = ability.abilityName;
+                        int oldCount = card.GetTurnCounter(abilityId);
+                        card.IncrementTurnCounter(abilityId);
+                        int currentCount = card.GetTurnCounter(abilityId);
+                        
+                        Debug.Log($"卡牌 {card.Data.Name} 的能力 {abilityId} 计数器从 {oldCount} 增加到 {currentCount}");
+                        
+                        // 检查是否满足触发条件
+                        bool conditionMet = _conditionResolver.CheckCondition(ability.triggerCondition, card, card.Position, _cardManager);
+                        Debug.Log($"卡牌 {card.Data.Name} 的能力 {abilityId} 触发条件 '{ability.triggerCondition}' 是否满足: {conditionMet}");
+                        
+                        if (conditionMet)
+                        {
+                            Debug.Log($"卡牌 {card.Data.Name} 的能力 {abilityId} 触发条件满足，开始执行能力");
+                            
+                            try
+                            {
+                                // 执行能力
+                                var coroutine = _abilityExecutor.ExecuteAbility(ability, card, card.Position);
+                                StartCoroutine(coroutine);
+                                Debug.Log($"成功启动能力执行协程: {abilityId}");
+                            }
+                            catch (Exception e)
+                            {
+                                Debug.LogError($"启动能力执行协程时出错: {e.Message}\n{e.StackTrace}");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        /// <summary>
+        /// 处理卡牌翻面事件
+        /// </summary>
+        private void HandleCardFlipped(Vector2Int position, bool isFaceUp)
+        {
+            if (isFaceUp) // 只处理从背面翻到正面的情况
+            {
+                Card card = _cardManager.GetCard(position);
+                if (card != null)
+                {
+                    // 初始化卡牌的回合计数器
+                    foreach (var ability in GetCardAbilities(card))
+                    {
+                        if (ability.triggerCondition.Contains("TurnCounter"))
+                        {
+                            string abilityId = ability.abilityName;
+                            // 设置初始值为0
+                            card.SetTurnCounter(abilityId, 0);
+                            Debug.Log($"卡牌 {card.Data.Name} 翻面，初始化能力 {abilityId} 的计数器为 0");
+                        }
+                    }
+                }
+            }
         }
         
         /// <summary>

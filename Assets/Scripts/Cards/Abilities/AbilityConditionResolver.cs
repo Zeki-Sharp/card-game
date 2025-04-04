@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System;
 namespace ChessGame.Cards
 {
     /// <summary>
@@ -79,67 +80,64 @@ namespace ChessGame.Cards
             }
         }
 
-        private string ReplaceVariables(string condition, Card card, Vector2Int targetPosition, CardManager cardManager)
-        {
+            private string ReplaceVariables(string condition, Card card, Vector2Int targetPosition, CardManager cardManager)
+            {
             try
             {
-                // 使用正则表达式替换完整的变量名
-                // 替换StraightDistance - 检查是否在同一直线上（横向或纵向）
                 int dx1 = Mathf.Abs(targetPosition.x - card.Position.x); // 水平方向距离
                 int dy1 = Mathf.Abs(targetPosition.y - card.Position.y); // 垂直方向距离
                 bool isStraight = dy1 == 0 || dx1 == 0;
                 int straightDistance = isStraight ? Mathf.Max(dx1, dy1) : int.MaxValue;
-                condition = Regex.Replace(condition, @"\bStraightDistance\b", straightDistance.ToString());
-                
-                // 替换Distance - 曼哈顿距离（横向+纵向）
                 int manhattanDistance = dx1 + dy1;
-                condition = Regex.Replace(condition, @"\bDistance\b", manhattanDistance.ToString());
-                
-                // 替换DiagonalDistance - 对角线距离
                 bool isDiagonal = dx1 == dy1 && dx1 > 0;
                 int diagonalDistance = isDiagonal ? dx1 : int.MaxValue;
-                condition = Regex.Replace(condition, @"\bDiagonalDistance\b", diagonalDistance.ToString());
-                
-                // 替换MoveRange和AttackRange
-                condition = Regex.Replace(condition, @"\bMoveRange\b", card.MoveRange.ToString());
-                condition = Regex.Replace(condition, @"\bAttackRange\b", card.AttackRange.ToString());
-                
-                // 替换Enemy
+
                 Card targetCard = cardManager.GetCard(targetPosition);
                 bool isEnemy = targetCard != null && targetCard.OwnerId != card.OwnerId && !targetCard.IsFaceDown;
-                condition = Regex.Replace(condition, @"\bEnemy\b", isEnemy.ToString().ToLower());
-                
-                // 替换FaceDown
                 bool isFaceDown = targetCard != null && targetCard.IsFaceDown;
-                condition = Regex.Replace(condition, @"\bFaceDown\b", isFaceDown.ToString().ToLower());
-
-                // 替换EnemyOrFaceDown
                 bool isEnemyOrFaceDown = targetCard != null && (targetCard.OwnerId != card.OwnerId || targetCard.IsFaceDown);
-                condition = Regex.Replace(condition, @"\bEnemyOrFaceDown\b", isEnemyOrFaceDown.ToString().ToLower());
-                
-                // 替换Empty
                 bool isEmpty = targetCard == null;
-                condition = Regex.Replace(condition, @"\bEmpty\b", isEmpty.ToString().ToLower());
-            
-                // 添加路径遮挡检查
-                bool isPathBlocked = CheckPathBlocked(card.Position, targetPosition, cardManager);
-                condition = Regex.Replace(condition, @"\bPathBlocked\b", isPathBlocked.ToString().ToLower());
-                
-                // 添加对角线遮挡检查
-                bool isDiagonalBlocked = CheckDiagonalBlocked(card.Position, targetPosition, cardManager);
-                condition = Regex.Replace(condition, @"\bDiagonalBlocked\b", isDiagonalBlocked.ToString().ToLower());
 
-                // 替换Blocked
+                bool isPathBlocked = CheckPathBlocked(card.Position, targetPosition, cardManager);
+                bool isDiagonalBlocked = CheckDiagonalBlocked(card.Position, targetPosition, cardManager);
                 bool isBlocked = isPathBlocked || isDiagonalBlocked;
-                condition = Regex.Replace(condition, @"\bBlocked\b", isBlocked.ToString().ToLower());
-                
-                // 添加更详细的日志
-                Debug.Log($"- PathBlocked: {isPathBlocked}");
-                Debug.Log($"- DiagonalBlocked: {isDiagonalBlocked}");
-                
+
+                // 替换数值变量
+                condition = Regex.Replace(condition, @"\bStraightDistance\b", straightDistance.ToString());
+                condition = Regex.Replace(condition, @"\bDistance\b", manhattanDistance.ToString());
+                condition = Regex.Replace(condition, @"\bDiagonalDistance\b", diagonalDistance.ToString());
+                condition = Regex.Replace(condition, @"\bMoveRange\b", card.MoveRange.ToString());
+                condition = Regex.Replace(condition, @"\bAttackRange\b", card.AttackRange.ToString());
+
+                // 替换布尔变量
+                condition = ReplaceBool(condition, "Enemy", isEnemy);
+                condition = ReplaceBool(condition, "FaceDown", isFaceDown);
+                condition = ReplaceBool(condition, "EnemyOrFaceDown", isEnemyOrFaceDown);
+                condition = ReplaceBool(condition, "Empty", isEmpty);
+                condition = ReplaceBool(condition, "PathBlocked", isPathBlocked);
+                condition = ReplaceBool(condition, "DiagonalBlocked", isDiagonalBlocked);
+                condition = ReplaceBool(condition, "Blocked", isBlocked);
+
+                // 替换 TurnCounter[AbilityId]
+                condition = Regex.Replace(condition, @"TurnCounter\[([^\]]+)\]", match =>
+                {
+                    try
+                    {
+                        string abilityId = match.Groups[1].Value;
+                        int count = card.GetTurnCounter(abilityId);
+                        Debug.Log($"替换回合计数器变量: {match.Value} -> {count}, 能力ID: {abilityId}");
+                        return count.ToString();
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogError($"替换回合计数器变量时发生错误: {e.Message}\n{e.StackTrace}");
+                        return "0";
+                    }
+                });
+
                 return condition;
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Debug.LogError($"替换变量时发生错误: {e.Message}\n{e.StackTrace}");
                 return "false";
@@ -353,6 +351,30 @@ namespace ChessGame.Cards
             
             // 检查条件
             return EvaluateExpression(resolvedCondition);
+        }
+
+        
+        
+        /// <summary>
+        /// 从条件表达式中提取能力ID
+        /// </summary>
+        private string ExtractAbilityId(string expression)
+        {
+            // 格式: TurnCounter[abilityId]
+            int startIndex = expression.IndexOf('[');
+            int endIndex = expression.IndexOf(']');
+            
+            if (startIndex >= 0 && endIndex > startIndex)
+            {
+                return expression.Substring(startIndex + 1, endIndex - startIndex - 1);
+            }
+            
+            return "default";
+        }
+
+        private string ReplaceBool(string condition, string keyword, bool value)
+        {       
+            return Regex.Replace(condition, $@"\b{keyword}\b", value.ToString().ToLower());
         }
     }
 } 

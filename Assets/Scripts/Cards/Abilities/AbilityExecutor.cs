@@ -111,6 +111,20 @@ namespace ChessGame.Cards
                 case AbilityActionConfig.ActionType.ApplyEffect:
                     // 应用效果的逻辑
                     break;
+                    
+                case AbilityActionConfig.ActionType.ModifyStat:
+                    // 修改卡牌属性
+                    yield return ModifyCardStat(sourceCard, targetPosition, parameters);
+                    break;
+                    
+                case AbilityActionConfig.ActionType.ResetCounter:
+                    // 重置计数器
+                    ResetCardCounter(sourceCard, parameters);
+                    break;
+                    
+                default:
+                    Debug.LogWarning($"未知的动作类型: {actionConfig.actionType}");
+                    break;
             }
             
             // 确保每个动作执行后有足够的时间让游戏状态更新
@@ -261,6 +275,89 @@ namespace ChessGame.Cards
             }
             
             return 0.2f; // 默认
+        }
+        
+        /// <summary>
+        /// 修改卡牌属性
+        /// </summary>
+        private IEnumerator ModifyCardStat(Card sourceCard, Vector2Int targetPosition, Dictionary<string, object> parameters)
+        {
+            // 获取目标卡牌
+            Card targetCard = null;
+            
+            if (targetPosition == sourceCard.Position)
+            {
+                // 目标是自己
+                targetCard = sourceCard;
+            }
+            else
+            {
+                // 目标是其他卡牌
+                targetCard = _cardManager.GetCard(targetPosition);
+            }
+            
+            if (targetCard == null)
+            {
+                Debug.LogWarning($"修改属性失败：目标位置 {targetPosition} 没有卡牌");
+                yield break;
+            }
+            
+            // 获取参数
+            string statType = parameters.ContainsKey("statType") ? (string)parameters["statType"] : "";
+            int amount = parameters.ContainsKey("amount") ? int.Parse((string)parameters["amount"]) : 0;
+            
+            Debug.Log($"修改卡牌属性: {targetCard.Data.Name}, 属性: {statType}, 数值: {amount}");
+            
+            // 修改属性
+            switch (statType.ToLower())
+            {
+                case "attack":
+                    targetCard.Data.Attack += amount;
+                    Debug.Log($"卡牌 {targetCard.Data.Name} 攻击力从 {targetCard.Data.Attack - amount} 增加到 {targetCard.Data.Attack}");
+                    break;
+                    
+                case "health":
+                    targetCard.Data.Health += amount;
+                    Debug.Log($"卡牌 {targetCard.Data.Name} 生命值从 {targetCard.Data.Health - amount} 增加到 {targetCard.Data.Health}");
+                    break;
+                    
+                case "both":
+                    targetCard.Data.Attack += amount;
+                    targetCard.Data.Health += amount;
+                    Debug.Log($"卡牌 {targetCard.Data.Name} 攻击力从 {targetCard.Data.Attack - amount} 增加到 {targetCard.Data.Attack}, 生命值从 {targetCard.Data.Health - amount} 增加到 {targetCard.Data.Health}");
+                    break;
+                    
+                default:
+                    Debug.LogWarning($"未知的属性类型: {statType}");
+                    break;
+            }
+            
+            // 更新卡牌视图
+            CardView cardView = _cardManager.GetCardView(targetPosition);
+            if (cardView != null)
+            {
+                cardView.UpdateVisuals();
+            }
+            
+            yield return new WaitForSeconds(0.5f);
+        }
+        
+        /// <summary>
+        /// 重置卡牌计数器
+        /// </summary>
+        private void ResetCardCounter(Card sourceCard, Dictionary<string, object> parameters)
+        {
+            // 获取参数
+            string abilityId = parameters.ContainsKey("abilityId") ? (string)parameters["abilityId"] : "default";
+            
+            Debug.Log($"重置卡牌计数器: {sourceCard.Data.Name}, 能力ID: {abilityId}, 当前值: {sourceCard.GetTurnCounter(abilityId)}");
+            
+            // 重置计数器
+            sourceCard.ResetTurnCounter(abilityId);
+            
+            // 确认计数器已重置
+            int newCount = sourceCard.GetTurnCounter(abilityId);
+            Debug.Log($"卡牌 {sourceCard.Data.Name} 的能力 {abilityId} 计数器已重置为 {newCount}");
         }
     }
 } 

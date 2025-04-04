@@ -43,6 +43,9 @@ namespace ChessGame
         public virtual MoveType MovementType { get; protected set; } = MoveType.Manhattan;
         public virtual MoveType AttackType { get; protected set; } = MoveType.Manhattan;
 
+        // 回合计数器字典，键为能力ID，值为计数值
+        private Dictionary<string, int> _turnCounters = new Dictionary<string, int>();
+
         public Card(CardData data, Vector2Int position, int ownerId = 0, bool isFaceDown = true)
         {
             Data = data.Clone(); // 创建数据副本，避免共享引用
@@ -365,6 +368,45 @@ namespace ChessGame
             return GetAttackablePositions(cardManager.BoardWidth, cardManager.BoardHeight, allCards);
         }
 
+        /// <summary>
+        /// 获取指定能力的回合计数器值
+        /// </summary>
+        public int GetTurnCounter(string abilityId)
+        {
+            if (_turnCounters.TryGetValue(abilityId, out int count))
+            {
+                return count;
+            }
+            return 0;
+        }
+        
+        /// <summary>
+        /// 设置指定能力的回合计数器值
+        /// </summary>
+        public void SetTurnCounter(string abilityId, int value)
+        {
+            _turnCounters[abilityId] = value;
+        }
+        
+        /// <summary>
+        /// 增加指定能力的回合计数器值
+        /// </summary>
+        public void IncrementTurnCounter(string abilityId)
+        {
+            if (!_turnCounters.ContainsKey(abilityId))
+            {
+                _turnCounters[abilityId] = 0;
+            }
+            _turnCounters[abilityId]++;
+        }
+        
+        /// <summary>
+        /// 重置指定能力的回合计数器值
+        /// </summary>
+        public void ResetTurnCounter(string abilityId)
+        {
+            _turnCounters[abilityId] = 0;
+        }
     }
 
 } 

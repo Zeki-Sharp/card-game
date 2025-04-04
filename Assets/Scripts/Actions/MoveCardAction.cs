@@ -22,7 +22,7 @@ namespace ChessGame
             {
                 Debug.LogError("MoveCardAction: CardManager 为空");
                 // 尝试再次从场景中获取
-                cardManager = GameObject.FindObjectOfType<CardManager>();
+                CardManager = GameObject.FindObjectOfType<CardManager>();
                 if (CardManager == null)
                 {
                     Debug.LogError("MoveCardAction: 无法从场景中找到 CardManager");
