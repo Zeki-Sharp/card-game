@@ -73,33 +73,26 @@ namespace ChessGame.Cards
             switch (actionConfig.actionType)
             {
                 case AbilityActionConfig.ActionType.Attack:
-                    // 普通攻击
-                    Debug.Log($"执行攻击动作: 从 {sourceCard.Position} 到 {targetPosition}");
-                    
-                    // 确保目标位置有卡牌
-                    Card targetCard = _cardManager.GetCard(targetPosition);
-                    if (targetCard != null)
+                    // 使用 AttackCardAction
+                    AttackCardAction attackAction = new AttackCardAction(_cardManager, sourceCard.Position, targetPosition);
+                    if (attackAction.Execute())
                     {
-                        // 执行攻击，不需要再检查攻击范围
-                        int damageDealt = ExecuteAttackAction(sourceCard.Position, targetPosition);
-                        context["dealtDamage"] = damageDealt;
-                        Debug.Log($"攻击完成，造成伤害: {damageDealt}");
-                    }
-                    else
-                    {
-                        Debug.LogError($"攻击失败: 目标位置 {targetPosition} 没有卡牌");
+                        context["dealtDamage"] = attackAction.GetDamageDealt();
+                        Debug.Log($"攻击完成，造成伤害: {attackAction.GetDamageDealt()}");
                     }
                     break;
                     
                 case AbilityActionConfig.ActionType.Move:
-                    Debug.Log($"【能力执行器】执行移动动作: 从 {sourceCard.Position} 到 {targetPosition}");
-                    ExecuteMoveAction(sourceCard.Position, targetPosition);
-                    Debug.Log($"【能力执行器】移动完成，新位置: {sourceCard.Position}");
+                    // 使用 MoveCardAction
+                    MoveCardAction moveAction = new MoveCardAction(_cardManager, sourceCard.Position, targetPosition);
+                    moveAction.Execute();
                     break;
                     
                 case AbilityActionConfig.ActionType.Heal:
+                    // 使用 HealCardAction
                     int healAmount = ResolveHealAmount(parameters, context);
-                    ExecuteHealAction(targetPosition, healAmount);
+                    HealCardAction healAction = new HealCardAction(_cardManager, targetPosition, healAmount);
+                    healAction.Execute();
                     break;
                     
                 case AbilityActionConfig.ActionType.Wait:
@@ -114,13 +107,23 @@ namespace ChessGame.Cards
                     break;
                     
                 case AbilityActionConfig.ActionType.ModifyStat:
-                    // 修改卡牌属性
-                    yield return ModifyStat(sourceCard, parameters);
+                    // 使用 ModifyStatAction
+                    string statType = parameters.ContainsKey("statType") ? (string)parameters["statType"] : "attack";
+                    int amount = parameters.ContainsKey("amount") ? System.Convert.ToInt32(parameters["amount"]) : 1;
+                    
+                    ModifyStatAction modifyStatAction = new ModifyStatAction(_cardManager, sourceCard.Position, statType, amount);
+                    modifyStatAction.Execute();
+                    
+                    // 等待动画播放
+                    yield return new WaitForSeconds(0.2f);
                     break;
                     
                 case AbilityActionConfig.ActionType.ResetCounter:
-                    // 重置计数器
-                    ResetCardCounter(sourceCard, parameters);
+                    // 使用 ResetCounterAction
+                    string abilityId = parameters.ContainsKey("abilityId") ? (string)parameters["abilityId"] : "default";
+                    
+                    ResetCounterAction resetCounterAction = new ResetCounterAction(_cardManager, sourceCard.Position, abilityId);
+                    resetCounterAction.Execute();
                     break;
                     
                 default:
@@ -197,48 +200,6 @@ namespace ChessGame.Cards
         }
         
         /// <summary>
-        /// 执行攻击动作
-        /// </summary>
-        private int ExecuteAttackAction(Vector2Int sourcePos, Vector2Int targetPos)
-        {
-
-            AttackCardAction attackAction = new AttackCardAction(_cardManager, sourcePos, targetPos);
-            attackAction.Execute(); 
-
-            return attackAction.GetDamageDealt();
-        }
-        
-        /// <summary>
-        /// 执行移动动作
-        /// </summary>
-        private void ExecuteMoveAction(Vector2Int fromPos, Vector2Int toPos)
-        {
-            MoveCardAction moveAction = new MoveCardAction(_cardManager, fromPos, toPos);
-            moveAction.Execute();
-        }
-        
-        /// <summary>
-        /// 执行治疗动作
-        /// </summary>
-        private void ExecuteHealAction(Vector2Int targetPos, int amount)
-        {
-            Card targetCard = _cardManager.GetCard(targetPos);
-            if (targetCard == null) return;
-            
-            // 增加目标的生命值
-            targetCard.Data.Health += amount;
-            
-            // 更新卡牌视图
-            CardView cardView = _cardManager.GetCardView(targetPos);
-            if (cardView != null)
-            {
-                cardView.UpdateVisuals();
-            }
-            
-            Debug.Log($"治疗效果: {targetCard.Data.Name} 恢复 {amount} 点生命值");
-        }
-        
-        /// <summary>
         /// 解析治疗量
         /// </summary>
         private int ResolveHealAmount(Dictionary<string, object> parameters, Dictionary<string, object> context)
@@ -288,70 +249,6 @@ namespace ChessGame.Cards
             }
             
             return 0.2f; // 默认
-        }
-        
-        /// <summary>
-        /// 修改卡牌属性
-        /// </summary>
-        private IEnumerator ModifyStat(Card sourceCard, Dictionary<string, object> parameters)
-        {
-            // 获取要修改的属性类型
-            string statType = parameters.ContainsKey("statType") ? (string)parameters["statType"] : "attack";
-            
-            // 获取修改的数值
-            int amount = parameters.ContainsKey("amount") ? Convert.ToInt32(parameters["amount"]) : 1;
-            
-            Debug.Log($"修改卡牌属性: {sourceCard.Data.Name}, 属性类型: {statType}, 数值: {amount}");
-            
-            // 根据属性类型修改卡牌属性
-            switch (statType.ToLower())
-            {
-                case "attack":
-                    sourceCard.Data.Attack += amount;
-                    Debug.Log($"卡牌 {sourceCard.Data.Name} 的攻击力从 {sourceCard.Data.Attack - amount} 增加到 {sourceCard.Data.Attack}");
-                    break;
-                case "health":
-                    sourceCard.Data.Health += amount;
-                    Debug.Log($"卡牌 {sourceCard.Data.Name} 的生命值从 {sourceCard.Data.Health - amount} 增加到 {sourceCard.Data.Health}");
-                    break;
-                case "both":
-                    sourceCard.Data.Attack += amount;
-                    sourceCard.Data.Health += amount;
-                    Debug.Log($"卡牌 {sourceCard.Data.Name} 的攻击力和生命值都增加了 {amount}，现在为 {sourceCard.Data.Attack}/{sourceCard.Data.Health}");
-                    break;
-                default:
-                    Debug.LogWarning($"未知的属性类型: {statType}");
-                    break;
-            }
-            
-            // 播放成长动画
-            if (amount > 0 && CardAnimationService.Instance != null)
-            {
-                yield return CardAnimationService.Instance.PlayGrowAnimation(sourceCard.Position);
-            }
-            else
-            {
-                // 如果没有动画或者是减少属性，等待一小段时间
-                yield return new WaitForSeconds(0.2f);
-            }
-        }
-        
-        /// <summary>
-        /// 重置卡牌计数器
-        /// </summary>
-        private void ResetCardCounter(Card sourceCard, Dictionary<string, object> parameters)
-        {
-            // 获取参数
-            string abilityId = parameters.ContainsKey("abilityId") ? (string)parameters["abilityId"] : "default";
-            
-            Debug.Log($"重置卡牌计数器: {sourceCard.Data.Name}, 能力ID: {abilityId}, 当前值: {sourceCard.GetTurnCounter(abilityId)}");
-            
-            // 重置计数器
-            sourceCard.ResetTurnCounter(abilityId);
-            
-            // 确认计数器已重置
-            int newCount = sourceCard.GetTurnCounter(abilityId);
-            Debug.Log($"卡牌 {sourceCard.Data.Name} 的能力 {abilityId} 计数器已重置为 {newCount}");
         }
     }
 } 
