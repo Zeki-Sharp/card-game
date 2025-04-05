@@ -197,7 +197,6 @@ namespace ChessGame.Cards
             Debug.Log($"加载了 {configs.Length} 个能力配置");
             
             // 这里简化处理，假设每个能力配置文件名包含卡牌类型ID
-            // 例如: "Ability_1_Charge.asset" 表示ID为1的卡牌的冲锋能力
             foreach (var config in configs)
             {
                 string fileName = config.name;
@@ -353,28 +352,8 @@ namespace ChessGame.Cards
         /// </summary>
         public List<Vector2Int> GetAbilityRange(AbilityConfiguration ability, Card card, CardManager cardManager)
         {
-            List<Vector2Int> validPositions = new List<Vector2Int>();
-            
-            // 遍历棋盘上所有位置
-            for (int x = 0; x < cardManager.BoardWidth; x++)
-            {
-                for (int y = 0; y < cardManager.BoardHeight; y++)
-                {
-                    Vector2Int targetPos = new Vector2Int(x, y);
-                    
-                    // 跳过源位置
-                    if (targetPos == card.Position)
-                        continue;
-                    
-                    // 检查能力是否可以在该位置触发
-                    if (_conditionResolver.CheckCondition(ability.triggerCondition, card, targetPos, cardManager))
-                    {
-                        validPositions.Add(targetPos);
-                    }
-                }
-            }
-            
-            return validPositions;
+            // 使用范围计算器计算范围
+            return _rangeCalculator.GetAbilityRange(ability, card);
         }
         
         /// <summary>

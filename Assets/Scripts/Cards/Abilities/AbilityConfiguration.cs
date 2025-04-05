@@ -24,7 +24,23 @@ namespace ChessGame.Cards
         // 冷却时间（回合数）
         public int cooldown = 0;
         
-        // 能力图标
-        public Sprite icon;
+        // 范围类型枚举
+        public enum RangeType
+        {
+            Default,        // 使用触发条件
+            AttackRange,    // 使用卡牌的攻击范围
+            MoveRange,      // 使用卡牌的移动范围
+            Custom,         // 使用自定义范围值
+            Unlimited       // 无限范围（全场）
+        }
+        
+        // 范围类型
+        public RangeType rangeType = RangeType.Default;
+        
+        // 自定义范围值（当rangeType为Custom时使用）
+        public int customRangeValue = 1;
+        
+        // 范围条件（额外的条件，如"Enemy"表示只能选择敌方卡牌）
+        public string rangeCondition = "";
     }
 } 

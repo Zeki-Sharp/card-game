@@ -77,17 +77,10 @@ namespace ChessGame
                     Debug.Log($"成功从视图字典中移除位置 {_position} 的卡牌视图");
                 }
                 
-                // 销毁卡牌视图游戏对象
-                if (cardView != null)
-                {
-                    // 触发销毁动画
-                    cardView.PlayDestroyAnimation();
-                    
-                    // 延迟销毁游戏对象，给动画播放时间
-                    GameObject.Destroy(cardView.gameObject, 1.0f);
-                    
-                    Debug.Log($"卡牌视图已标记为销毁: {_position}");
-                }
+                // 延迟销毁游戏对象，给动画播放时间
+                GameObject.Destroy(cardView.gameObject, 1.0f);
+                
+                Debug.Log($"卡牌视图已标记为销毁: {_position}");
             }
             else
             {

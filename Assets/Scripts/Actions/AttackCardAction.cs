@@ -4,12 +4,13 @@ using System.Collections.Generic;
 namespace ChessGame
 {
     /// <summary>
-    /// 卡牌攻击行动 - 包含完整的攻击逻辑
+    /// 卡牌攻击行动 - 包含完整的攻击逻辑，但不负责攻击范围检查
     /// </summary>
     public class AttackCardAction : CardAction
     {
         private Vector2Int _attackerPosition;
         private Vector2Int _targetPosition;
+        private int _damageDealt; // 记录造成的伤害
         
         public AttackCardAction(CardManager cardManager, Vector2Int attackerPosition, Vector2Int targetPosition) 
             : base(cardManager)
@@ -28,6 +29,12 @@ namespace ChessGame
                     Debug.LogError("AttackCardAction: 无法从场景中找到 CardManager");
                 }
             }
+        }
+        
+        // 获取造成的伤害
+        public int GetDamageDealt()
+        {
+            return _damageDealt;
         }
         
         public override bool CanExecute()
@@ -60,12 +67,8 @@ namespace ChessGame
                 return false;
             }
             
-            // 检查是否可以攻击
-            if (!attackerCard.CanAttack(_targetPosition, CardManager.GetAllCards()))
-            {
-                Debug.LogWarning($"攻击失败：目标位置 {_targetPosition} 不在合法攻击范围内");
-                return false;
-            }
+            // 移除攻击范围检查，由能力系统负责
+            // 只检查基本条件
             
             return true;
         }
@@ -103,6 +106,9 @@ namespace ChessGame
                     Debug.Log($"背面卡牌 {targetCard.Data.Name} 血量降至0或以下，保留1点血量");
                     targetCard.Data.Health = 1;
                 }
+                
+                // 计算造成的伤害
+                _damageDealt = targetHpBefore - targetCard.Data.Health;
                 
                 // 标记攻击者已行动
                 attackerCard.HasActed = true;
@@ -143,30 +149,27 @@ namespace ChessGame
                 int attackerHealthAfter = attackerCard.Data.Health;
                 int targetHealthAfter = targetCard.Data.Health;
                 
+                // 计算造成的伤害
+                _damageDealt = targetHealthBefore - targetHealthAfter;
+                
                 Debug.Log($"攻击前生命值 - 攻击者: {attackerHealthBefore}, 目标: {targetHealthBefore}");
                 Debug.Log($"攻击后生命值 - 攻击者: {attackerHealthAfter}, 目标: {targetHealthAfter}");
+                Debug.Log($"造成伤害: {_damageDealt}");
                 
                 // 标记攻击者已行动
                 attackerCard.HasActed = true;
                 
-                // 更新被攻击者的视图，以及触发受伤事件
-                CardView targetView = CardManager.GetCardView(_targetPosition);
-                if (targetView != null) targetView.UpdateVisuals();
+                // 触发攻击事件
                 GameEventSystem.Instance.NotifyCardAttacked(_attackerPosition, _targetPosition);
+                
+                // 触发受伤事件
                 GameEventSystem.Instance.NotifyCardDamaged(_targetPosition);
-
-                // 更新攻击者的视图，以及触发受伤事件
-                CardView attackerView = CardManager.GetCardView(_attackerPosition);
-                if (attackerView != null) attackerView.UpdateVisuals();
-                GameEventSystem.Instance.NotifyCardDamaged(_attackerPosition); // 别忘了攻击者也可能受伤
+                GameEventSystem.Instance.NotifyCardDamaged(_attackerPosition); // 攻击者也可能受伤
                 
                 // 检查目标卡牌是否死亡
                 if (targetCard.Data.Health <= 0)
                 {
                     Debug.Log($"目标卡牌 {targetCard.Data.Name} 生命值为 {targetCard.Data.Health}，将被移除");
-                    
-                    // 立即更新目标卡牌视图，显示生命值为0
-                    if (targetView != null) targetView.UpdateVisuals();
                     
                     // 移除目标卡牌
                     CardManager.RemoveCard(_targetPosition);

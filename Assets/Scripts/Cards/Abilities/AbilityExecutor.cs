@@ -80,8 +80,8 @@ namespace ChessGame.Cards
                     Card targetCard = _cardManager.GetCard(targetPosition);
                     if (targetCard != null)
                     {
-                        // 执行攻击
-                        int damageDealt = _cardManager.ExecuteAttack(sourceCard.Position, targetPosition);
+                        // 执行攻击，不需要再检查攻击范围
+                        int damageDealt = ExecuteAttackAction(sourceCard.Position, targetPosition);
                         context["dealtDamage"] = damageDealt;
                         Debug.Log($"攻击完成，造成伤害: {damageDealt}");
                     }
@@ -194,6 +194,18 @@ namespace ChessGame.Cards
             }
             
             return targetPosition; // 默认返回原始目标位置
+        }
+        
+        /// <summary>
+        /// 执行攻击动作
+        /// </summary>
+        private int ExecuteAttackAction(Vector2Int sourcePos, Vector2Int targetPos)
+        {
+
+            AttackCardAction attackAction = new AttackCardAction(_cardManager, sourcePos, targetPos);
+            attackAction.Execute(); 
+
+            return attackAction.GetDamageDealt();
         }
         
         /// <summary>

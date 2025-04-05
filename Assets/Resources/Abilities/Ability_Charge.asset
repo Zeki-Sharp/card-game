@@ -29,4 +29,6 @@ MonoBehaviour:
     targetSelector: Target
     parameterList: []
   cooldown: 0
-  icon: {fileID: 0}
+  rangeType: 0
+  customRangeValue: 1
+  rangeCondition: 

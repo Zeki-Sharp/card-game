@@ -80,8 +80,30 @@ namespace ChessGame.Cards
             }
         }
 
-            private string ReplaceVariables(string condition, Card card, Vector2Int targetPosition, CardManager cardManager)
+        /// <summary>
+        /// 检查攻击范围条件
+        /// </summary>
+        public bool CheckAttackRangeCondition(Card sourceCard, Vector2Int targetPosition, CardManager cardManager)
+        {
+            // 获取目标卡牌
+            Card targetCard = cardManager.GetCard(targetPosition);
+            if (targetCard == null)
             {
+                return false;
+            }
+            
+            // 检查是否是敌方卡牌
+            if (sourceCard.OwnerId == targetCard.OwnerId)
+            {
+                return false;
+            }
+            
+            // 检查是否在攻击范围内
+            return sourceCard.CanAttack(targetPosition, cardManager.GetAllCards());
+        }
+
+        private string ReplaceVariables(string condition, Card card, Vector2Int targetPosition, CardManager cardManager)
+        {
             try
             {
                 int dx1 = Mathf.Abs(targetPosition.x - card.Position.x); // 水平方向距离

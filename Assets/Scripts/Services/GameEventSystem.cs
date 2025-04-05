@@ -58,7 +58,6 @@ namespace ChessGame
         public event Action<Vector2Int> OnCardDamaged;
         public event Action<Vector2Int, int, bool> OnCardAdded;
         
-        // 回合事件
         public event Action<int> OnTurnStarted;
         public event Action<int> OnTurnEnded;
         
@@ -115,7 +114,7 @@ namespace ChessGame
         // 通知卡牌受伤
         public void NotifyCardDamaged(Vector2Int position)
         {
-            Debug.Log($"GameEventSystem: 卡牌在位置 {position} 受伤");
+            /*Debug.Log($"GameEventSystem: 卡牌在位置 {position} 受伤");
             
             // 获取卡牌和视图
             CardManager cardManager = FindObjectOfType<CardManager>();
@@ -137,10 +136,11 @@ namespace ChessGame
                         cardManager.RemoveCard(position);
                     }
                 }
-            }
+            }*/
             
             if (OnCardDamaged != null)
             {
+                Debug.Log($"GameEventSystem: 卡牌受伤事件 - 位置 {position}");
                 OnCardDamaged.Invoke(position);
             }
         }
