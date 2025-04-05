@@ -216,9 +216,6 @@ namespace ChessGame
             }
         }
         
-        
-        
-        
         // 处理单元格点击
         public void HandleCellClick(Vector2Int position)
         {
@@ -537,59 +534,7 @@ namespace ChessGame
             
             Debug.Log("已清空所有卡牌");
         }
-
-        public bool HasCardAt(Vector2Int position)
-        {
-            return _cards.ContainsKey(position);
-        }  
         
-        public Card GetCardAt(Vector2Int position)
-        {
-            return _cards.ContainsKey(position) ? _cards[position] : null;
-        }
-        
-        /// <summary>
-        /// 执行移动操作，不检查移动条件
-        /// </summary>
-        /// <param name="fromPosition">起始位置</param>
-        /// <param name="toPosition">目标位置</param>
-        /// <returns>是否成功移动</returns>
-        public bool ExecuteMove(Vector2Int fromPosition, Vector2Int toPosition)
-        {
-            // 获取卡牌
-            Card card = GetCard(fromPosition);
-            if (card == null)
-            {
-                Debug.LogError($"ExecuteMove: 位置 {fromPosition} 没有卡牌");
-                return false;
-            }
-            
-            // 检查目标位置是否为空
-            if (GetCard(toPosition) != null)
-            {
-                Debug.LogError($"ExecuteMove: 目标位置 {toPosition} 已有卡牌");
-                return false;
-            }
-            
-            // 执行移动
-            _cards.Remove(fromPosition);
-            card.Position = toPosition;
-            _cards[toPosition] = card;
-            
-            // 更新视图
-            CardView cardView = GetCardView(fromPosition);
-            if (cardView != null)
-            {
-                _cardViews.Remove(fromPosition);
-                _cardViews[toPosition] = cardView;
-                
-                // 触发移动事件
-                GameEventSystem.Instance.NotifyCardMoved(fromPosition, toPosition);
-            }
-            
-            Debug.Log($"ExecuteMove: 卡牌从 {fromPosition} 移动到 {toPosition}");
-            return true;
-        }
 
         /// <summary>
         /// 执行攻击操作，不检查攻击条件
@@ -650,63 +595,6 @@ namespace ChessGame
             GameEventSystem.Instance.NotifyCardAttacked(sourcePosition, targetPosition);
             
             return damage;
-        }
-
-        /// <summary>
-        /// 执行能力
-        /// </summary>
-        public IEnumerator ExecuteAbility(AbilityConfiguration ability, Card card, Vector2Int targetPosition)
-        {
-            Debug.Log($"CardManager.ExecuteAbility: {ability.abilityName}, 目标位置: {targetPosition}");
-            
-            if (AbilityManager.Instance == null)
-            {
-                Debug.LogError("执行能力失败: AbilityManager实例为空");
-                yield break;
-            }
-            
-            // 执行能力
-            yield return AbilityManager.Instance.ExecuteAbility(ability, card, targetPosition);
-            
-            // 能力执行完成后，检查游戏状态
-            CheckGameState();
-        }
-
-        /// <summary>
-        /// 检查游戏状态
-        /// </summary>
-        private void CheckGameState()
-        {
-            // 检查是否有卡牌被移除
-            // 检查是否游戏结束
-            // 其他状态检查...
-        }
-
-        /// <summary>
-        /// 触发卡牌能力
-        /// </summary>
-        public void TriggerCardAbility(AbilityConfiguration ability, Card card, Vector2Int targetPosition)
-        {
-            Debug.Log($"CardManager.TriggerCardAbility: 触发能力 {ability.abilityName}");
-            
-            // 启动协程执行能力
-            StartCoroutine(ExecuteCardAbility(ability, card, targetPosition));
-        }
-
-        /// <summary>
-        /// 执行卡牌能力的协程
-        /// </summary>
-        private IEnumerator ExecuteCardAbility(AbilityConfiguration ability, Card card, Vector2Int targetPosition)
-        {
-            Debug.Log($"CardManager.ExecuteCardAbility: 开始执行能力 {ability.abilityName}");
-            
-            // 执行能力
-            yield return AbilityManager.Instance.ExecuteAbility(ability, card, targetPosition);
-            
-            Debug.Log($"CardManager.ExecuteCardAbility: 能力 {ability.abilityName} 执行完成");
-            
-            // 检查游戏状态
-            CheckGameState();
         }
     }
 
