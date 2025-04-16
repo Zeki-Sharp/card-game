@@ -75,6 +75,9 @@ namespace ChessGame.Cards
             // 订阅回合开始事件
             _gameEventSystem.OnTurnStarted += HandleTurnStarted;
             
+            // 订阅回合结束事件
+            _gameEventSystem.OnTurnEnded += HandleTurnEnded;
+            
             // 订阅卡牌翻面事件
             _gameEventSystem.OnCardFlipped += HandleCardFlipped;
             
@@ -97,6 +100,7 @@ namespace ChessGame.Cards
             if (_gameEventSystem != null)
             {
                 _gameEventSystem.OnTurnStarted -= HandleTurnStarted;
+                _gameEventSystem.OnTurnEnded -= HandleTurnEnded;
                 _gameEventSystem.OnCardFlipped -= HandleCardFlipped;
                 _gameEventSystem.OnCardAdded -= HandleCardAdded;
             }
