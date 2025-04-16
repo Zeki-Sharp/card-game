@@ -78,11 +78,17 @@ namespace ChessGame.Cards
             // 订阅卡牌翻面事件
             _gameEventSystem.OnCardFlipped += HandleCardFlipped;
             
+            // 订阅卡牌添加事件
+            _gameEventSystem.OnCardAdded += HandleCardAdded;
+            
             // 加载能力配置
             LoadAbilityConfigurations();
             
             // 从CardDataSO加载能力
             LoadAbilitiesFromCardDataSO();
+            
+            // 初始化所有已存在卡牌的能力冷却
+            InitializeAllCardsCooldowns();
         }
         
         private void OnDestroy()
@@ -92,6 +98,7 @@ namespace ChessGame.Cards
             {
                 _gameEventSystem.OnTurnStarted -= HandleTurnStarted;
                 _gameEventSystem.OnCardFlipped -= HandleCardFlipped;
+                _gameEventSystem.OnCardAdded -= HandleCardAdded;
             }
         }
         
@@ -118,12 +125,16 @@ namespace ChessGame.Cards
         /// </summary>
         private void ReduceAllCooldowns(int playerId)
         {
+            Debug.Log($"[冷却系统] 开始减少玩家 {playerId} 所有卡牌的冷却计数");
+            
             Dictionary<Vector2Int, Card> allCards = _cardManager.GetAllCards();
             foreach (var kvp in allCards)
             {
                 Card card = kvp.Value;
                 if (card.OwnerId == playerId && !card.IsFaceDown)
                 {
+                    Debug.Log($"[冷却系统] 处理卡牌 {card.Data.Name} 的冷却");
+                    
                     foreach (var ability in GetCardAbilities(card))
                     {
                         if (ability.cooldown > 0)
@@ -131,10 +142,12 @@ namespace ChessGame.Cards
                             string cooldownCounterId = ability.GetCooldownCounterId();
                             int currentCooldown = card.GetTurnCounter(cooldownCounterId);
                             
+                            Debug.Log($"[冷却系统] 卡牌 {card.Data.Name} 能力 {ability.abilityName} 当前冷却: {currentCooldown}");
+                            
                             if (currentCooldown > 0)
                             {
                                 card.SetTurnCounter(cooldownCounterId, currentCooldown - 1);
-                                Debug.Log($"减少卡牌 {card.Data.Name} 能力 {ability.abilityName} 的冷却，从 {currentCooldown} 到 {currentCooldown - 1}");
+                                Debug.Log($"[冷却系统] 减少卡牌 {card.Data.Name} 能力 {ability.abilityName} 的冷却，从 {currentCooldown} 到 {currentCooldown - 1}");
                             }
                         }
                     }
@@ -185,10 +198,9 @@ namespace ChessGame.Cards
                             string cooldownCounterId = ability.GetCooldownCounterId();
                             
                             // 设置初始冷却值为配置的冷却值
-                            // 这样能力不会立即触发，而是等待冷却结束
                             card.SetTurnCounter(cooldownCounterId, ability.cooldown);
                             
-                            Debug.Log($"卡牌 {card.Data.Name} 添加，初始化能力 {ability.abilityName} 的冷却为 {ability.cooldown}");
+                            Debug.Log($"[冷却系统] 卡牌 {card.Data.Name} 添加，初始化能力 {ability.abilityName} 的冷却为 {ability.cooldown}");
                         }
                     }
                 }
@@ -217,7 +229,7 @@ namespace ChessGame.Cards
                             // 设置初始冷却值为配置的冷却值
                             card.SetTurnCounter(cooldownCounterId, ability.cooldown);
                             
-                            Debug.Log($"卡牌 {card.Data.Name} 翻面，初始化能力 {ability.abilityName} 的冷却为 {ability.cooldown}");
+                            Debug.Log($"[冷却系统] 卡牌 {card.Data.Name} 翻面，初始化能力 {ability.abilityName} 的冷却为 {ability.cooldown}");
                         }
                     }
                 }
@@ -305,24 +317,26 @@ namespace ChessGame.Cards
         /// </summary>
         public bool CanTriggerAbility(AbilityConfiguration ability, Card card, Vector2Int position, CardManager cardManager)
         {
+            Debug.Log($"[冷却系统] 检查能力 {ability.abilityName} 是否可以触发");
+            
             // 检查冷却
             if (ability.cooldown > 0)
             {
                 string cooldownCounterId = ability.GetCooldownCounterId();
                 int currentCooldown = card.GetTurnCounter(cooldownCounterId);
                 
-                Debug.Log($"能力 {ability.abilityName} 当前冷却: {currentCooldown}");
+                Debug.Log($"[冷却系统] 能力 {ability.abilityName} 当前冷却: {currentCooldown}");
                 
                 if (currentCooldown > 0)
                 {
-                    Debug.Log($"能力 {ability.abilityName} 冷却中，无法触发");
+                    Debug.Log($"[冷却系统] 能力 {ability.abilityName} 冷却中，无法触发");
                     return false;
                 }
             }
             
             // 检查条件
             bool conditionMet = _conditionResolver.ResolveCondition(ability.triggerCondition, card, position, cardManager);
-            Debug.Log($"能力 {ability.abilityName} 条件检查结果: {conditionMet}");
+            Debug.Log($"[冷却系统] 能力 {ability.abilityName} 条件检查结果: {conditionMet}");
             
             return conditionMet;
         }
@@ -335,7 +349,7 @@ namespace ChessGame.Cards
             // 设置标志为true
             _isExecutingAbility = true;
             
-            Debug.Log($"开始执行能力: {ability.abilityName}");
+            Debug.Log($"[冷却系统] 开始执行能力: {ability.abilityName}");
             
             // 执行能力
             yield return _abilityExecutor.ExecuteAbility(ability, card, targetPosition);
@@ -345,13 +359,13 @@ namespace ChessGame.Cards
             {
                 string cooldownCounterId = ability.GetCooldownCounterId();
                 card.SetTurnCounter(cooldownCounterId, ability.cooldown);
-                Debug.Log($"能力 {ability.abilityName} 执行完毕，设置冷却为 {ability.cooldown} 回合");
+                Debug.Log($"[冷却系统] 能力 {ability.abilityName} 执行完毕，设置冷却为 {ability.cooldown} 回合");
             }
             
             // 能力执行完毕，重置标志
             _isExecutingAbility = false;
             
-            Debug.Log($"能力 {ability.abilityName} 执行完成");
+            Debug.Log($"[冷却系统] 能力 {ability.abilityName} 执行完成");
         }
         
         // 添加从CardDataSO加载能力的方法
@@ -454,6 +468,48 @@ namespace ChessGame.Cards
                             Debug.Log($"卡牌 {card.Data.Name} 的能力 {ability.abilityName} 不满足触发条件");
                         }
                     }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 初始化卡牌的能力冷却
+        /// </summary>
+        public void InitializeCardAbilityCooldowns(Card card)
+        {
+            if (card == null || card.IsFaceDown)
+                return;
+            
+            Debug.Log($"[冷却系统] 初始化卡牌 {card.Data.Name} 的能力冷却");
+            
+            foreach (var ability in GetCardAbilities(card))
+            {
+                if (ability.cooldown > 0)
+                {
+                    string cooldownCounterId = ability.GetCooldownCounterId();
+                    
+                    // 设置初始冷却值为配置的冷却值
+                    card.SetTurnCounter(cooldownCounterId, ability.cooldown);
+                    
+                    Debug.Log($"[冷却系统] 卡牌 {card.Data.Name} 初始化能力 {ability.abilityName} 的冷却为 {ability.cooldown}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 初始化所有卡牌的能力冷却
+        /// </summary>
+        private void InitializeAllCardsCooldowns()
+        {
+            Debug.Log("[冷却系统] 初始化所有卡牌的能力冷却");
+            
+            Dictionary<Vector2Int, Card> allCards = _cardManager.GetAllCards();
+            foreach (var kvp in allCards)
+            {
+                Card card = kvp.Value;
+                if (!card.IsFaceDown)
+                {
+                    InitializeCardAbilityCooldowns(card);
                 }
             }
         }
