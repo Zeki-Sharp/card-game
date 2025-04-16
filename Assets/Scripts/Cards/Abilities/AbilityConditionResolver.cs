@@ -9,8 +9,6 @@ namespace ChessGame.Cards
     /// </summary>
     public class AbilityConditionResolver
     {
-        // 存储卡牌能力的冷却时间
-        private Dictionary<int, Dictionary<string, int>> _abilityCooldowns = new Dictionary<int, Dictionary<string, int>>();
         
         /// <summary>
         /// 检查能力是否可以触发
@@ -38,47 +36,9 @@ namespace ChessGame.Cards
             return result;
         }
         
-        /// <summary>
-        /// 设置能力冷却
-        /// </summary>
-        public void SetAbilityCooldown(int cardId, string abilityName, int cooldown)
-        {
-            if (!_abilityCooldowns.ContainsKey(cardId))
-            {
-                _abilityCooldowns[cardId] = new Dictionary<string, int>();
-            }
-            _abilityCooldowns[cardId][abilityName] = cooldown;
-        }
+
         
-        /// <summary>
-        /// 获取能力冷却
-        /// </summary>
-        public int GetAbilityCooldown(int cardId, string abilityName)
-        {
-            if (_abilityCooldowns.TryGetValue(cardId, out var cooldowns) && 
-                cooldowns.TryGetValue(abilityName, out int cooldown))
-            {
-                return cooldown;
-            }
-            return 0;
-        }
-        
-        /// <summary>
-        /// 减少所有能力的冷却时间
-        /// </summary>
-        public void ReduceCooldowns(int playerId)
-        {
-            foreach (var cardCooldowns in _abilityCooldowns)
-            {
-                foreach (var ability in new List<string>(cardCooldowns.Value.Keys))
-                {
-                    if (cardCooldowns.Value[ability] > 0)
-                    {
-                        cardCooldowns.Value[ability]--;
-                    }
-                }
-            }
-        }
+ 
 
         /// <summary>
         /// 检查攻击范围条件
@@ -380,6 +340,23 @@ namespace ChessGame.Cards
         private string ReplaceBool(string condition, string keyword, bool value)
         {       
             return Regex.Replace(condition, $@"\b{keyword}\b", value.ToString().ToLower());
+        }
+
+        /// <summary>
+        /// 解析条件表达式
+        /// </summary>
+        public bool ResolveCondition(string condition, Card sourceCard, Vector2Int targetPosition, CardManager cardManager)
+        {
+            // 如果条件为空，默认为真
+            if (string.IsNullOrEmpty(condition))
+                return true;
+        
+            // 替换变量
+            string resolvedCondition = ReplaceVariables(condition, sourceCard, targetPosition, cardManager);
+            Debug.Log($"替换变量后的条件: {resolvedCondition}");
+        
+            // 检查条件
+            return EvaluateExpression(resolvedCondition);
         }
     }
 } 

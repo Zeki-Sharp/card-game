@@ -100,57 +100,95 @@ namespace ChessGame.Cards
         /// </summary>
         private void HandleTurnStarted(int playerId)
         {
+            Debug.Log($"AbilityManager: 处理回合开始事件，玩家ID: {playerId}");
+            
+            // 减少所有卡牌的冷却计数
+            ReduceAllCooldowns(playerId);
+            
+            // 触发回合开始时的自动能力
+            FSM.TurnState.TurnPhase triggerPhase = playerId == 0 ? 
+                FSM.TurnState.TurnPhase.PlayerTurnStart : 
+                FSM.TurnState.TurnPhase.EnemyTurnStart;
+                
+            TriggerAutomaticAbilitiesAtPhase(playerId, triggerPhase);
+        }
+        
+        /// <summary>
+        /// 减少所有卡牌的冷却计数
+        /// </summary>
+        private void ReduceAllCooldowns(int playerId)
+        {
+            Dictionary<Vector2Int, Card> allCards = _cardManager.GetAllCards();
+            foreach (var kvp in allCards)
+            {
+                Card card = kvp.Value;
+                if (card.OwnerId == playerId && !card.IsFaceDown)
+                {
+                    foreach (var ability in GetCardAbilities(card))
+                    {
+                        if (ability.cooldown > 0)
+                        {
+                            string cooldownCounterId = ability.GetCooldownCounterId();
+                            int currentCooldown = card.GetTurnCounter(cooldownCounterId);
+                            
+                            if (currentCooldown > 0)
+                            {
+                                card.SetTurnCounter(cooldownCounterId, currentCooldown - 1);
+                                Debug.Log($"减少卡牌 {card.Data.Name} 能力 {ability.abilityName} 的冷却，从 {currentCooldown} 到 {currentCooldown - 1}");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        /// <summary>
+        /// 处理回合结束事件
+        /// </summary>
+        private void HandleTurnEnded(int playerId)
+        {
             // 获取当前回合阶段
-            TurnPhase currentPhase = TurnPhase.PlayerTurnStart;
+            FSM.TurnState.TurnPhase currentPhase = FSM.TurnState.TurnPhase.PlayerTurnEnd;
             if (_turnManager != null && _turnManager.GetTurnStateMachine() != null)
             {
                 currentPhase = _turnManager.GetTurnStateMachine().GetCurrentPhase();
             }
             
-            Debug.Log($"AbilityManager: 处理回合开始事件，玩家ID: {playerId}，当前回合阶段: {currentPhase}");
+            Debug.Log($"AbilityManager: 处理回合结束事件，玩家ID: {playerId}，当前回合阶段: {currentPhase}");
             
-            // 获取所有卡牌
-            Dictionary<Vector2Int, Card> allCards = _cardManager.GetAllCards();
-            
-            // 遍历所有卡牌
-            foreach (var kvp in allCards)
-            {
-                Card card = kvp.Value;
+            // 触发回合结束时的自动能力
+            bool isPlayerTurn = playerId == 0; // 假设玩家ID为0
+            FSM.TurnState.TurnPhase triggerPhase = isPlayerTurn ? 
+                FSM.TurnState.TurnPhase.PlayerTurnEnd : 
+                FSM.TurnState.TurnPhase.EnemyTurnEnd;
                 
-                // 只处理当前回合玩家的卡牌，并且只处理正面的卡牌
-                if (card.OwnerId != playerId || card.IsFaceDown)
-                    continue;
-                    
-                // 增加回合计数器
-                foreach (var ability in GetCardAbilities(card))
+            TriggerAutomaticAbilitiesAtPhase(playerId, triggerPhase);
+        }
+        
+        /// <summary>
+        /// 处理卡牌添加事件
+        /// </summary>
+        private void HandleCardAdded(Vector2Int position, int ownerId, bool isFaceDown)
+        {
+            if (!isFaceDown) // 只处理正面卡牌
+            {
+                Card card = _cardManager.GetCard(position);
+                if (card != null)
                 {
-                    if (ability.triggerCondition.Contains("TurnCounter"))
+                    Debug.Log($"AbilityManager: 处理卡牌添加事件，卡牌: {card.Data.Name}");
+                    
+                    // 初始化卡牌的能力冷却
+                    foreach (var ability in GetCardAbilities(card))
                     {
-                        string abilityId = ability.abilityName;
-                        
-                        // 增加计数器
-                        card.IncrementTurnCounter(abilityId);
-                        int count = card.GetTurnCounter(abilityId);
-                        Debug.Log($"增加卡牌 {card.Data.Name} 的能力 {abilityId} 计数器，当前值: {count}");
-                        
-                        // 检查是否满足触发条件
-                        bool conditionMet = _conditionResolver.CheckCondition(ability.triggerCondition, card, card.Position, _cardManager);
-                        Debug.Log($"卡牌 {card.Data.Name} 的能力 {abilityId} 触发条件 '{ability.triggerCondition}' 是否满足: {conditionMet}");
-                        
-                        if (conditionMet)
+                        if (ability.cooldown > 0)
                         {
-                            Debug.Log($"卡牌 {card.Data.Name} 的能力 {abilityId} 触发条件满足，开始执行能力");
+                            string cooldownCounterId = ability.GetCooldownCounterId();
                             
-                            try
-                            {
-                                // 执行能力，但不标记为已行动
-                                var coroutine = ExecuteAbility(ability, card, card.Position);
-                                StartCoroutine(coroutine);
-                            }
-                            catch (Exception e)
-                            {
-                                Debug.LogError($"启动能力执行协程时出错: {e.Message}\n{e.StackTrace}");
-                            }
+                            // 设置初始冷却值为配置的冷却值
+                            // 这样能力不会立即触发，而是等待冷却结束
+                            card.SetTurnCounter(cooldownCounterId, ability.cooldown);
+                            
+                            Debug.Log($"卡牌 {card.Data.Name} 添加，初始化能力 {ability.abilityName} 的冷却为 {ability.cooldown}");
                         }
                     }
                 }
@@ -160,22 +198,26 @@ namespace ChessGame.Cards
         /// <summary>
         /// 处理卡牌翻面事件
         /// </summary>
-        private void HandleCardFlipped(Vector2Int position, bool isFaceUp)
+        private void HandleCardFlipped(Vector2Int position, bool isFaceDown)
         {
-            if (isFaceUp) // 只处理从背面翻到正面的情况
+            if (!isFaceDown) // 只处理从背面翻到正面的情况
             {
                 Card card = _cardManager.GetCard(position);
                 if (card != null)
                 {
-                    // 初始化卡牌的回合计数器
+                    Debug.Log($"AbilityManager: 处理卡牌翻面事件，卡牌: {card.Data.Name}");
+                    
+                    // 初始化卡牌的能力冷却
                     foreach (var ability in GetCardAbilities(card))
                     {
-                        if (ability.triggerCondition.Contains("TurnCounter"))
+                        if (ability.cooldown > 0)
                         {
-                            string abilityId = ability.abilityName;
-                            // 设置初始值为0
-                            card.SetTurnCounter(abilityId, 0);
-                            Debug.Log($"卡牌 {card.Data.Name} 翻面，初始化能力 {abilityId} 的计数器为 0");
+                            string cooldownCounterId = ability.GetCooldownCounterId();
+                            
+                            // 设置初始冷却值为配置的冷却值
+                            card.SetTurnCounter(cooldownCounterId, ability.cooldown);
+                            
+                            Debug.Log($"卡牌 {card.Data.Name} 翻面，初始化能力 {ability.abilityName} 的冷却为 {ability.cooldown}");
                         }
                     }
                 }
@@ -261,9 +303,28 @@ namespace ChessGame.Cards
         /// <summary>
         /// 检查能力是否可以触发
         /// </summary>
-        public bool CanTriggerAbility(AbilityConfiguration ability, Card card, Vector2Int targetPosition, CardManager cardManager)
+        public bool CanTriggerAbility(AbilityConfiguration ability, Card card, Vector2Int position, CardManager cardManager)
         {
-            return _conditionResolver.CheckCondition(ability.triggerCondition, card, targetPosition, cardManager);
+            // 检查冷却
+            if (ability.cooldown > 0)
+            {
+                string cooldownCounterId = ability.GetCooldownCounterId();
+                int currentCooldown = card.GetTurnCounter(cooldownCounterId);
+                
+                Debug.Log($"能力 {ability.abilityName} 当前冷却: {currentCooldown}");
+                
+                if (currentCooldown > 0)
+                {
+                    Debug.Log($"能力 {ability.abilityName} 冷却中，无法触发");
+                    return false;
+                }
+            }
+            
+            // 检查条件
+            bool conditionMet = _conditionResolver.ResolveCondition(ability.triggerCondition, card, position, cardManager);
+            Debug.Log($"能力 {ability.abilityName} 条件检查结果: {conditionMet}");
+            
+            return conditionMet;
         }
         
         /// <summary>
@@ -274,50 +335,23 @@ namespace ChessGame.Cards
             // 设置标志为true
             _isExecutingAbility = true;
             
-            Debug.Log($"开始执行能力: {ability.abilityName}, 禁用玩家输入");
-            
-            // 确保卡牌管理器存在
-            if (_cardManager == null)
-            {
-                Debug.LogError("执行能力失败: 卡牌管理器为空");
-                _isExecutingAbility = false;
-                yield break;
-            }
-            
-            // 执行能力前记录卡牌位置和当前回合阶段
-            Vector2Int originalPosition = card.Position;
-            
-            // 获取当前回合阶段并记录
-            TurnPhase executionStartPhase = TurnPhase.PlayerMainPhase;
-            if (_turnManager != null && _turnManager.GetTurnStateMachine() != null)
-            {
-                executionStartPhase = _turnManager.GetTurnStateMachine().GetCurrentPhase();
-            }
-            
-            Debug.Log($"能力 {ability.abilityName} 开始执行时的回合阶段: {executionStartPhase}");
+            Debug.Log($"开始执行能力: {ability.abilityName}");
             
             // 执行能力
             yield return _abilityExecutor.ExecuteAbility(ability, card, targetPosition);
             
-            // 设置冷却
-            _conditionResolver.SetAbilityCooldown(card.Data.Id, ability.abilityName, ability.cooldown);
-            
-            // 使用记录的回合阶段来判断是否标记卡牌为已行动
-            if (executionStartPhase == TurnPhase.PlayerMainPhase || executionStartPhase == TurnPhase.EnemyMainPhase)
+            // 执行能力后重置冷却
+            if (ability.cooldown > 0)
             {
-                Debug.Log($"能力 {ability.abilityName} 在主回合阶段触发，标记卡牌 {card.Data.Name} 为已行动");
-                card.HasActed = true;
-            }
-            else
-            {
-                card.HasActed = false;
-                Debug.Log($"能力 {ability.abilityName} 在非主回合阶段触发，不标记卡牌 {card.Data.Name} 为已行动, card.HasActed: {card.HasActed}");
+                string cooldownCounterId = ability.GetCooldownCounterId();
+                card.SetTurnCounter(cooldownCounterId, ability.cooldown);
+                Debug.Log($"能力 {ability.abilityName} 执行完毕，设置冷却为 {ability.cooldown} 回合");
             }
             
             // 能力执行完毕，重置标志
             _isExecutingAbility = false;
             
-            Debug.Log($"能力 {ability.abilityName} 执行完毕，恢复玩家输入");
+            Debug.Log($"能力 {ability.abilityName} 执行完成");
         }
         
         // 添加从CardDataSO加载能力的方法
@@ -378,6 +412,50 @@ namespace ChessGame.Cards
             
             // 默认使用移动高亮
             return HighlightType.Move;
+        }
+
+        /// <summary>
+        /// 在指定回合阶段触发自动能力
+        /// </summary>
+        private void TriggerAutomaticAbilitiesAtPhase(int playerId, FSM.TurnState.TurnPhase phase)
+        {
+            Debug.Log($"触发回合阶段 {phase} 的自动能力，玩家ID: {playerId}");
+            
+            // 获取所有卡牌
+            Dictionary<Vector2Int, Card> allCards = _cardManager.GetAllCards();
+            
+            // 遍历所有卡牌
+            foreach (var kvp in allCards)
+            {
+                Card card = kvp.Value;
+                
+                // 只处理当前回合玩家的卡牌，并且只处理正面的卡牌
+                if (card.OwnerId != playerId || card.IsFaceDown)
+                    continue;
+                    
+                // 获取卡牌的所有能力
+                List<AbilityConfiguration> abilities = GetCardAbilities(card);
+                
+                foreach (var ability in abilities)
+                {
+                    // 检查能力是否为自动触发，且触发阶段匹配
+                    if (ability.IsAutomatic() && ability.triggerPhase == phase)
+                    {
+                        // 检查能力是否可以触发
+                        if (CanTriggerAbility(ability, card, card.Position, _cardManager))
+                        {
+                            Debug.Log($"自动触发卡牌 {card.Data.Name} 的能力 {ability.abilityName}");
+                            
+                            // 执行能力
+                            StartCoroutine(ExecuteAbility(ability, card, card.Position));
+                        }
+                        else
+                        {
+                            Debug.Log($"卡牌 {card.Data.Name} 的能力 {ability.abilityName} 不满足触发条件");
+                        }
+                    }
+                }
+            }
         }
     }
 } 
