@@ -55,9 +55,6 @@ namespace ChessGame.Cards
                 Debug.Log($"【能力执行器】动作 {actionConfig.actionType} 执行完成");
             }
             
-            // 标记卡牌已行动
-            sourceCard.HasActed = true;
-            
             Debug.Log($"【能力执行器】能力 {ability.abilityName} 执行完成");
         }
         

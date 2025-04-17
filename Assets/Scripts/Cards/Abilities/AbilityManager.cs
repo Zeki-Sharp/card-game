@@ -353,7 +353,7 @@ namespace ChessGame.Cards
             // 设置标志为true
             _isExecutingAbility = true;
             
-            Debug.Log($"[冷却系统] 开始执行能力: {ability.abilityName}");
+            Debug.Log($"[冷却系统] 开始执行能力: {ability.abilityName}, 是否自动触发: {isAutomatic}");
             
             // 执行能力
             yield return _abilityExecutor.ExecuteAbility(ability, card, targetPosition);
@@ -371,6 +371,10 @@ namespace ChessGame.Cards
             {
                 card.HasActed = true;
                 Debug.Log($"卡牌 {card.Data.Name} 使用了主动能力，标记为已行动");
+            }
+            else
+            {
+                Debug.Log($"卡牌 {card.Data.Name} 触发了自动能力，不标记为已行动");
             }
             
             // 能力执行完毕，重置标志
