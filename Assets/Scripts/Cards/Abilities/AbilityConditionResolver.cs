@@ -79,6 +79,7 @@ namespace ChessGame.Cards
                 bool isFaceDown = targetCard != null && targetCard.IsFaceDown;
                 bool isEnemyOrFaceDown = targetCard != null && (targetCard.OwnerId != card.OwnerId || targetCard.IsFaceDown);
                 bool isEmpty = targetCard == null;
+                bool isAlly = targetCard != null && targetCard.OwnerId == card.OwnerId && !targetCard.IsFaceDown;
 
                 bool isPathBlocked = CheckPathBlocked(card.Position, targetPosition, cardManager);
                 bool isDiagonalBlocked = CheckDiagonalBlocked(card.Position, targetPosition, cardManager);
@@ -96,6 +97,7 @@ namespace ChessGame.Cards
                 condition = ReplaceBool(condition, "FaceDown", isFaceDown);
                 condition = ReplaceBool(condition, "EnemyOrFaceDown", isEnemyOrFaceDown);
                 condition = ReplaceBool(condition, "Empty", isEmpty);
+                condition = ReplaceBool(condition, "Ally", isAlly);
                 condition = ReplaceBool(condition, "PathBlocked", isPathBlocked);
                 condition = ReplaceBool(condition, "DiagonalBlocked", isDiagonalBlocked);
                 condition = ReplaceBool(condition, "Blocked", isBlocked);

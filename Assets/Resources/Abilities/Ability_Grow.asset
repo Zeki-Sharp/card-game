@@ -24,7 +24,7 @@ MonoBehaviour:
     - key: amount
       value: 1
   cooldown: 2
-  triggerPhase: 1
+  triggerPhase: 0
   rangeType: 0
   customRangeValue: 1
   rangeCondition: 
