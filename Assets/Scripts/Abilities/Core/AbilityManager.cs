@@ -106,6 +106,13 @@ namespace ChessGame.Cards
             
             // 委托给触发系统处理
             _triggerSystem.HandleTurnStarted(playerId);
+            
+            // 减少所有能力的冷却时间
+            if (_cooldownManager != null)
+            {
+                Debug.Log($"AbilityManager: 减少玩家 {playerId} 的所有能力冷却");
+                _cooldownManager.ReduceCooldownsForPlayer(playerId);
+            }
         }
         
         /// <summary>

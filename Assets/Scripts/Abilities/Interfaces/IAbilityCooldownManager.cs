@@ -24,5 +24,20 @@ namespace ChessGame.Cards
         /// 初始化所有卡牌的能力冷却
         /// </summary>
         void InitializeAllCardsCooldowns();
+        
+        /// <summary>
+        /// 减少指定玩家所有卡牌的能力冷却
+        /// </summary>
+        void ReduceCooldownsForPlayer(int playerId);
+        
+        /// <summary>
+        /// 减少指定卡牌的所有能力冷却
+        /// </summary>
+        void ReduceCardCooldowns(Card card);
+        
+        /// <summary>
+        /// 重置指定卡牌的指定能力冷却
+        /// </summary>
+        void ResetCooldown(Card card, AbilityConfiguration ability);
     }
 } 
