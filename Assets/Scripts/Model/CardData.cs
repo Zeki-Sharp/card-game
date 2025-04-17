@@ -9,6 +9,7 @@ namespace ChessGame
         [SerializeField] private string name;
         [SerializeField] private int attack;
         [SerializeField] private int health;
+        [SerializeField] private int maxHealth;
         [SerializeField] private Sprite image;
         [SerializeField] private int faction; // 0为玩家阵营，1为敌方阵营
         [SerializeField] private int moveRange = 1;
@@ -22,7 +23,7 @@ namespace ChessGame
         public int Faction => faction;
         public int MoveRange => moveRange;
         public int AttackRange => attackRange;
-        public int MaxHealth => health;
+        public int MaxHealth { get => maxHealth; set => maxHealth = value; }
         public int CurrentHealth => health;
 
         public int MaxAttack => attack;
@@ -38,6 +39,7 @@ namespace ChessGame
             this.name = name;
             this.attack = attack;
             this.health = health;
+            this.maxHealth = health;
             this.image = image;
             this.faction = faction;
             this.moveRange = moveRange;
@@ -47,7 +49,9 @@ namespace ChessGame
         // 创建卡牌数据的副本
         public CardData Clone()
         {
-            return new CardData(id, name, attack, health, image, faction, moveRange, attackRange);
+            CardData clone = new CardData(id, name, attack, health, image, faction, moveRange, attackRange);
+            clone.maxHealth = this.maxHealth;
+            return clone;
         }
     }
 } 

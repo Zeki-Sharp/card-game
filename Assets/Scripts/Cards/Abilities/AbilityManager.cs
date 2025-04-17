@@ -348,7 +348,7 @@ namespace ChessGame.Cards
         /// <summary>
         /// 执行能力
         /// </summary>
-        public IEnumerator ExecuteAbility(AbilityConfiguration ability, Card card, Vector2Int targetPosition)
+        public IEnumerator ExecuteAbility(AbilityConfiguration ability, Card card, Vector2Int targetPosition, bool isAutomatic = false)
         {
             // 设置标志为true
             _isExecutingAbility = true;
@@ -364,6 +364,13 @@ namespace ChessGame.Cards
                 string cooldownCounterId = ability.GetCooldownCounterId();
                 card.SetTurnCounter(cooldownCounterId, ability.cooldown);
                 Debug.Log($"[冷却系统] 能力 {ability.abilityName} 执行完毕，设置冷却为 {ability.cooldown} 回合");
+            }
+            
+            // 如果不是自动触发的能力，且在主要阶段，则标记卡牌已行动
+            if (!isAutomatic && _turnManager.GetTurnStateMachine().GetCurrentPhase() == FSM.TurnState.TurnPhase.PlayerMainPhase)
+            {
+                card.HasActed = true;
+                Debug.Log($"卡牌 {card.Data.Name} 使用了主动能力，标记为已行动");
             }
             
             // 能力执行完毕，重置标志
@@ -464,8 +471,8 @@ namespace ChessGame.Cards
                         {
                             Debug.Log($"自动触发卡牌 {card.Data.Name} 的能力 {ability.abilityName}");
                             
-                            // 执行能力
-                            StartCoroutine(ExecuteAbility(ability, card, card.Position));
+                            // 执行能力，标记为自动触发
+                            StartCoroutine(ExecuteAbility(ability, card, card.Position, true));
                         }
                         else
                         {
