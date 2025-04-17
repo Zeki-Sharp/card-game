@@ -20,33 +20,33 @@ namespace ChessGame.Cards
         /// <summary>
         /// 获取能力可作用的所有位置
         /// </summary>
-        public List<Vector2Int> GetAbilityRange(AbilityConfiguration ability, Card sourceCard)
+        public List<Vector2Int> GetAbilityRange(AbilityConfiguration ability, Card sourceCard, Vector2Int targetPosition)
         {
             // 根据范围类型选择不同的计算方法
             switch (ability.rangeType)
             {
                 case AbilityConfiguration.RangeType.AttackRange:
-                    return GetRangeBasedOnAttackRange(sourceCard, ability.rangeCondition);
+                    return GetRangeBasedOnAttackRange(sourceCard, ability.rangeCondition, targetPosition);
                     
                 case AbilityConfiguration.RangeType.MoveRange:
-                    return GetRangeBasedOnMoveRange(sourceCard, ability.rangeCondition);
+                    return GetRangeBasedOnMoveRange(sourceCard, ability.rangeCondition, targetPosition);
                     
                 case AbilityConfiguration.RangeType.Custom:
-                    return GetRangeBasedOnCustomValue(sourceCard, ability.customRangeValue, ability.rangeCondition);
+                    return GetRangeBasedOnCustomValue(sourceCard, ability.customRangeValue, ability.rangeCondition, targetPosition);
                     
                 case AbilityConfiguration.RangeType.Unlimited:
-                    return GetUnlimitedRange(sourceCard, ability.rangeCondition);
+                    return GetUnlimitedRange(sourceCard, ability.rangeCondition, targetPosition);
                     
                 case AbilityConfiguration.RangeType.Default:
                 default:
-                    return GetRangeBasedOnTriggerCondition(ability, sourceCard);
+                    return GetRangeBasedOnTriggerCondition(ability, sourceCard, targetPosition);
             }
         }
         
         /// <summary>
         /// 基于触发条件获取范围
         /// </summary>
-        private List<Vector2Int> GetRangeBasedOnTriggerCondition(AbilityConfiguration ability, Card sourceCard)
+        private List<Vector2Int> GetRangeBasedOnTriggerCondition(AbilityConfiguration ability, Card sourceCard, Vector2Int targetPosition)
         {
             List<Vector2Int> validPositions = new List<Vector2Int>();
             
@@ -75,7 +75,7 @@ namespace ChessGame.Cards
         /// <summary>
         /// 基于攻击范围获取范围
         /// </summary>
-        private List<Vector2Int> GetRangeBasedOnAttackRange(Card sourceCard, string additionalCondition)
+        private List<Vector2Int> GetRangeBasedOnAttackRange(Card sourceCard, string additionalCondition, Vector2Int targetPosition)
         {
             List<Vector2Int> validPositions = new List<Vector2Int>();
             
@@ -109,7 +109,7 @@ namespace ChessGame.Cards
         /// <summary>
         /// 基于移动范围获取范围
         /// </summary>
-        private List<Vector2Int> GetRangeBasedOnMoveRange(Card sourceCard, string additionalCondition)
+        private List<Vector2Int> GetRangeBasedOnMoveRange(Card sourceCard, string additionalCondition, Vector2Int targetPosition)
         {
             List<Vector2Int> validPositions = new List<Vector2Int>();
             int moveRange = sourceCard.MoveRange;
@@ -148,7 +148,7 @@ namespace ChessGame.Cards
         /// <summary>
         /// 基于自定义值获取范围
         /// </summary>
-        private List<Vector2Int> GetRangeBasedOnCustomValue(Card sourceCard, int rangeValue, string additionalCondition)
+        private List<Vector2Int> GetRangeBasedOnCustomValue(Card sourceCard, int rangeValue, string additionalCondition, Vector2Int targetPosition)
         {
             List<Vector2Int> validPositions = new List<Vector2Int>();
             
@@ -186,7 +186,7 @@ namespace ChessGame.Cards
         /// <summary>
         /// 获取无限范围（全场）
         /// </summary>
-        private List<Vector2Int> GetUnlimitedRange(Card sourceCard, string additionalCondition)
+        private List<Vector2Int> GetUnlimitedRange(Card sourceCard, string additionalCondition, Vector2Int targetPosition)
         {
             List<Vector2Int> validPositions = new List<Vector2Int>();
             
