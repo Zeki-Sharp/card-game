@@ -30,6 +30,10 @@ namespace ChessGame
                 GameEventSystem.Instance.OnCardSelected += HighlightSelectedPosition;
                 GameEventSystem.Instance.OnCardSelected += HighlightMovablePositions;
                 GameEventSystem.Instance.OnCardDeselected += ClearAllHighlights;
+                
+                // 订阅自动触发能力事件
+                GameEventSystem.Instance.OnAutomaticAbilityStart += (pos) => HighlightAutomaticAbilityTarget(pos, true);
+                GameEventSystem.Instance.OnAutomaticAbilityEnd += (pos) => HighlightAutomaticAbilityTarget(pos, false);
             }
             else
             {
@@ -45,8 +49,11 @@ namespace ChessGame
                 GameEventSystem.Instance.OnCardSelected -= HighlightSelectedPosition;
                 GameEventSystem.Instance.OnCardSelected -= HighlightMovablePositions;
                 GameEventSystem.Instance.OnCardDeselected -= ClearAllHighlights;
+                
+                // 取消订阅自动触发能力事件
+                GameEventSystem.Instance.OnAutomaticAbilityStart -= (pos) => HighlightAutomaticAbilityTarget(pos, true);
+                GameEventSystem.Instance.OnAutomaticAbilityEnd -= (pos) => HighlightAutomaticAbilityTarget(pos, false);
             }
-            
         }
         
         // 高亮选中的卡牌位置
@@ -206,25 +213,6 @@ namespace ChessGame
             }
         }
 
-        /// <summary>
-        /// 将AbilityManager.HighlightType转换为CellView.HighlightType
-        /// </summary>
-        private CellView.HighlightType ConvertHighlightType(AbilityManager.HighlightType highlightType)
-        {
-            switch (highlightType)
-            {
-                case AbilityManager.HighlightType.Attack:
-                    return CellView.HighlightType.Attack;
-                case AbilityManager.HighlightType.Move:
-                    return CellView.HighlightType.Move;
-                case AbilityManager.HighlightType.Ability:
-                    // 如果CellView.HighlightType中没有Ability类型，可以使用其他类型代替
-                    return CellView.HighlightType.Attack; // 或者其他合适的类型
-                default:
-                    return CellView.HighlightType.Move;
-            }
-        }
-
         public void HighlightTargetablePositions(Card card)
         {
             if (card == null) return;
@@ -271,12 +259,17 @@ namespace ChessGame
                 }
             }
             
-            // 高亮显示能力可作用的位置
+            // 高亮显示能力可作用的位置，但只包括主动触发的能力
             foreach (var ability in card.GetAbilities())
             {
-                // 获取能力的高亮类型
-                AbilityManager.HighlightType abilityHighlightType = AbilityManager.Instance.GetAbilityHighlightType(ability);
-                CellView.HighlightType highlightType = ConvertHighlightType(abilityHighlightType);
+                // 跳过自动触发的能力
+                if (ability.IsAutomatic())
+                {
+                    continue;
+                }
+                
+                // 直接判断能力类型，决定使用哪种高亮
+                CellView.HighlightType highlightType = DetermineAbilityHighlightType(ability);
                 
                 // 获取能力可作用的位置
                 List<Vector2Int> abilityPositions = AbilityManager.Instance.GetAbilityRange(ability, card, cardManager);
@@ -290,6 +283,40 @@ namespace ChessGame
                         cellView.SetHighlight(highlightType);
                     }
                 }
+            }
+        }
+
+        // 添加这个方法来判断能力应该使用哪种高亮类型
+        private CellView.HighlightType DetermineAbilityHighlightType(AbilityConfiguration ability)
+        {
+            if (ability == null || ability.actionSequence == null || ability.actionSequence.Count == 0)
+            {
+                return CellView.HighlightType.Move;
+            }
+            
+            // 检查能力的动作序列
+            foreach (var action in ability.actionSequence)
+            {
+                // 如果包含攻击动作，使用攻击高亮
+                if (action.actionType == AbilityActionConfig.ActionType.Attack)
+                {
+                    return CellView.HighlightType.Attack;
+                }
+            }
+            
+            // 默认使用移动高亮
+            return CellView.HighlightType.Move;
+        }
+
+        /// <summary>
+        /// 高亮显示自动触发能力的目标位置
+        /// </summary>
+        public void HighlightAutomaticAbilityTarget(Vector2Int position, bool highlight)
+        {
+            CellView cellView = board.GetCellView(position.x, position.y);
+            if (cellView != null)
+            {
+                cellView.SetHighlight(highlight ? CellView.HighlightType.Ability : CellView.HighlightType.None);
             }
         }
     }

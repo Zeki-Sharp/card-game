@@ -34,13 +34,6 @@ namespace ChessGame.Cards
             get { return _isExecutingAbility; }
         }
 
-        public enum HighlightType
-        {
-            Move,
-            Attack,
-            Ability
-        }
-
         private TurnManager _turnManager;
 
         private void Awake()
@@ -355,8 +348,20 @@ namespace ChessGame.Cards
             
             Debug.Log($"[冷却系统] 开始执行能力: {ability.abilityName}, 是否自动触发: {isAutomatic}");
             
+            // 如果是自动触发能力，触发开始事件
+            if (isAutomatic && _gameEventSystem != null)
+            {
+                _gameEventSystem.NotifyAutomaticAbilityStart(targetPosition);
+            }
+            
             // 执行能力
             yield return _abilityExecutor.ExecuteAbility(ability, card, targetPosition);
+            
+            // 如果是自动触发能力，触发结束事件
+            if (isAutomatic && _gameEventSystem != null)
+            {
+                _gameEventSystem.NotifyAutomaticAbilityEnd(targetPosition);
+            }
             
             // 执行能力后重置冷却
             if (ability.cooldown > 0)
@@ -417,30 +422,6 @@ namespace ChessGame.Cards
         {
             // 使用范围计算器计算范围
             return _rangeCalculator.GetAbilityRange(ability, card);
-        }
-        
-        /// <summary>
-        /// 获取能力的高亮类型
-        /// </summary>
-        public HighlightType GetAbilityHighlightType(AbilityConfiguration ability)
-        {
-            if (ability == null || ability.actionSequence == null || ability.actionSequence.Count == 0)
-            {
-                return HighlightType.Move;
-            }
-            
-            // 检查能力的动作序列
-            foreach (var action in ability.actionSequence)
-            {
-                // 如果包含攻击动作，使用攻击高亮
-                if (action.actionType == AbilityActionConfig.ActionType.Attack)
-                {
-                    return HighlightType.Attack;
-                }
-            }
-            
-            // 默认使用移动高亮
-            return HighlightType.Move;
         }
 
         /// <summary>

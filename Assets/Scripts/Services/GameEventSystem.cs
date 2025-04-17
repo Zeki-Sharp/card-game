@@ -69,6 +69,10 @@ namespace ChessGame
         // 添加卡牌行动事件
         public event Action<Vector2Int> OnCardActed;
         
+        public event Action<Vector2Int> OnAutomaticAbilityStart;
+
+        public event Action<Vector2Int> OnAutomaticAbilityEnd;
+
         // 通知卡牌选中
         public void NotifyCardSelected(Vector2Int position)
         {
@@ -114,29 +118,6 @@ namespace ChessGame
         // 通知卡牌受伤
         public void NotifyCardDamaged(Vector2Int position)
         {
-            /*Debug.Log($"GameEventSystem: 卡牌在位置 {position} 受伤");
-            
-            // 获取卡牌和视图
-            CardManager cardManager = FindObjectOfType<CardManager>();
-            if (cardManager != null)
-            {
-                Card card = cardManager.GetCard(position);
-                CardView cardView = cardManager.GetCardView(position);
-                
-                if (card != null && cardView != null)
-                {
-                    // 立即更新卡牌视图
-                    cardView.UpdateVisuals();
-                    Debug.Log($"更新卡牌视图: {card.Data.Name}, 生命值: {card.Data.Health}");
-                    
-                    // 检查卡牌是否死亡
-                    if (card.Data.Health <= 0)
-                    {
-                        Debug.Log($"卡牌 {card.Data.Name} 生命值为 {card.Data.Health}，将被移除");
-                        cardManager.RemoveCard(position);
-                    }
-                }
-            }*/
             
             if (OnCardDamaged != null)
             {
@@ -193,5 +174,20 @@ namespace ChessGame
             Debug.Log($"GameEventSystem: 卡牌行动事件 - 位置 {position}");
             OnCardActed?.Invoke(position);
         }
+
+        // 自动触发能力开始事件
+
+        public void NotifyAutomaticAbilityStart(Vector2Int position)
+        {
+            Debug.Log($"GameEventSystem: 自动触发能力开始事件 - 位置 {position}");
+            OnAutomaticAbilityStart?.Invoke(position);
+        }
+
+        // 自动触发能力结束事件
+        public void NotifyAutomaticAbilityEnd(Vector2Int position)
+        {
+            Debug.Log($"GameEventSystem: 自动触发能力结束事件 - 位置 {position}");
+            OnAutomaticAbilityEnd?.Invoke(position);
+        } 
     }
 } 

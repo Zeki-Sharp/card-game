@@ -19,7 +19,8 @@ namespace ChessGame
             None,
             Move,
             Attack,
-            Selected
+            Selected,
+            Ability
         }
 
         // 单元格点击事件
