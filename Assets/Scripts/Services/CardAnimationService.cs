@@ -18,9 +18,56 @@ namespace ChessGame
         [SerializeField] private float removeAnimationDuration = 0.5f;
         [SerializeField] private float flipAnimationDuration = 0.5f;
         
-        // 添加动画队列系统
-        private Queue<System.Func<IEnumerator>> _animationQueue = new Queue<System.Func<IEnumerator>>();
+        // 添加动画速度控制
+        [SerializeField, Range(0.5f, 2.0f)] private float animationSpeedMultiplier = 1.0f;
+        
+        /// <summary>
+        /// 设置动画速度倍率
+        /// </summary>
+        /// <param name="speedMultiplier">速度倍率（0.5-2.0）</param>
+        public void SetAnimationSpeed(float speedMultiplier)
+        {
+            animationSpeedMultiplier = Mathf.Clamp(speedMultiplier, 0.5f, 2.0f);
+        }
+        
+        /// <summary>
+        /// 获取考虑了速度因素的动画持续时间
+        /// </summary>
+        /// <param name="baseDuration">基础持续时间</param>
+        /// <returns>调整后的持续时间</returns>
+        private float GetAdjustedDuration(float baseDuration)
+        {
+            return baseDuration / animationSpeedMultiplier;
+        }
+        
+        // 添加动画组类型枚举
+        public enum AnimationGroupType
+        {
+            Action,      // 主动行为（攻击、移动）
+            Reaction,    // 反应行为（受击、翻面）
+            Result,      // 结果展示（数值变化）
+            Secondary    // 次要效果（高亮、提示）
+        }
+        
+        // 动画项结构，包含动画函数和组类型
+        private struct AnimationItem
+        {
+            public System.Func<IEnumerator> AnimationFunc;
+            public AnimationGroupType GroupType;
+            
+            public AnimationItem(System.Func<IEnumerator> animationFunc, AnimationGroupType groupType)
+            {
+                AnimationFunc = animationFunc;
+                GroupType = groupType;
+            }
+        }
+        
+        // 更新原有队列为新的动画项队列
+        private Queue<AnimationItem> _animationQueue = new Queue<AnimationItem>();
         private bool _isProcessingQueue = false;
+        
+        // 添加重叠执行控制参数
+        [SerializeField, Range(0.5f, 1.0f)] private float actionCompletionThreshold = 0.8f; // Action动画完成多少比例后开始下一个动画
         
         private void Awake()
         {
@@ -73,15 +120,22 @@ namespace ChessGame
         /// 添加动画到队列
         /// </summary>
         /// <param name="animationFunc">返回动画协程的函数</param>
-        private void EnqueueAnimation(System.Func<IEnumerator> animationFunc)
+        /// <param name="groupType">动画组类型</param>
+        private void EnqueueAnimation(System.Func<IEnumerator> animationFunc, AnimationGroupType groupType = AnimationGroupType.Action)
         {
-            _animationQueue.Enqueue(animationFunc);
+            _animationQueue.Enqueue(new AnimationItem(animationFunc, groupType));
             
             // 如果队列没在处理中，开始处理
             if (!_isProcessingQueue)
             {
                 StartCoroutine(ProcessAnimationQueue());
             }
+        }
+        
+        // 保留旧的方法以保持向后兼容性
+        private void EnqueueAnimation(System.Func<IEnumerator> animationFunc)
+        {
+            EnqueueAnimation(animationFunc, AnimationGroupType.Action);
         }
         
         /// <summary>
@@ -93,11 +147,83 @@ namespace ChessGame
             
             while (_animationQueue.Count > 0)
             {
-                var nextAnimation = _animationQueue.Dequeue();
-                yield return StartCoroutine(nextAnimation());
+                var currentAnimation = _animationQueue.Dequeue();
+                
+                // 获取当前动画协程
+                IEnumerator currentAnimCoroutine = currentAnimation.AnimationFunc();
+                
+                // 如果是Action类型动画并且有后续动画
+                if (currentAnimation.GroupType == AnimationGroupType.Action && _animationQueue.Count > 0)
+                {
+                    // 获取下一个动画的信息但不从队列中移除
+                    AnimationItem nextAnimation = _animationQueue.Peek();
+                    
+                    // 如果下一个是Reaction类型，实现重叠执行
+                    if (nextAnimation.GroupType == AnimationGroupType.Reaction)
+                    {
+                        // 运行当前动画到指定进度
+                        float startTime = Time.time;
+                        float estimatedDuration = EstimateAnimationDuration(currentAnimation);
+                        float targetProgress = estimatedDuration * actionCompletionThreshold;
+                        
+                        // 运行当前动画直到达到目标进度
+                        while (currentAnimCoroutine.MoveNext())
+                        {
+                            yield return currentAnimCoroutine.Current;
+                            
+                            // 检查是否达到了目标进度
+                            if (Time.time - startTime >= targetProgress)
+                                break;
+                        }
+                        
+                        // 当主动动画达到阈值后，提前启动反应动画
+                        _animationQueue.Dequeue(); // 现在可以移除下一个动画
+                        StartCoroutine(nextAnimation.AnimationFunc());
+                        
+                        // 继续完成当前动画的剩余部分
+                        while (currentAnimCoroutine.MoveNext())
+                        {
+                            yield return currentAnimCoroutine.Current;
+                        }
+                    }
+                    else
+                    {
+                        // 正常执行当前动画
+                        while (currentAnimCoroutine.MoveNext())
+                        {
+                            yield return currentAnimCoroutine.Current;
+                        }
+                    }
+                }
+                else
+                {
+                    // 其他动画类型正常执行
+                    while (currentAnimCoroutine.MoveNext())
+                    {
+                        yield return currentAnimCoroutine.Current;
+                    }
+                }
             }
             
             _isProcessingQueue = false;
+        }
+        
+        /// <summary>
+        /// 估算动画持续时间
+        /// </summary>
+        private float EstimateAnimationDuration(AnimationItem animation)
+        {
+            // 基于动画类型返回估计持续时间，并应用速度调整
+            float baseDuration = animation.GroupType switch
+            {
+                AnimationGroupType.Action => attackAnimationDuration,
+                AnimationGroupType.Reaction => 0.3f,
+                AnimationGroupType.Result => 0.2f,
+                AnimationGroupType.Secondary => 0.2f,
+                _ => 0.5f
+            };
+            
+            return GetAdjustedDuration(baseDuration);
         }
         
         // 播放移动动画
@@ -105,16 +231,16 @@ namespace ChessGame
         {
             Debug.Log($"播放移动动画: 从 {fromPosition} 到 {toPosition}");
             
-            // 将动画添加到队列
+            // 将动画添加到队列，指定为Action类型
             EnqueueAnimation(() => MoveAnimationCoroutine(
                 cardManager.GetCardView(toPosition),
-                GetWorldPosition(toPosition)));
+                GetWorldPosition(toPosition)), AnimationGroupType.Action);
         }
         
         // 移动动画协程
         private IEnumerator MoveAnimationCoroutine(CardView cardView, Vector3 targetPosition)
         {
-            float duration = 0.3f;
+            float duration = GetAdjustedDuration(moveAnimationDuration);
             float elapsed = 0f;
             
             // 保存原始位置
@@ -147,8 +273,8 @@ namespace ChessGame
                 // 获取目标位置的世界坐标
                 Vector3 targetWorldPos = GetWorldPosition(targetPosition);
                 
-                // 将动画添加到队列
-                EnqueueAnimation(() => AttackAnimationCoroutine(attackerView, targetWorldPos));
+                // 将动画添加到队列，指定为Action类型
+                EnqueueAnimation(() => AttackAnimationCoroutine(attackerView, targetWorldPos), AnimationGroupType.Action);
             }
         }
         
@@ -159,7 +285,7 @@ namespace ChessGame
             
             Vector3 originalPosition = attackerView.transform.position;
             Vector3 midPosition = Vector3.Lerp(originalPosition, targetPosition, 0.5f);
-            float duration = 0.3f;
+            float duration = GetAdjustedDuration(attackAnimationDuration);
             float elapsed = 0f;
             
             // 向目标移动一半
@@ -199,8 +325,8 @@ namespace ChessGame
             CardView cardView = cardManager.GetCardView(position);
             if (cardView != null)
             {
-                // 将动画添加到队列
-                EnqueueAnimation(() => DamageAnimationCoroutine(cardView, position));
+                // 将动画添加到队列，指定为Reaction类型
+                EnqueueAnimation(() => DamageAnimationCoroutine(cardView, position), AnimationGroupType.Reaction);
             }
         }
         
@@ -219,7 +345,7 @@ namespace ChessGame
             Vector3 smallerScale = originalScale * scaleFactor;
             
             // 缩小阶段
-            float shrinkDuration = 0.15f;
+            float shrinkDuration = GetAdjustedDuration(0.15f);
             float elapsed = 0f;
             
             while (elapsed < shrinkDuration)
@@ -235,7 +361,7 @@ namespace ChessGame
             cardView.transform.localScale = smallerScale;
             
             // 恢复阶段
-            float recoverDuration = 0.25f;
+            float recoverDuration = GetAdjustedDuration(0.25f);
             elapsed = 0f;
             
             while (elapsed < recoverDuration)
@@ -270,8 +396,8 @@ namespace ChessGame
             CardView cardView = cardManager.GetCardView(position);
             if (cardView != null)
             {
-                // 将动画添加到队列
-                EnqueueAnimation(() => DeathAnimationCoroutine(cardView, position));
+                // 将动画添加到队列，销毁动画属于Result类型
+                EnqueueAnimation(() => DeathAnimationCoroutine(cardView, position), AnimationGroupType.Result);
             }
         }
         
@@ -281,7 +407,7 @@ namespace ChessGame
             if (cardView == null) yield break;
             
             // 缩小并淡出
-            float duration = removeAnimationDuration;
+            float duration = GetAdjustedDuration(removeAnimationDuration);
             float elapsed = 0f;
             
             Vector3 originalScale = cardView.transform.localScale;
@@ -332,15 +458,15 @@ namespace ChessGame
             CardView cardView = cardManager.GetCardView(position);
             if (cardView != null)
             {
-                // 将动画添加到队列
-                EnqueueAnimation(() => FlipAnimationCoroutine(cardView, isFaceDown));
+                // 翻面动画通常是反应类型
+                EnqueueAnimation(() => FlipAnimationCoroutine(cardView, isFaceDown), AnimationGroupType.Reaction);
             }
         }
         
         // 使用缩放而非旋转的翻转动画
         private IEnumerator FlipAnimationCoroutine(CardView cardView, bool isFaceDown)
         {
-            float duration = 0.5f;
+            float duration = GetAdjustedDuration(flipAnimationDuration);
             float elapsed = 0f;
             
             // 保存原始缩放
@@ -405,6 +531,9 @@ namespace ChessGame
             CardView cardView = cardManager.GetCardView(position);
             if (cardView == null) yield break;
             
+            // 应用速度调整
+            duration = GetAdjustedDuration(duration);
+            
             // 保存原始缩放
             Vector3 originalScale = cardView.transform.localScale;
             Vector3 targetScale = originalScale * scaleMultiplier;
@@ -449,8 +578,8 @@ namespace ChessGame
         private void OnCardStatModified(Vector2Int position)
         {
             Debug.Log($"卡牌属性被修改: {position}");
-            // 将动画添加到队列
-            EnqueueAnimation(() => PlayGrowAnimation(position));
+            // 属性修改属于结果类型
+            EnqueueAnimation(() => PlayGrowAnimation(position), AnimationGroupType.Result);
         }
 
         // 播放卡牌放置动画
@@ -499,8 +628,8 @@ namespace ChessGame
         // 播放卡牌放置动画（公共接口）
         public void PlayPlaceAnimationQueued(Vector2Int position, Vector3 startPosition)
         {
-            // 将放置动画添加到队列
-            EnqueueAnimation(() => PlaceAnimationCoroutine(position, startPosition));
+            // 将放置动画添加到队列，放置是主动行为
+            EnqueueAnimation(() => PlaceAnimationCoroutine(position, startPosition), AnimationGroupType.Action);
         }
         
         // 内部协程实现放置动画
@@ -520,7 +649,7 @@ namespace ChessGame
             midPosition.y += 1.5f; // 增加高度形成弧线
             
             // 执行弧线运动
-            float duration = 0.5f;
+            float duration = GetAdjustedDuration(0.5f);
             float elapsed = 0f;
             
             while (elapsed < duration)
@@ -553,7 +682,7 @@ namespace ChessGame
             Vector3 squishScale = new Vector3(originalScale.x * 1.1f, originalScale.y * 0.9f, originalScale.z);
             
             // 1. 轻微扁平化
-            float squishDuration = 0.15f;
+            float squishDuration = GetAdjustedDuration(0.15f);
             float elapsed = 0f;
             
             while (elapsed < squishDuration)
