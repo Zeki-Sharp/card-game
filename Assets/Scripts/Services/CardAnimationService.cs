@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 namespace ChessGame
 {
@@ -20,6 +21,11 @@ namespace ChessGame
         
         // 添加动画速度控制
         [SerializeField, Range(0.5f, 2.0f)] private float animationSpeedMultiplier = 1.0f;
+        
+        // 添加动画完成事件
+        public event Action OnAttackAnimationComplete;
+        public event Action OnFlipAnimationComplete;
+        public event Action OnDamageAnimationComplete;
         
         /// <summary>
         /// 设置动画速度倍率
@@ -315,6 +321,9 @@ namespace ChessGame
             
             // 更新卡牌视图
             attackerView.UpdateVisuals();
+            
+            // 触发攻击动画完成事件
+            NotifyAttackAnimationComplete();
         }
         
         // 播放受伤动画
@@ -379,6 +388,9 @@ namespace ChessGame
             
             // 更新卡牌视觉效果
             cardView.UpdateVisuals();
+            
+            // 触发受伤动画完成事件
+            NotifyDamageAnimationComplete();
             
             // 检查是否需要死亡动画
             Card card = cardManager.GetCard(position);
@@ -502,6 +514,9 @@ namespace ChessGame
             
             // 确保恢复到正常大小
             cardView.transform.localScale = originalScale;
+            
+            // 触发翻面动画完成事件
+            NotifyFlipAnimationComplete();
         }
         
         // 获取世界坐标
@@ -707,6 +722,27 @@ namespace ChessGame
             
             // 确保恢复原始大小
             cardView.transform.localScale = originalScale;
+        }
+
+        // 在适当的位置触发攻击动画完成事件
+        private void NotifyAttackAnimationComplete()
+        {
+            Debug.Log("攻击动画完成");
+            OnAttackAnimationComplete?.Invoke();
+        }
+        
+        // 在适当的位置触发翻面动画完成事件
+        private void NotifyFlipAnimationComplete()
+        {
+            Debug.Log("翻面动画完成");
+            OnFlipAnimationComplete?.Invoke();
+        }
+        
+        // 在适当的位置触发受伤动画完成事件
+        private void NotifyDamageAnimationComplete()
+        {
+            Debug.Log("受伤动画完成");
+            OnDamageAnimationComplete?.Invoke();
         }
     }
 } 

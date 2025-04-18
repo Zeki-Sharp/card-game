@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Collections;
 
 namespace ChessGame
 {
@@ -11,6 +12,7 @@ namespace ChessGame
         private Vector2Int _attackerPosition;
         private Vector2Int _targetPosition;
         private int _damageDealt; // 记录造成的伤害
+        private bool _isAnimationCompleted = false; // 标记动画是否完成
         
         public AttackCardAction(CardManager cardManager, Vector2Int attackerPosition, Vector2Int targetPosition) 
             : base(cardManager)
@@ -73,6 +75,176 @@ namespace ChessGame
             return true;
         }
         
+        // 注册动画完成的回调
+        private void RegisterAnimationCompletionCallback()
+        {
+            if (CardAnimationService.Instance != null)
+            {
+                CardAnimationService.Instance.OnAttackAnimationComplete += AnimationCompleted;
+            }
+            else
+            {
+                Debug.LogError("找不到CardAnimationService实例，无法注册动画完成回调");
+                // 如果没有动画服务，直接标记为完成
+                _isAnimationCompleted = true;
+            }
+        }
+        
+        // 动画完成的回调方法
+        private void AnimationCompleted()
+        {
+            _isAnimationCompleted = true;
+            // 取消订阅，避免多次触发
+            if (CardAnimationService.Instance != null)
+            {
+                CardAnimationService.Instance.OnAttackAnimationComplete -= AnimationCompleted;
+            }
+        }
+        
+        // 执行背面卡牌攻击的方法
+        private IEnumerator ExecuteFaceDownAttack(Card attackerCard, Card targetCard, int targetHpBefore)
+        {
+            // 翻面
+            targetCard.FlipToFaceUp();
+            
+            // 触发翻面事件 - 播放翻面动画
+            GameEventSystem.Instance.NotifyCardFlipped(_targetPosition, false);
+            
+            // 等待一小段时间让翻面动画完成
+            yield return new WaitForSeconds(0.5f);
+            
+            // 触发攻击事件 - 播放攻击动画
+            RegisterAnimationCompletionCallback();
+            GameEventSystem.Instance.NotifyCardAttacked(_attackerPosition, _targetPosition);
+            
+            // 等待攻击动画完成
+            float waitTime = 0f;
+            float maxWaitTime = 2f; // 最大等待时间，避免无限等待
+            while (!_isAnimationCompleted && waitTime < maxWaitTime)
+            {
+                yield return null;
+                waitTime += Time.deltaTime;
+            }
+            
+            // 计算并应用伤害 - 只在动画完成后执行
+            int damage = attackerCard.Data.Attack;
+            targetCard.Data.Health -= damage;
+            
+            // 特殊规则：如果背面卡牌血量降至0或以下，保留1点血量
+            if (targetCard.Data.Health <= 0)
+            {
+                Debug.Log($"背面卡牌 {targetCard.Data.Name} 血量降至0或以下，保留1点血量");
+                targetCard.Data.Health = 1;
+            }
+            
+            // 计算造成的伤害
+            _damageDealt = targetHpBefore - targetCard.Data.Health;
+            
+            // 标记攻击者已行动
+            attackerCard.HasActed = true;
+            
+            // 触发受伤事件 - 播放受伤动画
+            GameEventSystem.Instance.NotifyCardDamaged(_targetPosition);
+            
+            Debug.Log($"卡牌 {attackerCard.Data.Name} 攻击背面卡牌 {targetCard.Data.Name} 成功，造成 {_damageDealt} 点伤害");
+        }
+        
+        // 执行正面卡牌攻击的方法
+        private IEnumerator ExecuteFaceUpAttack(Card attackerCard, Card targetCard, int attackerHpBefore, int targetHpBefore)
+        {
+            // 触发攻击事件 - 播放攻击动画
+            RegisterAnimationCompletionCallback();
+            GameEventSystem.Instance.NotifyCardAttacked(_attackerPosition, _targetPosition);
+            
+            // 等待攻击动画完成
+            float waitTime = 0f;
+            float maxWaitTime = 2f; // 最大等待时间
+            while (!_isAnimationCompleted && waitTime < maxWaitTime)
+            {
+                yield return null;
+                waitTime += Time.deltaTime;
+            }
+            
+            // 计算并应用伤害 - 只在动画完成后执行
+            int damage = attackerCard.Data.Attack;
+            targetCard.Data.Health -= damage;
+            
+            // 计算造成的伤害
+            _damageDealt = damage;
+            
+            // 触发受伤事件 - 播放受伤动画
+            GameEventSystem.Instance.NotifyCardDamaged(_targetPosition);
+            
+            // 等待一小段时间让受伤动画完成
+            yield return new WaitForSeconds(0.3f);
+            
+            // 判断是否应该受到反伤
+            bool canCounter = targetCard.ShouldReceiveCounterAttack(attackerCard, CardManager.GetAllCards());
+            
+            if (canCounter)
+            {
+                Debug.Log($"卡牌 {targetCard.Data.Name} 对 {attackerCard.Data.Name} 进行反击");
+                
+                // 重置动画完成标志
+                _isAnimationCompleted = false;
+                
+                // 触发反击攻击事件 - 播放反击动画
+                RegisterAnimationCompletionCallback();
+                // 注意：这里反向触发攻击事件，表示目标卡牌攻击攻击者卡牌
+                GameEventSystem.Instance.NotifyCardAttacked(_targetPosition, _attackerPosition);
+                
+                // 等待反击动画完成
+                waitTime = 0f;
+                while (!_isAnimationCompleted && waitTime < maxWaitTime)
+                {
+                    yield return null;
+                    waitTime += Time.deltaTime;
+                }
+                
+                // 计算并应用反伤 - 只在动画完成后执行
+                int counterDamage = targetCard.Data.Attack;
+                attackerCard.Data.Health -= counterDamage;
+                
+                // 触发攻击者受伤事件 - 播放受伤动画
+                GameEventSystem.Instance.NotifyCardDamaged(_attackerPosition);
+            }
+            else
+            {
+                Debug.Log($"卡牌 {attackerCard.Data.Name} 不在 {targetCard.Data.Name} 的攻击范围内，不受反伤");
+            }
+            
+            // 标记攻击者已行动
+            attackerCard.HasActed = true;
+            
+            // 记录攻击后的生命值
+            int attackerHealthAfter = attackerCard.Data.Health;
+            int targetHealthAfter = targetCard.Data.Health;
+            
+            Debug.Log($"攻击前生命值 - 攻击者: {attackerHpBefore}, 目标: {targetHpBefore}");
+            Debug.Log($"攻击后生命值 - 攻击者: {attackerHealthAfter}, 目标: {targetHealthAfter}");
+            Debug.Log($"造成伤害: {_damageDealt}");
+            
+            // 检查目标卡牌是否死亡
+            if (targetCard.Data.Health <= 0)
+            {
+                Debug.Log($"目标卡牌 {targetCard.Data.Name} 生命值为 {targetCard.Data.Health}，将被移除");
+                
+                // 移除目标卡牌
+                CardManager.RemoveCard(_targetPosition);
+            }
+            
+            // 检查攻击者是否死亡（反伤机制）
+            if (attackerCard.Data.Health <= 0)
+            {
+                Debug.Log($"攻击者卡牌 {attackerCard.Data.Name} 生命值为 {attackerCard.Data.Health}，将被移除");
+                
+                // 移除攻击者卡牌
+                CardManager.RemoveCard(_attackerPosition);
+            }
+            
+            Debug.Log($"卡牌 {attackerCard.Data.Name} 攻击 {targetCard.Data.Name} 成功");
+        }
+        
         public override bool Execute()
         {    
             if (!CanExecute())
@@ -86,107 +258,31 @@ namespace ChessGame
             int attackerHpBefore = attackerCard.Data.Health;
             int targetHpBefore = targetCard.Data.Health;
             
-            // 处理背面卡牌的特殊情况
+            // 找到MonoBehaviour对象来启动协程
+            CardManager monoBehaviour = CardManager;
+            if (monoBehaviour == null)
+            {
+                monoBehaviour = GameObject.FindObjectOfType<CardManager>();
+                if (monoBehaviour == null)
+                {
+                    Debug.LogError("无法找到MonoBehaviour对象来启动协程");
+                    return false;
+                }
+            }
+            
+            // 根据卡牌是否背面选择不同的处理方式
             if (targetCard.IsFaceDown)
             {
                 Debug.Log("目标是背面卡牌，先翻面");
-                
-                // 翻面
-                targetCard.FlipToFaceUp();
-                
-                // 触发翻面事件
-                GameEventSystem.Instance.NotifyCardFlipped(_targetPosition, false);
-                
-                // 执行攻击
-                attackerCard.Attack(targetCard);
-                
-                // 特殊规则：如果背面卡牌血量降至0或以下，保留1点血量
-                if (targetCard.Data.Health <= 0)
-                {
-                    Debug.Log($"背面卡牌 {targetCard.Data.Name} 血量降至0或以下，保留1点血量");
-                    targetCard.Data.Health = 1;
-                }
-                
-                // 计算造成的伤害
-                _damageDealt = targetHpBefore - targetCard.Data.Health;
-                
-                // 标记攻击者已行动
-                attackerCard.HasActed = true;
-                
-                // 触发攻击事件
-                GameEventSystem.Instance.NotifyCardAttacked(_attackerPosition, _targetPosition);
-                
-                // 触发受伤事件
-                GameEventSystem.Instance.NotifyCardDamaged(_targetPosition);
-                
-                return true;
+                monoBehaviour.StartCoroutine(ExecuteFaceDownAttack(attackerCard, targetCard, targetHpBefore));
             }
             else
             {
-                // 正面卡牌正常攻击
                 Debug.Log("目标是正面卡牌，直接执行攻击");
-                
-                // 记录攻击前的生命值，用于调试
-                int attackerHealthBefore = attackerCard.Data.Health;
-                int targetHealthBefore = targetCard.Data.Health;
-                
-                // 执行攻击
-                attackerCard.Attack(targetCard);
-                
-                // 判断是否应该受到反伤
-                if (targetCard.ShouldReceiveCounterAttack(attackerCard, CardManager.GetAllCards()))
-                {
-                    // 执行反击
-                    targetCard.AntiAttack(attackerCard);
-                    Debug.Log($"卡牌 {targetCard.Data.Name} 对 {attackerCard.Data.Name} 进行反击");
-                }
-                else
-                {
-                    Debug.Log($"卡牌 {attackerCard.Data.Name} 不在 {targetCard.Data.Name} 的攻击范围内，不受反伤");
-                }
-                
-                // 记录攻击后的生命值，用于调试
-                int attackerHealthAfter = attackerCard.Data.Health;
-                int targetHealthAfter = targetCard.Data.Health;
-                
-                // 计算造成的伤害
-                _damageDealt = targetHealthBefore - targetHealthAfter;
-                
-                Debug.Log($"攻击前生命值 - 攻击者: {attackerHealthBefore}, 目标: {targetHealthBefore}");
-                Debug.Log($"攻击后生命值 - 攻击者: {attackerHealthAfter}, 目标: {targetHealthAfter}");
-                Debug.Log($"造成伤害: {_damageDealt}");
-                
-                // 标记攻击者已行动
-                attackerCard.HasActed = true;
-                
-                // 触发攻击事件
-                GameEventSystem.Instance.NotifyCardAttacked(_attackerPosition, _targetPosition);
-                
-                // 触发受伤事件
-                GameEventSystem.Instance.NotifyCardDamaged(_targetPosition);
-                GameEventSystem.Instance.NotifyCardDamaged(_attackerPosition); // 攻击者也可能受伤
-                
-                // 检查目标卡牌是否死亡
-                if (targetCard.Data.Health <= 0)
-                {
-                    Debug.Log($"目标卡牌 {targetCard.Data.Name} 生命值为 {targetCard.Data.Health}，将被移除");
-                    
-                    // 移除目标卡牌
-                    CardManager.RemoveCard(_targetPosition);
-                }
-                
-                // 检查攻击者是否死亡（反伤机制）
-                if (attackerCard.Data.Health <= 0)
-                {
-                    Debug.Log($"攻击者卡牌 {attackerCard.Data.Name} 生命值为 {attackerCard.Data.Health}，将被移除");
-                    
-                    // 移除攻击者卡牌
-                    CardManager.RemoveCard(_attackerPosition);
-                }
-                    
-                Debug.Log($"卡牌 {attackerCard.Data.Name} 攻击 {targetCard.Data.Name} 成功");
-                return true;
+                monoBehaviour.StartCoroutine(ExecuteFaceUpAttack(attackerCard, targetCard, attackerHpBefore, targetHpBefore));
             }
+            
+            return true;
         }
     }
 } 
