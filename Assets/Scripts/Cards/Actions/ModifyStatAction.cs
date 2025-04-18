@@ -76,10 +76,10 @@ namespace ChessGame
                 cardView.UpdateVisuals();
             }
             
-            // 播放成长动画
-            if (_amount > 0 && CardAnimationService.Instance != null)
+            // 播放成长动画（使用事件系统通知）
+            if (_amount > 0)
             {
-                CardAnimationService.Instance.PlayGrowAnimation(_targetPosition);
+                GameEventSystem.Instance.NotifyCardStatModified(_targetPosition);
             }
             
             return true;

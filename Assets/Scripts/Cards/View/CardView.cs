@@ -167,79 +167,78 @@ namespace ChessGame
         // 播放翻转动画
         public void PlayFlipAnimation()
         {
-            StartCoroutine(FlipAnimationCoroutine());
+            // 直接委托给CardAnimationService
+            if (CardAnimationService.Instance != null)
+            {
+                // 找到该卡牌的位置
+                Vector2Int? position = null;
+                CardManager cardManager = FindObjectOfType<CardManager>();
+                if (cardManager != null) 
+                {
+                    position = cardManager.FindCardPosition(_card);
+                }
+                
+                if (position.HasValue)
+                {
+                    GameEventSystem.Instance?.NotifyCardFlipped(position.Value, _card.IsFaceDown);
+                    return;
+                }
+            }
+            
+            // 后备方案：如果无法找到位置或服务不可用，使用简单动画
+            StartCoroutine(SimpleFlipAnimationCoroutine());
         }
         
-        // 翻转动画协程
-        private IEnumerator FlipAnimationCoroutine()
+        // 简单的翻转动画协程 - 仅作为后备方案
+        private IEnumerator SimpleFlipAnimationCoroutine()
         {
-            float duration = 0.5f;
+            float duration = 0.3f;
             float elapsed = 0f;
             
-            // 获取初始旋转
-            Quaternion startRotation = transform.rotation;
+            // 获取初始缩放
+            Vector3 originalScale = transform.localScale;
             
-            // 计算目标旋转（绕Y轴旋转180度）
-            Quaternion targetRotation = startRotation * Quaternion.Euler(0, 180, 0);
-            
-            // 执行旋转动画
-            while (elapsed < duration)
+            // 水平缩小到0
+            while (elapsed < duration / 2)
             {
-                transform.rotation = Quaternion.Slerp(startRotation, targetRotation, elapsed / duration);
+                Vector3 scale = transform.localScale;
+                scale.x = Mathf.Lerp(originalScale.x, 0, elapsed / (duration / 2));
+                transform.localScale = scale;
+                
                 elapsed += Time.deltaTime;
                 yield return null;
             }
-            
-            // 确保最终旋转正确
-            transform.rotation = targetRotation;
             
             // 更新卡牌视觉效果
             UpdateVisuals();
-        }
-        
-        // 播放攻击动画
-        public void PlayAttackAnimation(Vector3 targetPosition)
-        {
-            StartCoroutine(AttackAnimationCoroutine(targetPosition));
-        }
-        
-        private System.Collections.IEnumerator AttackAnimationCoroutine(Vector3 targetPosition)
-        {
-            Vector3 originalPosition = transform.position;
-            Vector3 midPosition = Vector3.Lerp(originalPosition, targetPosition, 0.6f);
             
-            // 移向目标
-            float duration = 0.2f;
-            float elapsed = 0f;
-            
-            while (elapsed < duration)
-            {
-                transform.position = Vector3.Lerp(originalPosition, midPosition, elapsed / duration);
-                elapsed += Time.deltaTime;
-                yield return null;
-            }
-            
-            // 返回原位
+            // 水平放大回原始大小
             elapsed = 0f;
-            while (elapsed < duration)
+            while (elapsed < duration / 2)
             {
-                transform.position = Vector3.Lerp(midPosition, originalPosition, elapsed / duration);
+                Vector3 scale = transform.localScale;
+                scale.x = Mathf.Lerp(0, originalScale.x, elapsed / (duration / 2));
+                transform.localScale = scale;
+                
                 elapsed += Time.deltaTime;
                 yield return null;
             }
             
-            transform.position = originalPosition;
+            // 确保回到原始大小
+            Vector3 finalScale = transform.localScale;
+            finalScale.x = originalScale.x;
+            transform.localScale = finalScale;
         }
         
-        // 播放受伤动画
-        public void PlayDamageAnimation()
+        // 播放简单视觉反馈 - 这些方法仅包含简单的视觉效果，不涉及位置移动
+        public void PlayDamageEffect()
         {
-            StartCoroutine(DamageAnimationCoroutine());
+            StartCoroutine(DamageEffectCoroutine());
         }
         
-        private System.Collections.IEnumerator DamageAnimationCoroutine()
+        private System.Collections.IEnumerator DamageEffectCoroutine()
         {
-            // 闪烁效果
+            // 简单的红色闪烁效果
             for (int i = 0; i < 3; i++)
             {
                 cardRenderer.color = Color.red;
@@ -249,59 +248,46 @@ namespace ChessGame
             }
         }
         
-        // 播放死亡动画
-        public void PlayDeathAnimation()
+        public void PlayBuffEffect()
         {
-            // 停止所有活动协程
-            StopAllCoroutines();
-            
-            // 播放死亡动画
-            StartCoroutine(DeathAnimationCoroutine());
+            StartCoroutine(BuffEffectCoroutine());
         }
         
-        private System.Collections.IEnumerator DeathAnimationCoroutine()
+        private System.Collections.IEnumerator BuffEffectCoroutine()
         {
-            // 缩小并淡出
-            float duration = 0.5f;
-            float elapsed = 0f;
-            
-            Vector3 originalScale = transform.localScale;
-            Color originalColor = cardRenderer.color;
-            Color targetColor = new Color(originalColor.r, originalColor.g, originalColor.b, 0f);
-            
-            while (elapsed < duration)
+            // 简单的绿色闪烁效果
+            for (int i = 0; i < 3; i++)
             {
-                float t = elapsed / duration;
-                transform.localScale = Vector3.Lerp(originalScale, Vector3.zero, t);
-                cardRenderer.color = Color.Lerp(originalColor, targetColor, t);
-                
-                elapsed += Time.deltaTime;
-                yield return null;
+                cardRenderer.color = Color.green;
+                yield return new WaitForSeconds(0.1f);
+                cardRenderer.color = Color.white;
+                yield return new WaitForSeconds(0.1f);
             }
-            
-            // 动画完成后，通知可以安全销毁
-            gameObject.SetActive(false); // 先隐藏对象
         }
         
-        // 设置选中状态
+        // 高亮显示卡牌
         public void SetSelected(bool selected)
         {
             _isSelected = selected;
             
-            // 可以添加选中效果，例如改变边框颜色或添加发光效果
+            // 如果有边框渲染器，可以改变其颜色
             if (frameRenderer != null)
             {
                 if (_isSelected)
                 {
-                    // 选中效果，例如黄色边框
+                    // 存储原始颜色并修改为高亮颜色
                     frameRenderer.color = Color.yellow;
-                    Debug.Log($"CardView.SetSelected: 卡牌 {_card.Data.Name} 设置为选中状态");
                 }
                 else
                 {
-                    // 恢复正常颜色
-                    UpdateVisuals();
-                    Debug.Log($"CardView.SetSelected: 卡牌 {_card.Data.Name} 取消选中状态");
+                    // 恢复原始颜色
+                    frameRenderer.color = _card.OwnerId == 0 ? playerColor : enemyColor;
+                    
+                    // 如果已行动，降低亮度
+                    if (_card.HasActed && !_card.IsFaceDown)
+                    {
+                        frameRenderer.color = actedColor;
+                    }
                 }
             }
         }

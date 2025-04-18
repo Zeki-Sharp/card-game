@@ -43,6 +43,7 @@ namespace ChessGame
                 GameEventSystem.Instance.OnCardRemoved += PlayDestroyAnimation;
                 GameEventSystem.Instance.OnCardFlipped += PlayFlipAnimation;
                 GameEventSystem.Instance.OnCardDamaged += PlayDamageAnimation;
+                GameEventSystem.Instance.OnCardStatModified += OnCardStatModified;
             }
             else
             {
@@ -60,8 +61,8 @@ namespace ChessGame
                 GameEventSystem.Instance.OnCardRemoved -= PlayDestroyAnimation;
                 GameEventSystem.Instance.OnCardFlipped -= PlayFlipAnimation;
                 GameEventSystem.Instance.OnCardDamaged -= PlayDamageAnimation;
+                GameEventSystem.Instance.OnCardStatModified -= OnCardStatModified;
             }
-        
         }
         
         // 播放移动动画
@@ -180,7 +181,46 @@ namespace ChessGame
             CardView cardView = cardManager.GetCardView(position);
             if (cardView != null)
             {
-                cardView.PlayDamageAnimation();
+                // 不直接使用卡牌视图的动画方法，而是在这里实现完整的受伤动画
+                StartCoroutine(DamageAnimationCoroutine(cardView, position));
+            }
+        }
+        
+        // 受伤动画协程
+        private IEnumerator DamageAnimationCoroutine(CardView cardView, Vector2Int position)
+        {
+            // 闪烁效果
+            cardView.PlayDamageEffect(); // 调用简化版的视觉效果
+            
+            // 抖动效果
+            Vector3 originalPosition = cardView.transform.position;
+            float shakeMagnitude = 0.05f;
+            float shakeDuration = 0.5f;
+            float elapsed = 0f;
+            
+            while (elapsed < shakeDuration)
+            {
+                // 随机偏移位置
+                float offsetX = Random.Range(-shakeMagnitude, shakeMagnitude);
+                float offsetZ = Random.Range(-shakeMagnitude, shakeMagnitude);
+                
+                cardView.transform.position = originalPosition + new Vector3(offsetX, 0, offsetZ);
+                
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            // 恢复原位
+            cardView.transform.position = originalPosition;
+            
+            // 更新卡牌视觉效果
+            cardView.UpdateVisuals();
+            
+            // 检查是否需要死亡动画
+            Card card = cardManager.GetCard(position);
+            if (card != null && card.Data.Health <= 0)
+            {
+                yield return StartCoroutine(DeathAnimationCoroutine(cardView, position));
             }
         }
         
@@ -192,8 +232,57 @@ namespace ChessGame
             CardView cardView = cardManager.GetCardView(position);
             if (cardView != null)
             {
-                cardView.PlayDeathAnimation();
+                StartCoroutine(DeathAnimationCoroutine(cardView, position));
             }
+        }
+        
+        // 死亡动画协程
+        private IEnumerator DeathAnimationCoroutine(CardView cardView, Vector2Int position)
+        {
+            if (cardView == null) yield break;
+            
+            // 缩小并淡出
+            float duration = removeAnimationDuration;
+            float elapsed = 0f;
+            
+            Vector3 originalScale = cardView.transform.localScale;
+            SpriteRenderer[] renderers = cardView.GetComponentsInChildren<SpriteRenderer>();
+            List<Color> originalColors = new List<Color>();
+            
+            // 保存所有渲染器的原始颜色
+            foreach (SpriteRenderer renderer in renderers)
+            {
+                originalColors.Add(renderer.color);
+            }
+            
+            // 执行缩小和淡出动画
+            while (elapsed < duration)
+            {
+                float t = elapsed / duration;
+                
+                // 缩小
+                cardView.transform.localScale = Vector3.Lerp(originalScale, Vector3.zero, t);
+                
+                // 淡出所有渲染器
+                for (int i = 0; i < renderers.Length; i++)
+                {
+                    Color color = renderers[i].color;
+                    Color targetColor = new Color(color.r, color.g, color.b, 0f);
+                    renderers[i].color = Color.Lerp(originalColors[i], targetColor, t);
+                }
+                
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            // 确保缩小到0
+            cardView.transform.localScale = Vector3.zero;
+            
+            // 隐藏游戏对象
+            cardView.gameObject.SetActive(false);
+            
+            // 通知游戏系统可以安全销毁卡牌
+            GameEventSystem.Instance?.NotifyCardDestroyed(position);
         }
         
         // 播放翻面动画
@@ -274,24 +363,19 @@ namespace ChessGame
         /// <returns>协程</returns>
         public IEnumerator PlayGrowAnimation(Vector2Int position, float duration = 0.5f, float scaleMultiplier = 1.2f)
         {
-            Debug.Log($"播放卡牌成长动画: 位置 {position}, 持续时间 {duration}, 缩放倍数 {scaleMultiplier}");
-            
-            // 获取卡牌视图
             CardView cardView = cardManager.GetCardView(position);
-            if (cardView == null)
-            {
-                Debug.LogWarning($"找不到位置 {position} 的卡牌视图，无法播放成长动画");
-                yield break;
-            }
+            if (cardView == null) yield break;
             
-            // 记录原始缩放
+            // 保存原始缩放
             Vector3 originalScale = cardView.transform.localScale;
             Vector3 targetScale = originalScale * scaleMultiplier;
             
-            // 放大阶段
+            // 第一阶段：放大
             float elapsed = 0f;
             while (elapsed < duration / 2)
             {
+                if (cardView == null) yield break; // 安全检查
+                
                 float t = elapsed / (duration / 2);
                 cardView.transform.localScale = Vector3.Lerp(originalScale, targetScale, t);
                 
@@ -299,13 +383,15 @@ namespace ChessGame
                 yield return null;
             }
             
-            // 确保达到最大缩放
-            cardView.transform.localScale = targetScale;
+            // 播放增益效果
+            cardView.PlayBuffEffect(); // 播放视觉效果
             
-            // 缩小阶段
+            // 第二阶段：恢复原大小
             elapsed = 0f;
             while (elapsed < duration / 2)
             {
+                if (cardView == null) yield break; // 安全检查
+                
                 float t = elapsed / (duration / 2);
                 cardView.transform.localScale = Vector3.Lerp(targetScale, originalScale, t);
                 
@@ -313,10 +399,95 @@ namespace ChessGame
                 yield return null;
             }
             
-            // 确保恢复原始缩放
-            cardView.transform.localScale = originalScale;
+            // 确保恢复原始大小
+            if (cardView != null)
+            {
+                cardView.transform.localScale = originalScale;
+            }
+        }
+
+        // 卡牌属性修改事件响应
+        private void OnCardStatModified(Vector2Int position)
+        {
+            Debug.Log($"卡牌属性被修改: {position}");
+            StartCoroutine(PlayGrowAnimation(position));
+        }
+
+        // 播放卡牌放置动画
+        public IEnumerator PlayPlaceAnimation(Vector2Int position, Vector3 startPosition)
+        {
+            CardView cardView = cardManager.GetCardView(position);
+            if (cardView == null) yield break;
             
-            Debug.Log($"卡牌成长动画完成: 位置 {position}");
+            // 设置初始位置
+            cardView.transform.position = startPosition;
+            
+            // 目标位置
+            Vector3 targetPosition = GetWorldPosition(position);
+            
+            // 计算一个高于起点和终点的弧线中点
+            Vector3 midPosition = (startPosition + targetPosition) / 2f;
+            midPosition.y += 1.5f; // 增加高度形成弧线
+            
+            // 执行弧线运动
+            float duration = 0.5f;
+            float elapsed = 0f;
+            
+            while (elapsed < duration)
+            {
+                float t = elapsed / duration;
+                
+                // 使用贝塞尔曲线计算路径点
+                Vector3 m1 = Vector3.Lerp(startPosition, midPosition, t);
+                Vector3 m2 = Vector3.Lerp(midPosition, targetPosition, t);
+                cardView.transform.position = Vector3.Lerp(m1, m2, t);
+                
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            // 确保最终位置正确
+            cardView.transform.position = targetPosition;
+            
+            // 播放着陆效果
+            yield return StartCoroutine(LandingEffectCoroutine(cardView));
+        }
+
+        // 卡牌着陆效果
+        private IEnumerator LandingEffectCoroutine(CardView cardView)
+        {
+            if (cardView == null) yield break;
+            
+            // 轻微缩放效果
+            Vector3 originalScale = cardView.transform.localScale;
+            Vector3 squishScale = new Vector3(originalScale.x * 1.1f, originalScale.y * 0.9f, originalScale.z);
+            
+            // 1. 轻微扁平化
+            float squishDuration = 0.15f;
+            float elapsed = 0f;
+            
+            while (elapsed < squishDuration)
+            {
+                float t = elapsed / squishDuration;
+                cardView.transform.localScale = Vector3.Lerp(originalScale, squishScale, t);
+                
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            // 2. 恢复原始形状
+            elapsed = 0f;
+            while (elapsed < squishDuration)
+            {
+                float t = elapsed / squishDuration;
+                cardView.transform.localScale = Vector3.Lerp(squishScale, originalScale, t);
+                
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            // 确保恢复原始大小
+            cardView.transform.localScale = originalScale;
         }
     }
 } 

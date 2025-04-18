@@ -534,5 +534,21 @@ namespace ChessGame
             
             Debug.Log("已清空所有卡牌");
         }
+
+        // 查找卡牌在棋盘上的位置
+        public Vector2Int? FindCardPosition(Card card)
+        {
+            if (card == null) return null;
+            
+            foreach (var kvp in _cards)
+            {
+                if (kvp.Value == card)
+                {
+                    return kvp.Key;
+                }
+            }
+            
+            return null;
+        }
     }
 } 

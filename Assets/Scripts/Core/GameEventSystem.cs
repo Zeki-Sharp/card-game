@@ -57,6 +57,8 @@ namespace ChessGame
         public event Action<Vector2Int, bool> OnCardFlipped;
         public event Action<Vector2Int> OnCardDamaged;
         public event Action<Vector2Int, int, bool> OnCardAdded;
+        public event Action<Vector2Int> OnCardStatModified;
+        public event Action<Vector2Int> OnCardDestroyed;
         
         public event Action<int> OnTurnStarted;
         public event Action<int> OnTurnEnded;
@@ -188,6 +190,20 @@ namespace ChessGame
         {
             Debug.Log($"GameEventSystem: 自动触发能力结束事件 - 位置 {position}");
             OnAutomaticAbilityEnd?.Invoke(position);
-        } 
+        }
+
+        // 通知卡牌属性修改
+        public void NotifyCardStatModified(Vector2Int position)
+        {
+            Debug.Log($"GameEventSystem: 卡牌属性修改事件 - 位置 {position}");
+            OnCardStatModified?.Invoke(position);
+        }
+
+        // 通知卡牌销毁
+        public void NotifyCardDestroyed(Vector2Int position)
+        {
+            Debug.Log($"GameEventSystem: 卡牌销毁事件 - 位置 {position}");
+            OnCardDestroyed?.Invoke(position);
+        }
     }
 } 
