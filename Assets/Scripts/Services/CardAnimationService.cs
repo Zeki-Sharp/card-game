@@ -18,6 +18,10 @@ namespace ChessGame
         [SerializeField] private float removeAnimationDuration = 0.5f;
         [SerializeField] private float flipAnimationDuration = 0.5f;
         
+        // 添加动画队列系统
+        private Queue<System.Func<IEnumerator>> _animationQueue = new Queue<System.Func<IEnumerator>>();
+        private bool _isProcessingQueue = false;
+        
         private void Awake()
         {
             if (_instance != null && _instance != this)
@@ -65,32 +69,46 @@ namespace ChessGame
             }
         }
         
+        /// <summary>
+        /// 添加动画到队列
+        /// </summary>
+        /// <param name="animationFunc">返回动画协程的函数</param>
+        private void EnqueueAnimation(System.Func<IEnumerator> animationFunc)
+        {
+            _animationQueue.Enqueue(animationFunc);
+            
+            // 如果队列没在处理中，开始处理
+            if (!_isProcessingQueue)
+            {
+                StartCoroutine(ProcessAnimationQueue());
+            }
+        }
+        
+        /// <summary>
+        /// 处理动画队列，确保动画按顺序执行
+        /// </summary>
+        private IEnumerator ProcessAnimationQueue()
+        {
+            _isProcessingQueue = true;
+            
+            while (_animationQueue.Count > 0)
+            {
+                var nextAnimation = _animationQueue.Dequeue();
+                yield return StartCoroutine(nextAnimation());
+            }
+            
+            _isProcessingQueue = false;
+        }
+        
         // 播放移动动画
         private void PlayMoveAnimation(Vector2Int fromPosition, Vector2Int toPosition)
         {
             Debug.Log($"播放移动动画: 从 {fromPosition} 到 {toPosition}");
             
-            // 获取卡牌视图 - 注意这里使用toPosition，因为卡牌已经移动到新位置
-            CardView cardView = cardManager.GetCardView(toPosition);
-            if (cardView != null)
-            {
-                Debug.Log($"找到卡牌视图: {cardView.name}, 当前位置: {cardView.transform.position}");
-                
-                // 获取目标位置的世界坐标
-                Vector3 targetWorldPos = GetWorldPosition(toPosition);
-                Debug.Log($"目标世界坐标: {targetWorldPos}");
-                
-                // 播放移动动画
-                StartCoroutine(MoveAnimationCoroutine(cardView, targetWorldPos));
-            }
-            else
-            {
-                Debug.LogError($"找不到位置 {toPosition} 的卡牌视图，这可能是因为字典更新不正确");
-                
-                // 打印所有卡牌视图位置进行调试
-                Dictionary<Vector2Int, CardView> allViews = cardManager.GetAllCardViews();
-                Debug.Log($"当前所有卡牌视图位置: {string.Join(", ", allViews.Keys)}");
-            }
+            // 将动画添加到队列
+            EnqueueAnimation(() => MoveAnimationCoroutine(
+                cardManager.GetCardView(toPosition),
+                GetWorldPosition(toPosition)));
         }
         
         // 移动动画协程
@@ -129,8 +147,8 @@ namespace ChessGame
                 // 获取目标位置的世界坐标
                 Vector3 targetWorldPos = GetWorldPosition(targetPosition);
                 
-                // 播放攻击动画
-                StartCoroutine(AttackAnimationCoroutine(attackerView, targetWorldPos));
+                // 将动画添加到队列
+                EnqueueAnimation(() => AttackAnimationCoroutine(attackerView, targetWorldPos));
             }
         }
         
@@ -181,8 +199,8 @@ namespace ChessGame
             CardView cardView = cardManager.GetCardView(position);
             if (cardView != null)
             {
-                // 不直接使用卡牌视图的动画方法，而是在这里实现完整的受伤动画
-                StartCoroutine(DamageAnimationCoroutine(cardView, position));
+                // 将动画添加到队列
+                EnqueueAnimation(() => DamageAnimationCoroutine(cardView, position));
             }
         }
         
@@ -252,7 +270,8 @@ namespace ChessGame
             CardView cardView = cardManager.GetCardView(position);
             if (cardView != null)
             {
-                StartCoroutine(DeathAnimationCoroutine(cardView, position));
+                // 将动画添加到队列
+                EnqueueAnimation(() => DeathAnimationCoroutine(cardView, position));
             }
         }
         
@@ -313,8 +332,8 @@ namespace ChessGame
             CardView cardView = cardManager.GetCardView(position);
             if (cardView != null)
             {
-                // 播放翻转动画
-                StartCoroutine(FlipAnimationCoroutine(cardView, isFaceDown));
+                // 将动画添加到队列
+                EnqueueAnimation(() => FlipAnimationCoroutine(cardView, isFaceDown));
             }
         }
         
@@ -430,11 +449,62 @@ namespace ChessGame
         private void OnCardStatModified(Vector2Int position)
         {
             Debug.Log($"卡牌属性被修改: {position}");
-            StartCoroutine(PlayGrowAnimation(position));
+            // 将动画添加到队列
+            EnqueueAnimation(() => PlayGrowAnimation(position));
         }
 
         // 播放卡牌放置动画
         public IEnumerator PlayPlaceAnimation(Vector2Int position, Vector3 startPosition)
+        {
+            CardView cardView = cardManager.GetCardView(position);
+            if (cardView == null) yield break;
+            
+            // 这个方法已经返回协程，可以直接在外部使用StartCoroutine
+            // 或者将其添加到队列 - 根据调用方式选择合适的处理
+            
+            // 设置初始位置
+            cardView.transform.position = startPosition;
+            
+            // 目标位置
+            Vector3 targetPosition = GetWorldPosition(position);
+            
+            // 计算一个高于起点和终点的弧线中点
+            Vector3 midPosition = (startPosition + targetPosition) / 2f;
+            midPosition.y += 1.5f; // 增加高度形成弧线
+            
+            // 执行弧线运动
+            float duration = 0.5f;
+            float elapsed = 0f;
+            
+            while (elapsed < duration)
+            {
+                float t = elapsed / duration;
+                
+                // 使用贝塞尔曲线计算路径点
+                Vector3 m1 = Vector3.Lerp(startPosition, midPosition, t);
+                Vector3 m2 = Vector3.Lerp(midPosition, targetPosition, t);
+                cardView.transform.position = Vector3.Lerp(m1, m2, t);
+                
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            // 确保最终位置正确
+            cardView.transform.position = targetPosition;
+            
+            // 播放着陆效果
+            yield return StartCoroutine(LandingEffectCoroutine(cardView));
+        }
+
+        // 播放卡牌放置动画（公共接口）
+        public void PlayPlaceAnimationQueued(Vector2Int position, Vector3 startPosition)
+        {
+            // 将放置动画添加到队列
+            EnqueueAnimation(() => PlaceAnimationCoroutine(position, startPosition));
+        }
+        
+        // 内部协程实现放置动画
+        private IEnumerator PlaceAnimationCoroutine(Vector2Int position, Vector3 startPosition)
         {
             CardView cardView = cardManager.GetCardView(position);
             if (cardView == null) yield break;
@@ -470,7 +540,7 @@ namespace ChessGame
             cardView.transform.position = targetPosition;
             
             // 播放着陆效果
-            yield return StartCoroutine(LandingEffectCoroutine(cardView));
+            yield return LandingEffectCoroutine(cardView);
         }
 
         // 卡牌着陆效果
