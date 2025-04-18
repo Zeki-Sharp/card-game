@@ -185,50 +185,8 @@ namespace ChessGame
                 }
             }
             
-            // 后备方案：如果无法找到位置或服务不可用，使用简单动画
-            StartCoroutine(SimpleFlipAnimationCoroutine());
         }
         
-        // 简单的翻转动画协程 - 仅作为后备方案
-        private IEnumerator SimpleFlipAnimationCoroutine()
-        {
-            float duration = 0.3f;
-            float elapsed = 0f;
-            
-            // 获取初始缩放
-            Vector3 originalScale = transform.localScale;
-            
-            // 水平缩小到0
-            while (elapsed < duration / 2)
-            {
-                Vector3 scale = transform.localScale;
-                scale.x = Mathf.Lerp(originalScale.x, 0, elapsed / (duration / 2));
-                transform.localScale = scale;
-                
-                elapsed += Time.deltaTime;
-                yield return null;
-            }
-            
-            // 更新卡牌视觉效果
-            UpdateVisuals();
-            
-            // 水平放大回原始大小
-            elapsed = 0f;
-            while (elapsed < duration / 2)
-            {
-                Vector3 scale = transform.localScale;
-                scale.x = Mathf.Lerp(0, originalScale.x, elapsed / (duration / 2));
-                transform.localScale = scale;
-                
-                elapsed += Time.deltaTime;
-                yield return null;
-            }
-            
-            // 确保回到原始大小
-            Vector3 finalScale = transform.localScale;
-            finalScale.x = originalScale.x;
-            transform.localScale = finalScale;
-        }
         
         // 播放简单视觉反馈 - 这些方法仅包含简单的视觉效果，不涉及位置移动
         public void PlayDamageEffect()
@@ -238,14 +196,10 @@ namespace ChessGame
         
         private System.Collections.IEnumerator DamageEffectCoroutine()
         {
-            // 简单的红色闪烁效果
-            for (int i = 0; i < 3; i++)
-            {
-                cardRenderer.color = Color.red;
-                yield return new WaitForSeconds(0.1f);
-                cardRenderer.color = Color.white;
-                yield return new WaitForSeconds(0.1f);
-            }
+            // 改为只标红一次
+            cardRenderer.color = Color.red;
+            yield return new WaitForSeconds(0.2f);
+            cardRenderer.color = Color.white;
         }
         
         public void PlayBuffEffect()
@@ -255,14 +209,10 @@ namespace ChessGame
         
         private System.Collections.IEnumerator BuffEffectCoroutine()
         {
-            // 简单的绿色闪烁效果
-            for (int i = 0; i < 3; i++)
-            {
-                cardRenderer.color = Color.green;
-                yield return new WaitForSeconds(0.1f);
-                cardRenderer.color = Color.white;
-                yield return new WaitForSeconds(0.1f);
-            }
+            // 改为只闪烁一次绿色
+            cardRenderer.color = Color.green;
+            yield return new WaitForSeconds(0.2f);
+            cardRenderer.color = Color.white;
         }
         
         // 高亮显示卡牌

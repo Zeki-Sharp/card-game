@@ -190,27 +190,47 @@ namespace ChessGame
         private IEnumerator DamageAnimationCoroutine(CardView cardView, Vector2Int position)
         {
             // 闪烁效果
-            cardView.PlayDamageEffect(); // 调用简化版的视觉效果
+            cardView.PlayDamageEffect(); // 调用简化版的视觉效果，已修改为只标红一次
             
-            // 抖动效果
+            // 保存原始缩放和位置
+            Vector3 originalScale = cardView.transform.localScale;
             Vector3 originalPosition = cardView.transform.position;
-            float shakeMagnitude = 0.05f;
-            float shakeDuration = 0.5f;
+            
+            // 受伤时先缩小
+            float scaleFactor = 0.85f; // 缩小到原来的85%
+            Vector3 smallerScale = originalScale * scaleFactor;
+            
+            // 缩小阶段
+            float shrinkDuration = 0.15f;
             float elapsed = 0f;
             
-            while (elapsed < shakeDuration)
+            while (elapsed < shrinkDuration)
             {
-                // 随机偏移位置
-                float offsetX = Random.Range(-shakeMagnitude, shakeMagnitude);
-                float offsetZ = Random.Range(-shakeMagnitude, shakeMagnitude);
-                
-                cardView.transform.position = originalPosition + new Vector3(offsetX, 0, offsetZ);
+                float t = elapsed / shrinkDuration;
+                cardView.transform.localScale = Vector3.Lerp(originalScale, smallerScale, t);
                 
                 elapsed += Time.deltaTime;
                 yield return null;
             }
             
-            // 恢复原位
+            // 确保达到最小缩放
+            cardView.transform.localScale = smallerScale;
+            
+            // 恢复阶段
+            float recoverDuration = 0.25f;
+            elapsed = 0f;
+            
+            while (elapsed < recoverDuration)
+            {
+                float t = elapsed / recoverDuration;
+                cardView.transform.localScale = Vector3.Lerp(smallerScale, originalScale, t);
+                
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            // 确保恢复原始大小
+            cardView.transform.localScale = originalScale;
             cardView.transform.position = originalPosition;
             
             // 更新卡牌视觉效果
