@@ -163,31 +163,7 @@ namespace ChessGame
         {
             return _card;
         }
-        
-        // 播放翻转动画
-        public void PlayFlipAnimation()
-        {
-            // 直接委托给CardAnimationService
-            if (CardAnimationService.Instance != null)
-            {
-                // 找到该卡牌的位置
-                Vector2Int? position = null;
-                CardManager cardManager = FindObjectOfType<CardManager>();
-                if (cardManager != null) 
-                {
-                    position = cardManager.FindCardPosition(_card);
-                }
-                
-                if (position.HasValue)
-                {
-                    GameEventSystem.Instance?.NotifyCardFlipped(position.Value, _card.IsFaceDown);
-                    return;
-                }
-            }
-            
-        }
-        
-        
+     
         // 播放简单视觉反馈 - 这些方法仅包含简单的视觉效果，不涉及位置移动
         public void PlayDamageEffect()
         {
@@ -240,64 +216,6 @@ namespace ChessGame
                     }
                 }
             }
-        }
-        
-        // 设置可攻击状态
-        public void SetAttackable(bool attackable)
-        {
-            // 可以添加可攻击效果，例如红色边框
-            if (frameRenderer != null)
-            {
-                if (attackable)
-                {
-                    // 可攻击效果，例如红色边框
-                    frameRenderer.color = Color.red;
-                }
-                else
-                {
-                    // 恢复正常颜色
-                    UpdateVisuals();
-                }
-            }
-        }
-        
-        // 播放销毁动画
-        public void PlayDestroyAnimation()
-        {
-            // 开始销毁动画协程
-            StartCoroutine(DestroyAnimationCoroutine());
-        }
-        
-        // 销毁动画协程
-        private IEnumerator DestroyAnimationCoroutine()
-        {
-            // 保存原始颜色和缩放
-            Color originalColor = cardRenderer.color;
-            Vector3 originalScale = transform.localScale;
-            
-            // 目标颜色（透明）
-            Color targetColor = new Color(originalColor.r, originalColor.g, originalColor.b, 0f);
-            
-            // 动画持续时间
-            float duration = 0.5f;
-            float elapsed = 0f;
-            
-            // 播放动画
-            while (elapsed < duration)
-            {
-                float t = elapsed / duration;
-                
-                // 缩小并淡出
-                transform.localScale = Vector3.Lerp(originalScale, Vector3.zero, t);
-                cardRenderer.color = Color.Lerp(originalColor, targetColor, t);
-                
-                elapsed += Time.deltaTime;
-                yield return null;
-            }
-            
-            // 确保完全透明和缩小
-            transform.localScale = Vector3.zero;
-            cardRenderer.color = targetColor;
         }
     }
 } 

@@ -1078,6 +1078,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cardManager: {fileID: 908457767}
+  moveAnimationDuration: 0.3
+  attackAnimationDuration: 0.3
+  removeAnimationDuration: 0.3
+  flipAnimationDuration: 0.3
+  animationSpeedMultiplier: 1
+  actionCompletionThreshold: 0.8
 --- !u!1 &770383905
 GameObject:
   m_ObjectHideFlags: 0
