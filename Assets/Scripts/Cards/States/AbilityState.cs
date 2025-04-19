@@ -88,9 +88,25 @@ namespace ChessGame.FSM
             // 标记卡牌已行动
             _sourceCard.HasActed = true;
             
+            // 检查是否应该结束回合
+            CheckEndTurn();
+            
             // 完成状态
             _isExecuting = false;
             CompleteState(CardState.Idle);
+        }
+        
+        // 添加检查结束回合的方法
+        private void CheckEndTurn()
+        {
+            TurnManager turnManager = StateMachine.CardManager.GetTurnManager();
+            if (turnManager == null) return;
+
+            if (turnManager.IsPlayerTurn())
+            {
+                Debug.Log("任意玩家卡牌使用能力后立即结束回合");
+                turnManager.EndPlayerTurn();
+            }
         }
         
         public override void Exit()

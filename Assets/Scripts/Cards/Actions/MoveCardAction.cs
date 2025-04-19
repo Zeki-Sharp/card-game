@@ -132,7 +132,28 @@ namespace ChessGame
             
             Debug.Log($"卡牌 {card.Data.Name} 移动完成：{_fromPosition} -> {_toPosition}");
             
+            // 如果是玩家卡牌，直接结束回合
+            EndPlayerTurn(card);
+            
             return true;
+        }
+        
+        // 添加结束玩家回合的方法
+        private void EndPlayerTurn(Card card)
+        {
+            if (card.OwnerId == 0) // 是玩家卡牌
+            {
+                // 获取TurnManager并结束回合
+                if (CardManager != null && CardManager.GetTurnManager() != null)
+                {
+                    TurnManager turnManager = CardManager.GetTurnManager();
+                    if (turnManager.IsPlayerTurn())
+                    {
+                        Debug.Log("移动后立即结束玩家回合");
+                        turnManager.EndPlayerTurn();
+                    }
+                }
+            }
         }
     }
 } 

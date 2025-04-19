@@ -130,13 +130,6 @@ namespace ChessGame
             int damage = attackerCard.Data.Attack;
             targetCard.Data.Health -= damage;
             
-            // 特殊规则：如果背面卡牌血量降至0或以下，保留1点血量
-            if (targetCard.Data.Health <= 0)
-            {
-                Debug.Log($"背面卡牌 {targetCard.Data.Name} 血量降至0或以下，保留1点血量");
-                targetCard.Data.Health = 1;
-            }
-            
             // 计算造成的伤害
             _damageDealt = targetHpBefore - targetCard.Data.Health;
             
@@ -146,7 +139,13 @@ namespace ChessGame
             // 触发受伤事件 - 播放受伤动画
             GameEventSystem.Instance.NotifyCardDamaged(_targetPosition);
             
+            // 检查目标卡牌是否死亡
+            CheckAndRemoveIfDead(targetCard, _targetPosition);
+            
             Debug.Log($"卡牌 {attackerCard.Data.Name} 攻击背面卡牌 {targetCard.Data.Name} 成功，造成 {_damageDealt} 点伤害");
+            
+            // 直接结束玩家回合
+            EndPlayerTurn();
         }
         
         // 执行正面卡牌攻击的方法
@@ -224,25 +223,12 @@ namespace ChessGame
             Debug.Log($"攻击后生命值 - 攻击者: {attackerHealthAfter}, 目标: {targetHealthAfter}");
             Debug.Log($"造成伤害: {_damageDealt}");
             
-            // 检查目标卡牌是否死亡
-            if (targetCard.Data.Health <= 0)
-            {
-                Debug.Log($"目标卡牌 {targetCard.Data.Name} 生命值为 {targetCard.Data.Health}，将被移除");
-                
-                // 移除目标卡牌
-                CardManager.RemoveCard(_targetPosition);
-            }
+            // 检查卡牌是否死亡
+            CheckAndRemoveIfDead(attackerCard, _attackerPosition);
+            CheckAndRemoveIfDead(targetCard, _targetPosition);
             
-            // 检查攻击者是否死亡（反伤机制）
-            if (attackerCard.Data.Health <= 0)
-            {
-                Debug.Log($"攻击者卡牌 {attackerCard.Data.Name} 生命值为 {attackerCard.Data.Health}，将被移除");
-                
-                // 移除攻击者卡牌
-                CardManager.RemoveCard(_attackerPosition);
-            }
-            
-            Debug.Log($"卡牌 {attackerCard.Data.Name} 攻击 {targetCard.Data.Name} 成功");
+            // 直接结束玩家回合
+            EndPlayerTurn();
         }
         
         public override bool Execute()
@@ -283,6 +269,32 @@ namespace ChessGame
             }
             
             return true;
+        }
+
+        private void CheckAndRemoveIfDead(Card card, Vector2Int position)
+        {
+            if (card != null && card.Data.Health <= 0)
+            {
+                // 移除卡牌
+                GameEventSystem.Instance.NotifyCardRemoved(position);
+                Debug.Log($"卡牌 {card.Data.Name} 生命值为 {card.Data.Health}，将被移除");
+                CardManager.RemoveCard(position);
+            }
+        }
+
+        // 添加结束玩家回合的方法
+        private void EndPlayerTurn()
+        {
+            // 获取TurnManager并结束回合
+            if (CardManager != null && CardManager.GetTurnManager() != null)
+            {
+                TurnManager turnManager = CardManager.GetTurnManager();
+                if (turnManager.IsPlayerTurn())
+                {
+                    Debug.Log("攻击后立即结束玩家回合");
+                    turnManager.EndPlayerTurn();
+                }
+            }
         }
     }
 } 
