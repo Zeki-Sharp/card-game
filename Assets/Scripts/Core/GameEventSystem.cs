@@ -75,6 +75,15 @@ namespace ChessGame
 
         public event Action<Vector2Int> OnAutomaticAbilityEnd;
 
+        //动画回调事件
+        public event Action<int,int> OnAttackAnimFinished;
+
+        public event Action<int,bool> OnFlipAnimFinished;
+
+        public event Action<int,int> OnDamageAnimFinished;
+
+        public event Action<int,int> OnDeathAnimFinished;
+
         // 通知卡牌选中
         public void NotifyCardSelected(Vector2Int position)
         {
@@ -205,5 +214,34 @@ namespace ChessGame
             Debug.Log($"GameEventSystem: 卡牌销毁事件 - 位置 {position}");
             OnCardDestroyed?.Invoke(position);
         }
+
+        //通知攻击动画结束
+        public void NotifyAttackAnimFinished(int attackerId, int targetId)
+        {
+            Debug.Log($"GameEventSystem: 攻击动画结束事件 - 攻击者 {attackerId}, 目标 {targetId}");
+            OnAttackAnimFinished?.Invoke(attackerId, targetId);
+        }
+
+        //通知翻转动画结束
+        public void NotifyFlipAnimFinished(int position, bool isFaceDown)
+        {
+            Debug.Log($"GameEventSystem: 翻转动画结束事件 - 位置 {position}, 是否背面 {isFaceDown}");
+            OnFlipAnimFinished?.Invoke(position, isFaceDown);
+        }
+
+        //通知伤害动画结束
+        public void NotifyDamageAnimFinished(int position, int damage)
+        {
+            Debug.Log($"GameEventSystem: 伤害动画结束事件 - 位置 {position}, 伤害 {damage}");
+            OnDamageAnimFinished?.Invoke(position, damage);
+        }
+        
+        //通知死亡动画结束
+        public void NotifyDeathAnimFinished(int position, int damage)
+        {
+            Debug.Log($"GameEventSystem: 死亡动画结束事件 - 位置 {position}, 伤害 {damage}");
+            OnDeathAnimFinished?.Invoke(position, damage);
+        }
+        
     }
 } 
