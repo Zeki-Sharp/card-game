@@ -8,10 +8,10 @@ namespace ChessGame
     /// <summary>
     /// 卡牌动画服务 - 负责处理卡牌的动画效果
     /// </summary>
-    public class CardAnimationService : MonoBehaviour
+    public class AnimationManager : MonoBehaviour
     {
-        private static CardAnimationService _instance;
-        public static CardAnimationService Instance => _instance;
+        private static AnimationManager _instance;
+        public static AnimationManager Instance => _instance;
 
         [SerializeField] private CardManager cardManager;
         [SerializeField] private float moveAnimationDuration = 0.5f;
@@ -96,6 +96,7 @@ namespace ChessGame
                 GameEventSystem.Instance.OnCardFlipped += PlayFlipAnimation;
                 GameEventSystem.Instance.OnCardDamaged += PlayDamageAnimation;
                 GameEventSystem.Instance.OnCardStatModified += OnCardStatModified;
+                GameEventSystem.Instance.OnCardHealed += OnCardHealed;
             }
             else
             {
@@ -114,6 +115,7 @@ namespace ChessGame
                 GameEventSystem.Instance.OnCardFlipped -= PlayFlipAnimation;
                 GameEventSystem.Instance.OnCardDamaged -= PlayDamageAnimation;
                 GameEventSystem.Instance.OnCardStatModified -= OnCardStatModified;
+                GameEventSystem.Instance.OnCardHealed -= OnCardHealed;
             }
         }
         
@@ -620,6 +622,9 @@ namespace ChessGame
             {
                 cardView.transform.localScale = originalScale;
             }
+
+            // 通知成长动画完成
+            GameEventSystem.Instance.NotifyGrowAnimFinished(position, 0);
         }
 
         // 卡牌属性修改事件响应
@@ -628,6 +633,66 @@ namespace ChessGame
             Debug.Log($"卡牌属性被修改: {position}");
             // 属性修改属于结果类型
             EnqueueAnimation(() => PlayGrowAnimation(position), AnimationGroupType.Result);
+        }
+
+        // 卡牌治疗事件响应
+        private void OnCardHealed(Vector2Int position)
+        {
+            Debug.Log($"卡牌被治疗: {position}");
+            // 治疗属于结果类型
+            EnqueueAnimation(() => PlayHealAnimation(position), AnimationGroupType.Result);
+        }
+
+        // 播放卡牌治疗动画
+        public IEnumerator PlayHealAnimation(Vector2Int position, float duration = 0.5f, float scaleMultiplier = 1.2f)
+        {
+            CardView cardView = cardManager.GetCardView(position);
+            if (cardView == null) yield break;
+            
+            // 应用速度调整
+            duration = GetAdjustedDuration(duration);
+            
+            // 保存原始缩放
+            Vector3 originalScale = cardView.transform.localScale;
+            Vector3 targetScale = originalScale * scaleMultiplier;
+            
+            // 第一阶段：放大
+            float elapsed = 0f;
+            while (elapsed < duration / 2)
+            {
+                if (cardView == null) yield break; // 安全检查
+                
+                float t = elapsed / (duration / 2);
+                cardView.transform.localScale = Vector3.Lerp(originalScale, targetScale, t);
+                
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            // 播放增益效果 - 治疗效果也使用绿色效果
+            cardView.PlayHealEffect(); // 使用治疗专用的视觉效果
+            
+            // 第二阶段：恢复原大小
+            elapsed = 0f;
+            while (elapsed < duration / 2)
+            {
+                if (cardView == null) yield break; // 安全检查
+                
+                float t = elapsed / (duration / 2);
+                cardView.transform.localScale = Vector3.Lerp(targetScale, originalScale, t);
+                
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            
+            // 确保恢复原始大小
+            if (cardView != null)
+            {
+                cardView.transform.localScale = originalScale;
+            }
+            
+            // 通知治疗动画完成
+            GameEventSystem.Instance.NotifyHealAnimFinished(position, 0);
         }
 
         // 播放卡牌放置动画

@@ -191,6 +191,20 @@ namespace ChessGame
             cardRenderer.color = Color.white;
         }
         
+        // 添加治疗效果
+        public void PlayHealEffect()
+        {
+            StartCoroutine(HealEffectCoroutine());
+        }
+        
+        private System.Collections.IEnumerator HealEffectCoroutine()
+        {
+            // 治疗使用淡绿色/青色
+            cardRenderer.color = new Color(0.3f, 1f, 0.7f);
+            yield return new WaitForSeconds(0.2f);
+            cardRenderer.color = Color.white;
+        }
+        
         // 高亮显示卡牌
         public void SetSelected(bool selected)
         {

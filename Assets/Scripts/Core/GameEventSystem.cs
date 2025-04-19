@@ -89,7 +89,9 @@ namespace ChessGame
 
         public event Action<int,int> OnDeathAnimFinished;
 
-        public event Action<int,int> OnHealAnimFinished;
+        public event Action<Vector2Int,int> OnHealAnimFinished;
+
+        public event Action<Vector2Int, int> OnGrowAnimFinished;
 
         // 通知卡牌选中
         public void NotifyCardSelected(Vector2Int position)
@@ -264,10 +266,17 @@ namespace ChessGame
         }
 
         //通知治疗动画结束
-        public void NotifyHealAnimFinished(int position, int healAmount)
+        public void NotifyHealAnimFinished(Vector2Int position, int healAmount)
         {
             Debug.Log($"GameEventSystem: 治疗动画结束事件 - 位置 {position}, 治疗量 {healAmount}");
             OnHealAnimFinished?.Invoke(position, healAmount);
+        }
+
+        //通知成长动画结束
+        public void NotifyGrowAnimFinished(Vector2Int position, int growAmount)
+        {
+            Debug.Log($"GameEventSystem: 成长动画结束事件 - 位置 {position}, 成长量 {growAmount}");
+            OnGrowAnimFinished?.Invoke(position, growAmount);
         }
     }
 } 

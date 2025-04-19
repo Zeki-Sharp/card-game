@@ -53,6 +53,12 @@ namespace ChessGame
 
             // 触发治疗事件
             GameEventSystem.Instance.NotifyCardHealed(_targetPosition);
+
+             // 通知玩家行动完成
+            if (targetCard.OwnerId == 0)
+            {
+                GameEventSystem.Instance.NotifyPlayerActionCompleted(targetCard.OwnerId);
+            }
             
             return true;
         }

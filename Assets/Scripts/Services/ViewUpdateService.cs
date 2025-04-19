@@ -60,12 +60,15 @@ public class ViewUpdateService : MonoBehaviour
             GameEventSystem.Instance.OnCardAdded += (position, ownerId, isFaceDown) => TriggerViewUpdate(ViewUpdateType.CardAdded);
             GameEventSystem.Instance.OnCardRemoved += (position) => TriggerViewUpdate(ViewUpdateType.CardRemoved);
             GameEventSystem.Instance.OnCardStatModified += (position) => TriggerViewUpdate(ViewUpdateType.CardStatChanged);
+            GameEventSystem.Instance.OnCardHealed += (position) => TriggerViewUpdate(ViewUpdateType.CardStatChanged);
             
             // 动画完成事件
             GameEventSystem.Instance.OnAttackAnimFinished += (attackerPosition, attackerId, targetId) => HandleAnimationComplete(ViewUpdateType.CardAttacked);
             GameEventSystem.Instance.OnFlipAnimFinished += (position, isFaceDown) => HandleAnimationComplete(ViewUpdateType.CardFlipped);
             GameEventSystem.Instance.OnDamageAnimFinished += (position, damage) => HandleAnimationComplete(ViewUpdateType.CardDamaged, position);
             GameEventSystem.Instance.OnDeathAnimFinished += (position, damage) => HandleAnimationComplete(ViewUpdateType.CardRemoved);
+            GameEventSystem.Instance.OnHealAnimFinished += (position, healAmount) => HandleAnimationComplete(ViewUpdateType.CardStatChanged, position);
+            GameEventSystem.Instance.OnGrowAnimFinished += (position, growAmount) => HandleAnimationComplete(ViewUpdateType.CardStatChanged, position);
             
             // 游戏状态事件
             GameEventSystem.Instance.OnTurnStarted += (playerId) => TriggerViewUpdate(ViewUpdateType.TurnChanged);
@@ -79,7 +82,7 @@ public class ViewUpdateService : MonoBehaviour
         }
 
         // 订阅动画完成事件
-        if (CardAnimationService.Instance != null)
+        if (AnimationManager.Instance != null)
         {
             // 这些事件已经转移到GameEventSystem，不再需要直接订阅
             /*
