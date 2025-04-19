@@ -49,15 +49,6 @@ namespace ChessGame
             // 触发翻转事件
             GameEventSystem.Instance.NotifyCardFlipped(_position, false);
             
-            // 更新卡牌视图
-            CardView cardView = CardManager.GetCardView(_position);
-            if (cardView != null)
-            {
-                cardView.UpdateVisuals();
-            }
-            
-            Debug.Log($"卡牌 {card.Data.Name} 翻转为正面");
-            
             return true;
         }
     }

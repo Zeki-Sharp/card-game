@@ -170,9 +170,8 @@ namespace ChessGame.FSM
                             // 标记卡牌已行动
                             selectedCard.HasActed = true;
                             
-                            // 更新卡牌视图
-                            CardView cardView = StateMachine.CardManager.GetCardView(selectedCard.Position);
-                            if (cardView != null) cardView.UpdateVisuals();
+                            // 触发卡牌行动事件
+                            GameEventSystem.Instance.NotifyCardActed(selectedCard.Position);
                             
                             CompleteState(CardState.Idle);
                             return;

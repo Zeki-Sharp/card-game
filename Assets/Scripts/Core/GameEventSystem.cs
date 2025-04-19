@@ -60,6 +60,8 @@ namespace ChessGame
         public event Action<Vector2Int> OnCardStatModified;
         public event Action<Vector2Int> OnCardDestroyed;
         
+        public event Action<Vector2Int> OnCardHealed;
+        
         public event Action<int> OnTurnStarted;
         public event Action<int> OnTurnEnded;
         
@@ -83,6 +85,8 @@ namespace ChessGame
         public event Action<int,int> OnDamageAnimFinished;
 
         public event Action<int,int> OnDeathAnimFinished;
+
+        public event Action<int,int> OnHealAnimFinished;
 
         // 通知卡牌选中
         public void NotifyCardSelected(Vector2Int position)
@@ -135,6 +139,13 @@ namespace ChessGame
                 Debug.Log($"GameEventSystem: 卡牌受伤事件 - 位置 {position}");
                 OnCardDamaged.Invoke(position);
             }
+        }
+
+        // 通知卡牌治疗
+        public void NotifyCardHealed(Vector2Int position)
+        {
+            Debug.Log($"GameEventSystem: 卡牌治疗事件 - 位置 {position}");
+            OnCardHealed?.Invoke(position);
         }
         
         // 通知卡牌添加
@@ -242,6 +253,12 @@ namespace ChessGame
             Debug.Log($"GameEventSystem: 死亡动画结束事件 - 位置 {position}, 伤害 {damage}");
             OnDeathAnimFinished?.Invoke(position, damage);
         }
-        
+
+        //通知治疗动画结束
+        public void NotifyHealAnimFinished(int position, int healAmount)
+        {
+            Debug.Log($"GameEventSystem: 治疗动画结束事件 - 位置 {position}, 治疗量 {healAmount}");
+            OnHealAnimFinished?.Invoke(position, healAmount);
+        }
     }
 } 

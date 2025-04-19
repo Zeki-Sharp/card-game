@@ -68,14 +68,7 @@ namespace ChessGame
                     Debug.LogWarning($"未知的属性类型: {_statType}");
                     return false;
             }
-            
-            // 更新卡牌视图
-            CardView cardView = CardManager.GetCardView(_targetPosition);
-            if (cardView != null)
-            {
-                cardView.UpdateVisuals();
-            }
-            
+                  
             // 播放成长动画（使用事件系统通知）
             if (_amount > 0)
             {

@@ -50,15 +50,9 @@ namespace ChessGame
             {
                 targetCard.Data.Health = targetCard.Data.MaxHealth;
             }
-            
-            // 更新卡牌视图
-            CardView cardView = CardManager.GetCardView(_targetPosition);
-            if (cardView != null)
-            {
-                cardView.UpdateVisuals();
-            }
-            
-            Debug.Log($"治疗效果: {targetCard.Data.Name} 从 {healthBefore} 恢复 {_healAmount} 点生命值，现在为 {targetCard.Data.Health}");
+
+            // 触发治疗事件
+            GameEventSystem.Instance.NotifyCardHealed(_targetPosition);
             
             return true;
         }
