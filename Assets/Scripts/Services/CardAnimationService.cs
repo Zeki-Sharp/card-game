@@ -22,11 +22,6 @@ namespace ChessGame
         // 添加动画速度控制
         [SerializeField, Range(0.5f, 2.0f)] private float animationSpeedMultiplier = 1.0f;
         
-        // 添加动画完成事件
-        // public event Action OnAttackAnimationComplete;
-        // public event Action OnFlipAnimationComplete;
-        // public event Action OnDamageAnimationComplete;
-        
         /// <summary>
         /// 设置动画速度倍率
         /// </summary>
