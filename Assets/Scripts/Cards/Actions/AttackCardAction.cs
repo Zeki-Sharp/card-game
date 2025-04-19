@@ -78,9 +78,9 @@ namespace ChessGame
         // 注册动画完成的回调
         private void RegisterAnimationCompletionCallback()
         {
-            if (CardAnimationService.Instance != null)
+            if (GameEventSystem.Instance != null)
             {
-                CardAnimationService.Instance.OnAttackAnimationComplete += AnimationCompleted;
+                GameEventSystem.Instance.OnAttackAnimFinished += AnimationCompleted;
             }
             else
             {
@@ -91,13 +91,13 @@ namespace ChessGame
         }
         
         // 动画完成的回调方法
-        private void AnimationCompleted()
+        private void AnimationCompleted(int attackerId, int targetId)
         {
             _isAnimationCompleted = true;
             // 取消订阅，避免多次触发
-            if (CardAnimationService.Instance != null)
+            if (GameEventSystem.Instance != null)
             {
-                CardAnimationService.Instance.OnAttackAnimationComplete -= AnimationCompleted;
+                GameEventSystem.Instance.OnAttackAnimFinished -= AnimationCompleted;
             }
         }
         

@@ -23,9 +23,9 @@ namespace ChessGame
         [SerializeField, Range(0.5f, 2.0f)] private float animationSpeedMultiplier = 1.0f;
         
         // 添加动画完成事件
-        public event Action OnAttackAnimationComplete;
-        public event Action OnFlipAnimationComplete;
-        public event Action OnDamageAnimationComplete;
+        // public event Action OnAttackAnimationComplete;
+        // public event Action OnFlipAnimationComplete;
+        // public event Action OnDamageAnimationComplete;
         
         /// <summary>
         /// 设置动画速度倍率
@@ -280,12 +280,12 @@ namespace ChessGame
                 Vector3 targetWorldPos = GetWorldPosition(targetPosition);
                 
                 // 将动画添加到队列，指定为Action类型
-                EnqueueAnimation(() => AttackAnimationCoroutine(attackerView, targetWorldPos), AnimationGroupType.Action);
+                EnqueueAnimation(() => AttackAnimationCoroutine(attackerView, targetWorldPos, attackerPosition), AnimationGroupType.Action);
             }
         }
         
         // 攻击动画协程
-        private IEnumerator AttackAnimationCoroutine(CardView attackerView, Vector3 targetPosition)
+        private IEnumerator AttackAnimationCoroutine(CardView attackerView, Vector3 targetPosition, Vector2Int attackerPosition)
         {
             if (attackerView == null) yield break;
             
@@ -322,8 +322,25 @@ namespace ChessGame
             // 更新卡牌视图
             attackerView.UpdateVisuals();
             
-            // 触发攻击动画完成事件
-            NotifyAttackAnimationComplete();
+            // 获取目标单元格位置
+            Card attackerCard = attackerView.GetCard();
+            int attackerId = attackerCard.OwnerId;
+            
+            // 从targetPosition向量中获取目标位置的x和y坐标
+            Vector2Int targetGridPosition = new Vector2Int(
+                Mathf.RoundToInt(targetPosition.x), 
+                Mathf.RoundToInt(targetPosition.y)
+            );
+            
+            // 触发攻击动画完成事件 - 使用GameEventSystem
+            if (GameEventSystem.Instance != null)
+            {
+                // 使用FindCardAtPosition获取目标ID
+                Card targetCard = cardManager.GetCard(targetGridPosition);
+                int targetId = targetCard != null ? targetCard.OwnerId : -1;
+                
+                GameEventSystem.Instance.NotifyAttackAnimFinished(attackerId, targetId);
+            }
         }
         
         // 播放受伤动画
@@ -389,11 +406,19 @@ namespace ChessGame
             // 更新卡牌视觉效果
             cardView.UpdateVisuals();
             
-            // 触发受伤动画完成事件
-            NotifyDamageAnimationComplete();
+            // 获取卡牌的当前生命值
+            Card card = cardManager.GetCard(position);
+            int damage = card != null ? card.Data.Health : 0;
+            
+            // 触发受伤动画完成事件 - 使用GameEventSystem
+            if (GameEventSystem.Instance != null)
+            {
+                // 使用position.x * boardWidth + position.y作为位置的唯一标识符
+                int positionId = position.x * cardManager.BoardWidth + position.y;
+                GameEventSystem.Instance.NotifyDamageAnimFinished(positionId, damage);
+            }
             
             // 检查是否需要死亡动画
-            Card card = cardManager.GetCard(position);
             if (card != null && card.Data.Health <= 0)
             {
                 yield return StartCoroutine(DeathAnimationCoroutine(cardView, position));
@@ -417,6 +442,10 @@ namespace ChessGame
         private IEnumerator DeathAnimationCoroutine(CardView cardView, Vector2Int position)
         {
             if (cardView == null) yield break;
+            
+            // 获取卡牌的当前生命值
+            Card card = cardManager.GetCard(position);
+            int damage = card != null ? card.Data.Health : 0;
             
             // 缩小并淡出
             float duration = GetAdjustedDuration(removeAnimationDuration);
@@ -458,6 +487,14 @@ namespace ChessGame
             // 隐藏游戏对象
             cardView.gameObject.SetActive(false);
             
+            // 触发死亡动画完成事件 - 使用GameEventSystem
+            if (GameEventSystem.Instance != null)
+            {
+                // 使用position.x * boardWidth + position.y作为位置的唯一标识符
+                int positionId = position.x * cardManager.BoardWidth + position.y;
+                GameEventSystem.Instance.NotifyDeathAnimFinished(positionId, damage);
+            }
+            
             // 通知游戏系统可以安全销毁卡牌
             GameEventSystem.Instance?.NotifyCardDestroyed(position);
         }
@@ -471,12 +508,12 @@ namespace ChessGame
             if (cardView != null)
             {
                 // 翻面动画通常是反应类型
-                EnqueueAnimation(() => FlipAnimationCoroutine(cardView, isFaceDown), AnimationGroupType.Reaction);
+                EnqueueAnimation(() => FlipAnimationCoroutine(cardView, isFaceDown, position), AnimationGroupType.Reaction);
             }
         }
         
         // 使用缩放而非旋转的翻转动画
-        private IEnumerator FlipAnimationCoroutine(CardView cardView, bool isFaceDown)
+        private IEnumerator FlipAnimationCoroutine(CardView cardView, bool isFaceDown, Vector2Int position)
         {
             float duration = GetAdjustedDuration(flipAnimationDuration);
             float elapsed = 0f;
@@ -515,8 +552,13 @@ namespace ChessGame
             // 确保恢复到正常大小
             cardView.transform.localScale = originalScale;
             
-            // 触发翻面动画完成事件
-            NotifyFlipAnimationComplete();
+            // 触发翻面动画完成事件 - 使用GameEventSystem
+            if (GameEventSystem.Instance != null)
+            {
+                // 使用position.x * boardWidth + position.y作为位置的唯一标识符
+                int positionId = position.x * cardManager.BoardWidth + position.y;
+                GameEventSystem.Instance.NotifyFlipAnimFinished(positionId, isFaceDown);
+            }
         }
         
         // 获取世界坐标
@@ -722,27 +764,6 @@ namespace ChessGame
             
             // 确保恢复原始大小
             cardView.transform.localScale = originalScale;
-        }
-
-        // 在适当的位置触发攻击动画完成事件
-        private void NotifyAttackAnimationComplete()
-        {
-            Debug.Log("攻击动画完成");
-            OnAttackAnimationComplete?.Invoke();
-        }
-        
-        // 在适当的位置触发翻面动画完成事件
-        private void NotifyFlipAnimationComplete()
-        {
-            Debug.Log("翻面动画完成");
-            OnFlipAnimationComplete?.Invoke();
-        }
-        
-        // 在适当的位置触发受伤动画完成事件
-        private void NotifyDamageAnimationComplete()
-        {
-            Debug.Log("受伤动画完成");
-            OnDamageAnimationComplete?.Invoke();
         }
     }
 } 
