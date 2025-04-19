@@ -73,6 +73,9 @@ namespace ChessGame
         // 添加卡牌行动事件
         public event Action<Vector2Int> OnCardActed;
         
+        // 添加玩家行动完成事件，用于通知回合结束
+        public event Action<int> OnPlayerActionCompleted; // 参数为玩家ID
+        
         public event Action<Vector2Int> OnAutomaticAbilityStart;
 
         public event Action<Vector2Int> OnAutomaticAbilityEnd;
@@ -196,9 +199,15 @@ namespace ChessGame
             Debug.Log($"GameEventSystem: 卡牌行动事件 - 位置 {position}");
             OnCardActed?.Invoke(position);
         }
+        
+        // 通知玩家行动完成
+        public void NotifyPlayerActionCompleted(int playerId)
+        {
+            Debug.Log($"GameEventSystem: 玩家行动完成事件 - 玩家ID {playerId}");
+            OnPlayerActionCompleted?.Invoke(playerId);
+        }
 
         // 自动触发能力开始事件
-
         public void NotifyAutomaticAbilityStart(Vector2Int position)
         {
             Debug.Log($"GameEventSystem: 自动触发能力开始事件 - 位置 {position}");

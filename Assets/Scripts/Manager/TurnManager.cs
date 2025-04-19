@@ -50,6 +50,9 @@ namespace ChessGame
                 
                 // 启动回合状态机
                 _turnStateMachine.Start();
+                
+                // 订阅玩家行动完成事件
+                GameEventSystem.Instance.OnPlayerActionCompleted += HandlePlayerActionCompleted;
             }
             else
             {
@@ -63,6 +66,12 @@ namespace ChessGame
             if (_turnStateMachine != null)
             {
                 _turnStateMachine.OnPhaseChanged -= HandlePhaseChanged;
+            }
+            
+            // 取消订阅玩家行动完成事件
+            if (GameEventSystem.Instance != null)
+            {
+                GameEventSystem.Instance.OnPlayerActionCompleted -= HandlePlayerActionCompleted;
             }
         }
         
@@ -161,6 +170,19 @@ namespace ChessGame
         public TurnStateMachine GetTurnStateMachine()
         {
             return _turnStateMachine;
+        }
+        
+        // 处理玩家行动完成事件
+        private void HandlePlayerActionCompleted(int playerId)
+        {
+            Debug.Log($"TurnManager.HandlePlayerActionCompleted: 玩家ID {playerId}");
+            
+            // 如果是玩家行动完成，结束玩家回合
+            if (playerId == 0 && IsPlayerTurn())
+            {
+                Debug.Log("玩家行动完成，结束回合");
+                EndPlayerTurn();
+            }
         }
     }
 } 

@@ -144,8 +144,11 @@ namespace ChessGame
             
             Debug.Log($"卡牌 {attackerCard.Data.Name} 攻击背面卡牌 {targetCard.Data.Name} 成功，造成 {_damageDealt} 点伤害");
             
-            // 直接结束玩家回合
-            EndPlayerTurn();
+            // 通知玩家行动完成
+            if (attackerCard.OwnerId == 0)
+            {
+                GameEventSystem.Instance.NotifyPlayerActionCompleted(attackerCard.OwnerId);
+            }
         }
         
         // 执行正面卡牌攻击的方法
@@ -227,8 +230,11 @@ namespace ChessGame
             CheckAndRemoveIfDead(attackerCard, _attackerPosition);
             CheckAndRemoveIfDead(targetCard, _targetPosition);
             
-            // 直接结束玩家回合
-            EndPlayerTurn();
+            // 通知玩家行动完成
+            if (attackerCard.OwnerId == 0)
+            {
+                GameEventSystem.Instance.NotifyPlayerActionCompleted(attackerCard.OwnerId);
+            }
         }
         
         public override bool Execute()
@@ -279,21 +285,6 @@ namespace ChessGame
                 GameEventSystem.Instance.NotifyCardRemoved(position);
                 Debug.Log($"卡牌 {card.Data.Name} 生命值为 {card.Data.Health}，将被移除");
                 CardManager.RemoveCard(position);
-            }
-        }
-
-        // 添加结束玩家回合的方法
-        private void EndPlayerTurn()
-        {
-            // 获取TurnManager并结束回合
-            if (CardManager != null && CardManager.GetTurnManager() != null)
-            {
-                TurnManager turnManager = CardManager.GetTurnManager();
-                if (turnManager.IsPlayerTurn())
-                {
-                    Debug.Log("攻击后立即结束玩家回合");
-                    turnManager.EndPlayerTurn();
-                }
             }
         }
     }
