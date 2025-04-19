@@ -78,11 +78,11 @@ namespace ChessGame
         public event Action<Vector2Int> OnAutomaticAbilityEnd;
 
         //动画回调事件
-        public event Action<int,int> OnAttackAnimFinished;
+        public event Action<Vector2Int, int, int> OnAttackAnimFinished;
 
         public event Action<int,bool> OnFlipAnimFinished;
 
-        public event Action<int,int> OnDamageAnimFinished;
+        public event Action<Vector2Int,int> OnDamageAnimFinished;
 
         public event Action<int,int> OnDeathAnimFinished;
 
@@ -227,10 +227,10 @@ namespace ChessGame
         }
 
         //通知攻击动画结束
-        public void NotifyAttackAnimFinished(int attackerId, int targetId)
+        public void NotifyAttackAnimFinished(Vector2Int attackerPosition, int attackerId, int targetId)
         {
             Debug.Log($"GameEventSystem: 攻击动画结束事件 - 攻击者 {attackerId}, 目标 {targetId}");
-            OnAttackAnimFinished?.Invoke(attackerId, targetId);
+            OnAttackAnimFinished?.Invoke(attackerPosition, attackerId, targetId);
         }
 
         //通知翻转动画结束
@@ -241,7 +241,7 @@ namespace ChessGame
         }
 
         //通知伤害动画结束
-        public void NotifyDamageAnimFinished(int position, int damage)
+        public void NotifyDamageAnimFinished(Vector2Int position, int damage)
         {
             Debug.Log($"GameEventSystem: 伤害动画结束事件 - 位置 {position}, 伤害 {damage}");
             OnDamageAnimFinished?.Invoke(position, damage);

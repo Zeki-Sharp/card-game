@@ -161,10 +161,11 @@ namespace ChessGame
             {
                 card.ResetAction();
             }
-            
-            foreach (var cardView in _cardViews.Values)
+
+            // 触发所有卡牌行动事件
+            foreach (var card in _cards.Values)
             {
-                cardView.UpdateVisuals();
+                GameEventSystem.Instance.NotifyCardActed(card.Position);
             }
         }
 
@@ -181,13 +182,9 @@ namespace ChessGame
                 if (card.OwnerId == 0) // 玩家卡牌
                 {
                     card.HasActed = false;
-                    
-                    // 更新卡牌视图
-                    CardView cardView = GetCardView(card.Position);
-                    if (cardView != null)
-                    {
-                        cardView.UpdateVisuals();
-                    }
+
+                    // 触发所有卡牌行动事件
+                    GameEventSystem.Instance.NotifyCardActed(card.Position);
                 }
             }
         }
@@ -205,13 +202,9 @@ namespace ChessGame
                 if (card.OwnerId == 1) // 敌方卡牌
                 {
                     card.HasActed = false;
-                    
-                    // 更新卡牌视图
-                    CardView cardView = GetCardView(card.Position);
-                    if (cardView != null)
-                    {
-                        cardView.UpdateVisuals();
-                    }
+
+                    // 触发所有卡牌行动事件
+                    GameEventSystem.Instance.NotifyCardActed(card.Position);
                 }
             }
         }
@@ -272,12 +265,12 @@ namespace ChessGame
                     card.HasActed = true;
                 }
             }
-            
-            // 更新所有卡牌视图
-            foreach (var cardView in _cardViews.Values)
+
+            // 触发所有卡牌行动事件
+            foreach (var card in _cards.Values)
             {
-                cardView.UpdateVisuals();
-            }
+                GameEventSystem.Instance.NotifyCardActed(card.Position);
+            }   
         }
 
         // 获取所有卡牌的字典

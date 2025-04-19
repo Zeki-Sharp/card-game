@@ -318,9 +318,7 @@ namespace ChessGame
             if (attackerView == null) yield break;
             
             attackerView.transform.position = originalPosition;
-            
-            // 更新卡牌视图
-            attackerView.UpdateVisuals();
+
             
             // 获取目标单元格位置
             Card attackerCard = attackerView.GetCard();
@@ -339,7 +337,7 @@ namespace ChessGame
                 Card targetCard = cardManager.GetCard(targetGridPosition);
                 int targetId = targetCard != null ? targetCard.OwnerId : -1;
                 
-                GameEventSystem.Instance.NotifyAttackAnimFinished(attackerId, targetId);
+                GameEventSystem.Instance.NotifyAttackAnimFinished(attackerPosition, attackerId, targetId);
             }
         }
         
@@ -403,8 +401,6 @@ namespace ChessGame
             cardView.transform.localScale = originalScale;
             cardView.transform.position = originalPosition;
             
-            // 更新卡牌视觉效果
-            cardView.UpdateVisuals();
             
             // 获取卡牌的当前生命值
             Card card = cardManager.GetCard(position);
@@ -415,7 +411,7 @@ namespace ChessGame
             {
                 // 使用position.x * boardWidth + position.y作为位置的唯一标识符
                 int positionId = position.x * cardManager.BoardWidth + position.y;
-                GameEventSystem.Instance.NotifyDamageAnimFinished(positionId, damage);
+                GameEventSystem.Instance.NotifyDamageAnimFinished(position, damage);
             }
             
             // 检查是否需要死亡动画

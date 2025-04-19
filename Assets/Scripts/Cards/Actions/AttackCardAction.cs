@@ -91,7 +91,7 @@ namespace ChessGame
         }
         
         // 动画完成的回调方法
-        private void AnimationCompleted(int attackerId, int targetId)
+        private void AnimationCompleted(Vector2Int attackerPosition, int attackerId, int targetId)
         {
             _isAnimationCompleted = true;
             // 取消订阅，避免多次触发

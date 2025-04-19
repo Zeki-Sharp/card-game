@@ -62,10 +62,10 @@ public class ViewUpdateService : MonoBehaviour
             GameEventSystem.Instance.OnCardStatModified += (position) => TriggerViewUpdate(ViewUpdateType.CardStatChanged);
             
             // 动画完成事件
-            GameEventSystem.Instance.OnAttackAnimFinished += (attackerId, targetId) => HandleAnimationComplete(ViewUpdateType.CardAttacked);
-            GameEventSystem.Instance.OnFlipAnimFinished += (positionId, isFaceDown) => HandleAnimationComplete(ViewUpdateType.CardFlipped);
-            GameEventSystem.Instance.OnDamageAnimFinished += (positionId, damage) => HandleAnimationComplete(ViewUpdateType.CardDamaged);
-            GameEventSystem.Instance.OnDeathAnimFinished += (positionId, damage) => HandleAnimationComplete(ViewUpdateType.CardRemoved);
+            GameEventSystem.Instance.OnAttackAnimFinished += (attackerPosition, attackerId, targetId) => HandleAnimationComplete(ViewUpdateType.CardAttacked);
+            GameEventSystem.Instance.OnFlipAnimFinished += (position, isFaceDown) => HandleAnimationComplete(ViewUpdateType.CardFlipped);
+            GameEventSystem.Instance.OnDamageAnimFinished += (position, damage) => HandleAnimationComplete(ViewUpdateType.CardDamaged, position);
+            GameEventSystem.Instance.OnDeathAnimFinished += (position, damage) => HandleAnimationComplete(ViewUpdateType.CardRemoved);
             
             // 游戏状态事件
             GameEventSystem.Instance.OnTurnStarted += (playerId) => TriggerViewUpdate(ViewUpdateType.TurnChanged);
@@ -263,16 +263,13 @@ public class ViewUpdateService : MonoBehaviour
     /// </summary>
     /// <param name="updateType">更新类型</param>
     /// <param name="positionId">位置ID</param>
-    public void HandleAnimationComplete(ViewUpdateType updateType, int positionId = -1)
+    public void HandleAnimationComplete(ViewUpdateType updateType, Vector2Int position = default)
     {
         Debug.Log($"动画完成，触发相关视图更新: {updateType}");
         
         // 如果提供了有效的positionId，转换为Vector2Int位置
-        if (positionId >= 0 && cardManager != null)
+        if (position != default && cardManager != null)
         {
-            int boardWidth = cardManager.BoardWidth;
-            Vector2Int position = new Vector2Int(positionId % boardWidth, positionId / boardWidth);
-            
             // 立即更新特定位置的视图
             UpdateCardView(position);
             
