@@ -199,48 +199,6 @@ namespace ChessGame
             // 标记攻击者已行动
             attackerCard.HasActed = true;
             
-            /*// 判断是否应该受到反击
-            bool canCounter = targetCard.ShouldReceiveCounterAttack(attackerCard, CardManager.GetAllCards());
-            bool isCounterAttackInProgress = false;
-            
-            if (canCounter)
-            {
-                Debug.Log($"触发反击：{targetCard.Data.Name} 对 {attackerCard.Data.Name}");
-                isCounterAttackInProgress = true;
-                
-                // 创建反击动作
-                var counterAttack = new CounterAttackAction(CardManager, targetCard.Position, attackerCard.Position);
-                
-                // 添加反击完成事件监听
-                bool counterAttackCompleted = false;
-                
-                // 注册反击完成的回调
-                Action counterAttackCompletedCallback = () => {
-                    Debug.Log("接收到反击完成回调");
-                    counterAttackCompleted = true;
-                };
-                
-                // 订阅反击完成事件
-                counterAttack.OnCounterAttackCompleted += counterAttackCompletedCallback;
-                
-                // 启动反击协程
-                CardManager.StartCoroutine(counterAttack.ExecuteCoroutine());
-                
-                // 等待反击真正完成
-                while (!counterAttackCompleted)
-                {
-                    yield return null;
-                }
-                
-                // 取消订阅，避免内存泄漏
-                counterAttack.OnCounterAttackCompleted -= counterAttackCompletedCallback;
-                Debug.Log("反击动画完全完成，继续后续流程");
-            }
-            else
-            {
-                Debug.Log($"没有反击条件");
-            }*/
-            
             // 记录攻击后的生命值
             int attackerHealthAfter = attackerCard.Data.Health;
             int targetHealthAfter = targetCard.Data.Health;

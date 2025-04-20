@@ -59,45 +59,6 @@ namespace ChessGame
             AttackRange = data.AttackRange;
         }
 
-        // 卡牌攻击目标
-        public bool Attack(Card target)
-        {
-            if (target == null) return false;
-            
-            // 计算伤害
-            int damage = this.Data.Attack;
-            
-            // 记录攻击前的生命值
-            int targetHealthBefore = target.Data.Health;
-            
-            // 应用伤害
-            target.Data.Health -= damage;
-            
-            Debug.Log($"卡牌 {this.Data.Name}(攻击力:{this.Data.Attack}) 攻击 {target.Data.Name}，造成 {damage} 点伤害，目标生命值: {targetHealthBefore} -> {target.Data.Health}");
-            
-            return true;
-        }
-
-        // 添加一个新方法，判断是否应该受到反伤
-        public bool ShouldReceiveCounterAttack(Card attacker, Dictionary<Vector2Int, Card> allCards)
-        {
-            // 获取被攻击者的可攻击位置
-            List<Vector2Int> attackablePositions = this.GetAttackablePositions(100, 100, allCards);
-            
-            // 检查攻击者的位置是否在被攻击者的可攻击范围内
-            bool canCounter = attackablePositions.Contains(attacker.Position);
-            
-            Debug.Log($"判断反伤: {this.Data.Name} {(canCounter ? "可以" : "不能")}反击 {attacker.Data.Name}");
-            
-            return canCounter;
-        }
-
-        // 检查卡牌是否存活
-        public bool IsAlive()
-        {
-            return Data.Health > 0;
-        }
-
         // 重置卡牌行动状态
         public void ResetAction()
         {
@@ -260,23 +221,6 @@ namespace ChessGame
             
             return attackablePositions;
         }
-
-        /*// 实现反击方法
-        public void AntiAttack(Card attacker)
-        {
-            if (attacker == null) return;
-            
-            // 计算反伤伤害
-            int damage = this.Data.Attack;
-            
-            // 记录反击前的生命值
-            int attackerHealthBefore = attacker.Data.Health;
-            
-            // 应用伤害
-            attacker.Data.Health -= damage;
-            
-            Debug.Log($"卡牌 {this.Data.Name}(攻击力:{this.Data.Attack}) 反击 {attacker.Data.Name}，造成 {damage} 点伤害，目标生命值: {attackerHealthBefore} -> {attacker.Data.Health}");
-        }*/
 
         // 添加获取卡牌能力的方法
         public List<AbilityConfiguration> GetAbilities()
