@@ -59,6 +59,11 @@ namespace ChessGame
             {
                 GameEventSystem.Instance.NotifyPlayerActionCompleted(targetCard.OwnerId);
             }
+            // 如果是敌方卡牌，通知敌方行动完成
+            else if (targetCard.OwnerId == 1)
+            {
+                GameEventSystem.Instance.NotifyEnemyActionCompleted(targetCard.OwnerId);
+            }
             
             return true;
         }

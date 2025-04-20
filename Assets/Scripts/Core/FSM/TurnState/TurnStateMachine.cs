@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Collections;
+using ChessGame.Cards;
 
 namespace ChessGame.FSM.TurnState
 {
@@ -144,6 +146,53 @@ namespace ChessGame.FSM.TurnState
         // 处理阶段完成事件
         private void OnPhaseCompleted(TurnPhase nextPhase)
         {
+            // 在完成某个阶段前，先检查是否有能力正在执行中
+            if (AbilityManager.IsExecutingAbility)
+            {
+                Debug.LogWarning($"回合状态机：检测到能力正在执行中，延迟阶段切换 {_currentPhase} -> {nextPhase}");
+                // 创建一个延迟协程来等待能力执行完毕
+                ChessGame.Utils.CoroutineManager.Instance.StartCoroutineEx(WaitForAbilityCompletionAndChangePhase(nextPhase));
+                return;
+            }
+            
+            // 同样检查动画是否在执行中
+            if (AnimationManager.Instance != null && AnimationManager.Instance.IsPlayingAnimation)
+            {
+                Debug.LogWarning($"回合状态机：检测到动画正在执行中，延迟阶段切换 {_currentPhase} -> {nextPhase}");
+                ChessGame.Utils.CoroutineManager.Instance.StartCoroutineEx(WaitForAnimationCompletionAndChangePhase(nextPhase));
+                return;
+            }
+            
+            ChangePhase(nextPhase);
+        }
+        
+        // 添加等待能力执行完毕的协程
+        private IEnumerator WaitForAbilityCompletionAndChangePhase(TurnPhase nextPhase)
+        {
+            Debug.Log("等待能力执行完毕...");
+            
+            // 等待直到能力执行完毕
+            while (AbilityManager.IsExecutingAbility)
+            {
+                yield return new WaitForSeconds(0.1f); // 短暂等待
+            }
+            
+            Debug.Log("能力执行完毕，继续切换阶段");
+            ChangePhase(nextPhase);
+        }
+        
+        // 添加等待动画执行完毕的协程
+        private IEnumerator WaitForAnimationCompletionAndChangePhase(TurnPhase nextPhase)
+        {
+            Debug.Log("等待动画执行完毕...");
+            
+            // 等待直到动画执行完毕
+            while (AnimationManager.Instance != null && AnimationManager.Instance.IsPlayingAnimation)
+            {
+                yield return new WaitForSeconds(0.1f); // 短暂等待
+            }
+            
+            Debug.Log("动画执行完毕，继续切换阶段");
             ChangePhase(nextPhase);
         }
         

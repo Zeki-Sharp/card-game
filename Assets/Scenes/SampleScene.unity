@@ -1137,7 +1137,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 770383907}
-  - component: {fileID: 770383906}
+  - component: {fileID: 770383908}
   m_Layer: 0
   m_Name: AIController
   m_TagString: Untagged
@@ -1145,20 +1145,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &770383906
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 770383905}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a6dbfe95351b49d4687f5560cc5e8b8f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  actionDelay: 0.5
-  selectionDelay: 0.8
 --- !u!4 &770383907
 Transform:
   m_ObjectHideFlags: 0
@@ -1174,6 +1160,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1023976013}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &770383908
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 770383905}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6dbfe95351b49d4687f5560cc5e8b8f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  actionDelay: 0.5
+  selectionDelay: 0.5
 --- !u!1 &848750908
 GameObject:
   m_ObjectHideFlags: 0
@@ -1802,7 +1802,7 @@ MonoBehaviour:
   board: {fileID: 619939636}
   cardManager: {fileID: 908457767}
   turnManager: {fileID: 861603162}
-  aiController: {fileID: 770383906}
+  aiController: {fileID: 0}
   gameStateManager: {fileID: 583560100}
   gameEndChecker: {fileID: 16423662}
 --- !u!4 &1404373182

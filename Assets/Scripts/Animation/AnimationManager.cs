@@ -67,6 +67,9 @@ namespace ChessGame
         private Queue<AnimationItem> _animationQueue = new Queue<AnimationItem>();
         private bool _isProcessingQueue = false;
         
+        // 添加公共属性允许其他系统检查动画状态
+        public bool IsPlayingAnimation => _isProcessingQueue && _animationQueue.Count > 0;
+        
         // 添加重叠执行控制参数
         [SerializeField, Range(0.5f, 1.0f)] private float actionCompletionThreshold = 0.8f; // Action动画完成多少比例后开始下一个动画
         

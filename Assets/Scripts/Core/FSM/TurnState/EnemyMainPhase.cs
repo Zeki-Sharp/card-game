@@ -43,6 +43,13 @@ namespace ChessGame.FSM.TurnState
         {
             Debug.Log("AI开始执行回合");
             
+            // 重置敌方卡牌行动状态
+            CardManager cardManager = StateMachine.GetCardManager();
+            if (cardManager != null)
+            {
+                cardManager.ResetEnemyCardActions();
+            }
+            
             // 获取AI控制器
             AIController aiController = GameObject.FindObjectOfType<AIController>();
             
@@ -55,9 +62,18 @@ namespace ChessGame.FSM.TurnState
             {
                 Debug.LogError("找不到AIController，无法执行AI回合");
                 yield return new WaitForSeconds(1.0f);
+                
+                // 如果没有AIController，自动结束回合
+                CompletePhase(TurnPhase.EnemyTurnEnd);
             }
             
-            Debug.Log("AI回合执行完毕");
+            // 注意：不在这里结束回合，由AIController调用TurnManager.EndEnemyTurn()来结束回合
+        }
+        
+        // 结束敌方回合
+        public void EndTurn()
+        {
+            Debug.Log("敌方结束回合");
             
             // 完成当前阶段，进入回合结束阶段
             CompletePhase(TurnPhase.EnemyTurnEnd);

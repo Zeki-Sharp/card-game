@@ -144,10 +144,17 @@ namespace ChessGame
             
             Debug.Log($"卡牌 {attackerCard.Data.Name} 攻击背面卡牌 {targetCard.Data.Name} 成功，造成 {_damageDealt} 点伤害");
             
-            // 通知玩家行动完成
-            if (attackerCard.OwnerId == 0)
+            // 如果是玩家卡牌，通知玩家行动完成
+            if (attackerCard.OwnerId == 0) // 是玩家卡牌
             {
+                Debug.Log("玩家卡牌攻击完成，通知玩家行动完成");
                 GameEventSystem.Instance.NotifyPlayerActionCompleted(attackerCard.OwnerId);
+            }
+            // 如果是敌方卡牌，通知敌方行动完成
+            else if (attackerCard.OwnerId == 1) // 是敌方卡牌
+            {
+                Debug.Log("敌方卡牌攻击完成，通知敌方行动完成");
+                GameEventSystem.Instance.NotifyEnemyActionCompleted(attackerCard.OwnerId);
             }
         }
         
@@ -230,11 +237,20 @@ namespace ChessGame
             CheckAndRemoveIfDead(attackerCard, _attackerPosition);
             CheckAndRemoveIfDead(targetCard, _targetPosition);
             
-            // 通知玩家行动完成
-            if (attackerCard.OwnerId == 0)
+            // 如果是玩家卡牌，通知玩家行动完成
+            if (attackerCard.OwnerId == 0) // 是玩家卡牌
             {
+                Debug.Log("玩家卡牌攻击完成，通知玩家行动完成");
                 GameEventSystem.Instance.NotifyPlayerActionCompleted(attackerCard.OwnerId);
             }
+            // 如果是敌方卡牌，通知敌方行动完成
+            else if (attackerCard.OwnerId == 1) // 是敌方卡牌
+            {
+                Debug.Log("敌方卡牌攻击完成，通知敌方行动完成");
+                GameEventSystem.Instance.NotifyEnemyActionCompleted(attackerCard.OwnerId);
+            }
+            
+            yield break; // 使用yield break代替return语句
         }
         
         public override bool Execute()

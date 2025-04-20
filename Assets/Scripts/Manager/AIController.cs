@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using ChessGame.Cards;
 
 namespace ChessGame
 {
@@ -16,10 +17,33 @@ namespace ChessGame
         // 添加一个标志，表示AI是否正在执行回合
         private bool _isExecutingTurn = false;
         
+        // 添加能力管理器引用
+        private AbilityManager _abilityManager;
+        
         private void Awake()
+        {
+            
+        }
+        
+        private void Start()
+        {
+            // 初始化引用
+             InitializeReferences();
+
+            // 订阅回合变化事件
+            if (_turnManager != null)
+            {
+                _turnManager.OnTurnChanged += OnTurnChanged;
+            }
+        }
+        
+
+        // 初始化引用
+        private void InitializeReferences()
         {
             _cardManager = FindObjectOfType<CardManager>();
             _turnManager = FindObjectOfType<TurnManager>();
+            _abilityManager = AbilityManager.Instance;
             
             if (_cardManager == null)
             {
@@ -30,17 +54,13 @@ namespace ChessGame
             {
                 Debug.LogError("AIController无法找到TurnManager");
             }
-        }
-        
-        private void Start()
-        {
-            // 订阅回合变化事件
-            if (_turnManager != null)
+            
+            if (_abilityManager == null)
             {
-                _turnManager.OnTurnChanged += OnTurnChanged;
+                Debug.LogError("AIController无法找到AbilityManager");
             }
         }
-        
+
         // 处理回合变化
         private void OnTurnChanged(TurnState turnState)
         {
@@ -72,31 +92,98 @@ namespace ChessGame
             {
                 Debug.Log("没有敌方卡牌，AI回合结束");
                 _isExecutingTurn = false;
+                _turnManager.EndEnemyTurn();
                 yield break;
             }
             
-            // 为每张卡牌执行行动
+            // 打乱敌方卡牌顺序，随机选择一张执行行动
+            ShuffleList(enemyCards);
+            
+            // 找到第一张可以行动的卡牌
+            Card actionCard = null;
             foreach (Card card in enemyCards)
             {
                 // 如果卡牌已经行动过，跳过
                 if (card.HasActed)
                     continue;
                     
+                // 找到第一张可以行动的卡牌
+                actionCard = card;
+                break;
+            }
+            
+            // 如果没有可行动的卡牌，直接结束回合
+            if (actionCard == null)
+            {
+                Debug.Log("没有可行动的敌方卡牌，AI回合结束");
+                _isExecutingTurn = false;
+                _turnManager.EndEnemyTurn();
+                yield break;
+            }
+            
+            // 获取卡牌的能力列表
+            List<AbilityConfiguration> abilities = _abilityManager.GetCardAbilities(actionCard);
+            
+            // 如果卡牌有能力，尝试使用能力
+            bool actionTaken = false;
+            if (abilities.Count > 0)
+            {
+                // 随机选择一个能力
+                AbilityConfiguration ability = abilities[Random.Range(0, abilities.Count)];
+                
+                // 获取能力可用的目标位置
+                List<Vector2Int> targetPositions = _abilityManager.GetAbilityRange(ability, actionCard);
+                
+                // 如果有可用的目标位置，随机选择一个执行能力
+                if (targetPositions.Count > 0)
+                {
+                    Vector2Int targetPosition = targetPositions[Random.Range(0, targetPositions.Count)];
+                    
+                    // 检查能力是否可以触发
+                    if (_abilityManager.CanTriggerAbility(ability, actionCard, targetPosition))
+                    {
+                        Debug.Log($"AI使用卡牌 {actionCard.Data.Name} 的能力 {ability.abilityName} 于位置 {targetPosition}");
+                        
+                        // 设置目标位置，这样会显示高亮
+                        _cardManager.SetTargetPosition(targetPosition);
+                        
+                        // 等待一段时间，让玩家看清AI的选择
+                        yield return new WaitForSeconds(selectionDelay);
+                        
+                        // 执行能力
+                        yield return _abilityManager.ExecuteAbility(ability, actionCard, targetPosition);
+                        
+                        // 标记行动已执行
+                        actionTaken = true;
+                        actionCard.HasActed = true;
+                        
+                        // 通知敌方行动完成
+                        GameEventSystem.Instance.NotifyEnemyActionCompleted(actionCard.OwnerId);
+                    }
+                }
+            }
+            
+            // 如果没有使用能力，尝试执行攻击或移动
+            if (!actionTaken)
+            {
                 // 尝试执行攻击
-                bool attacked = TryAttackWithCard(card);
+                bool attacked = TryAttackWithCard(actionCard);
                 
                 // 如果没有攻击，尝试移动
                 if (!attacked)
                 {
-                    TryMoveCard(card);
+                    TryMoveCard(actionCard);
                 }
-                
-                // 等待一段时间，让玩家看清AI的行动
-                yield return new WaitForSeconds(actionDelay);
             }
+            
+            // 等待一段时间，让玩家看清AI的行动
+            yield return new WaitForSeconds(actionDelay);
             
             // 标记AI回合执行完毕
             _isExecutingTurn = false;
+            
+            // 结束敌方回合
+            _turnManager.EndEnemyTurn();
             
             Debug.Log("AI回合执行完毕");
         }
@@ -110,7 +197,7 @@ namespace ChessGame
             foreach (var pair in allCards)
             {
                 Card card = pair.Value;
-                if (card != null && card.OwnerId == 1 && !card.HasActed && !card.IsFaceDown) // 敌方卡牌OwnerId为1，且必须是正面的
+                if (card != null && card.OwnerId == 1 && !card.IsFaceDown) // 敌方卡牌OwnerId为1，且必须是正面的
                 {
                     enemyCards.Add(card);
                 }

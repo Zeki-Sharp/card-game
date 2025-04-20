@@ -1,6 +1,9 @@
 using UnityEngine;
 using System;
 using ChessGame.FSM.TurnState;
+using System.Collections;
+using ChessGame.Utils;
+using ChessGame.Cards; // 添加对Cards命名空间的引用，AbilityManager在这个命名空间中
 
 namespace ChessGame
 {
@@ -53,6 +56,9 @@ namespace ChessGame
                 
                 // 订阅玩家行动完成事件
                 GameEventSystem.Instance.OnPlayerActionCompleted += HandlePlayerActionCompleted;
+                
+                // 订阅敌方行动完成事件
+                GameEventSystem.Instance.OnEnemyActionCompleted += HandleEnemyActionCompleted;
             }
             else
             {
@@ -72,6 +78,7 @@ namespace ChessGame
             if (GameEventSystem.Instance != null)
             {
                 GameEventSystem.Instance.OnPlayerActionCompleted -= HandlePlayerActionCompleted;
+                GameEventSystem.Instance.OnEnemyActionCompleted -= HandleEnemyActionCompleted;
             }
         }
         
@@ -120,6 +127,49 @@ namespace ChessGame
         {
             Debug.Log("TurnManager.EndPlayerTurn");
             
+            // 检查是否有能力正在执行
+            if (AbilityManager.IsExecutingAbility)
+            {
+                Debug.LogWarning("TurnManager: 检测到能力正在执行，延迟结束玩家回合");
+                // 使用协程延迟结束回合
+                CoroutineManager.Instance.StartCoroutineEx(DelayEndPlayerTurn());
+                return;
+            }
+            
+            // 检查是否有动画正在播放
+            if (AnimationManager.Instance != null && AnimationManager.Instance.IsPlayingAnimation)
+            {
+                Debug.LogWarning("TurnManager: 检测到动画正在播放，延迟结束玩家回合");
+                // 使用协程延迟结束回合
+                CoroutineManager.Instance.StartCoroutineEx(DelayEndPlayerTurn());
+                return;
+            }
+            
+            if (_turnStateMachine != null && _turnStateMachine.GetCurrentPhase() == TurnPhase.PlayerMainPhase)
+            {
+                _turnStateMachine.EndCurrentTurn();
+            }
+        }
+        
+        // 延迟结束玩家回合的协程
+        private IEnumerator DelayEndPlayerTurn()
+        {
+            Debug.Log("等待所有操作完成后再结束玩家回合...");
+            
+            // 等待能力执行完毕
+            while (AbilityManager.IsExecutingAbility)
+            {
+                yield return new WaitForSeconds(0.1f);
+            }
+            
+            // 等待动画播放完毕
+            while (AnimationManager.Instance != null && AnimationManager.Instance.IsPlayingAnimation)
+            {
+                yield return new WaitForSeconds(0.1f);
+            }
+            
+            Debug.Log("所有操作已完成，现在结束玩家回合");
+            
             if (_turnStateMachine != null && _turnStateMachine.GetCurrentPhase() == TurnPhase.PlayerMainPhase)
             {
                 _turnStateMachine.EndCurrentTurn();
@@ -131,9 +181,76 @@ namespace ChessGame
         {
             Debug.Log("TurnManager.EndEnemyTurn");
             
+            // 检查是否有能力正在执行
+            if (AbilityManager.IsExecutingAbility)
+            {
+                Debug.LogWarning("TurnManager: 检测到能力正在执行，延迟结束敌方回合");
+                // 使用协程延迟结束回合
+                CoroutineManager.Instance.StartCoroutineEx(DelayEndEnemyTurn());
+                return;
+            }
+            
+            // 检查是否有动画正在播放
+            if (AnimationManager.Instance != null && AnimationManager.Instance.IsPlayingAnimation)
+            {
+                Debug.LogWarning("TurnManager: 检测到动画正在播放，延迟结束敌方回合");
+                // 使用协程延迟结束回合
+                CoroutineManager.Instance.StartCoroutineEx(DelayEndEnemyTurn());
+                return;
+            }
+            
             if (_turnStateMachine != null && _turnStateMachine.GetCurrentPhase() == TurnPhase.EnemyMainPhase)
             {
-                _turnStateMachine.EndCurrentTurn();
+                // 获取当前状态
+                TurnPhase currentPhase = _turnStateMachine.GetCurrentPhase();
+                EnemyMainPhase enemyMainPhase = _turnStateMachine._states[currentPhase] as EnemyMainPhase;
+                
+                // 调用敌方主要阶段的EndTurn方法
+                if (enemyMainPhase != null)
+                {
+                    enemyMainPhase.EndTurn();
+                }
+                else
+                {
+                    Debug.LogError("无法获取敌方主要阶段状态");
+                }
+            }
+        }
+        
+        // 延迟结束敌方回合的协程
+        private IEnumerator DelayEndEnemyTurn()
+        {
+            Debug.Log("等待所有操作完成后再结束敌方回合...");
+            
+            // 等待能力执行完毕
+            while (AbilityManager.IsExecutingAbility)
+            {
+                yield return new WaitForSeconds(0.1f);
+            }
+            
+            // 等待动画播放完毕
+            while (AnimationManager.Instance != null && AnimationManager.Instance.IsPlayingAnimation)
+            {
+                yield return new WaitForSeconds(0.1f);
+            }
+            
+            Debug.Log("所有操作已完成，现在结束敌方回合");
+            
+            if (_turnStateMachine != null && _turnStateMachine.GetCurrentPhase() == TurnPhase.EnemyMainPhase)
+            {
+                // 获取当前状态
+                TurnPhase currentPhase = _turnStateMachine.GetCurrentPhase();
+                EnemyMainPhase enemyMainPhase = _turnStateMachine._states[currentPhase] as EnemyMainPhase;
+                
+                // 调用敌方主要阶段的EndTurn方法
+                if (enemyMainPhase != null)
+                {
+                    enemyMainPhase.EndTurn();
+                }
+                else
+                {
+                    Debug.LogError("无法获取敌方主要阶段状态");
+                }
             }
         }
         
@@ -182,6 +299,19 @@ namespace ChessGame
             {
                 Debug.Log("玩家行动完成，结束回合");
                 EndPlayerTurn();
+            }
+        }
+        
+        // 处理敌方行动完成事件
+        private void HandleEnemyActionCompleted(int playerId)
+        {
+            Debug.Log($"TurnManager.HandleEnemyActionCompleted: 玩家ID {playerId}");
+            
+            // 如果是敌方行动完成，结束敌方回合
+            if (playerId == 1 && !IsPlayerTurn())
+            {
+                Debug.Log("敌方行动完成，结束回合");
+                EndEnemyTurn();
             }
         }
     }

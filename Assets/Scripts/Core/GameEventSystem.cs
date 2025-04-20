@@ -76,6 +76,9 @@ namespace ChessGame
         // 添加玩家行动完成事件，用于通知回合结束
         public event Action<int> OnPlayerActionCompleted; // 参数为玩家ID
         
+        // 添加敌方行动完成事件，用于通知敌方回合结束
+        public event Action<int> OnEnemyActionCompleted; // 参数为玩家ID
+        
         public event Action<Vector2Int> OnAutomaticAbilityStart;
 
         public event Action<Vector2Int> OnAutomaticAbilityEnd;
@@ -208,6 +211,13 @@ namespace ChessGame
             Debug.Log($"GameEventSystem: 玩家行动完成事件 - 玩家ID {playerId}");
             OnPlayerActionCompleted?.Invoke(playerId);
         }
+        
+        // 通知敌方行动完成
+        public void NotifyEnemyActionCompleted(int playerId)
+        {
+            Debug.Log($"GameEventSystem: 敌方行动完成事件 - 玩家ID {playerId}");
+            OnEnemyActionCompleted?.Invoke(playerId);
+        }
 
         // 自动触发能力开始事件
         public void NotifyAutomaticAbilityStart(Vector2Int position)
@@ -257,7 +267,7 @@ namespace ChessGame
             Debug.Log($"GameEventSystem: 伤害动画结束事件 - 位置 {position}, 伤害 {damage}");
             OnDamageAnimFinished?.Invoke(position, damage);
         }
-        
+
         //通知死亡动画结束
         public void NotifyDeathAnimFinished(int position, int damage)
         {
