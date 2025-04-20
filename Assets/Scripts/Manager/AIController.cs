@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using ChessGame.Cards;
+using ChessGame.Utils;
 
 namespace ChessGame
 {
@@ -236,20 +237,55 @@ namespace ChessGame
                 Vector2Int targetPosition = attackablePositions[Random.Range(0, attackablePositions.Count)];
                 Debug.Log($"AI攻击卡牌，从 {card.Position} 到 {targetPosition}");
                 
-                // 设置目标位置，这样会显示高亮
-                _cardManager.SetTargetPosition(targetPosition);
+                // 获取卡牌的攻击能力
+                List<AbilityConfiguration> abilities = _abilityManager.GetCardAbilities(card);
                 
-                // 执行攻击
-                bool success = _cardManager.AttackCard(card.Position, targetPosition);
-                
-                if (success)
+                // 筛选出攻击类型的能力
+                List<AbilityConfiguration> attackAbilities = new List<AbilityConfiguration>();
+                foreach (var ability in abilities)
                 {
-                    Debug.Log($"AI攻击成功: {card.Position} -> {targetPosition}");
+                    // 检查能力是否包含攻击动作
+                    bool hasAttackAction = false;
+                    foreach (var action in ability.actionSequence)
+                    {
+                        if (action.actionType == AbilityActionConfig.ActionType.Attack)
+                        {
+                            hasAttackAction = true;
+                            break;
+                        }
+                    }
+                    
+                    if (hasAttackAction && _abilityManager.CanTriggerAbility(ability, card, targetPosition))
+                    {
+                        attackAbilities.Add(ability);
+                    }
+                }
+                
+                // 如果有可用的攻击能力，使用能力系统执行攻击
+                if (attackAbilities.Count > 0)
+                {
+                    // 随机选择一个攻击能力
+                    AbilityConfiguration attackAbility = attackAbilities[Random.Range(0, attackAbilities.Count)];
+                    
+                    // 设置目标位置，这样会显示高亮
+                    _cardManager.SetTargetPosition(targetPosition);
+                    
+                    // 使用协程管理器启动能力执行协程
+                    CoroutineManager.Instance.StartCoroutineEx(_abilityManager.ExecuteAbility(attackAbility, card, targetPosition));
+                    
+                    Debug.Log($"AI使用攻击能力: {attackAbility.abilityName}, 从 {card.Position} 到 {targetPosition}");
+                    
+                    // 标记卡牌已行动
+                    card.HasActed = true;
+                    
+                    // 通知敌方行动完成
+                    GameEventSystem.Instance.NotifyEnemyActionCompleted(card.OwnerId);
+                    
                     return true;
                 }
                 else
                 {
-                    Debug.LogWarning($"AI攻击失败: {card.Position} -> {targetPosition}");
+                    Debug.LogWarning($"AI没有可用的攻击能力，或者能力冷却中");
                 }
             }
             
@@ -273,17 +309,52 @@ namespace ChessGame
                 Vector2Int targetPosition = movePositions[Random.Range(0, movePositions.Count)];
                 Debug.Log($"AI移动卡牌，从 {card.Position} 到 {targetPosition}");
                 
-                // 执行移动
-                bool success = _cardManager.MoveCard(card.Position, targetPosition);
+                // 获取卡牌的移动能力
+                List<AbilityConfiguration> abilities = _abilityManager.GetCardAbilities(card);
                 
-                if (success)
+                // 筛选出移动类型的能力
+                List<AbilityConfiguration> moveAbilities = new List<AbilityConfiguration>();
+                foreach (var ability in abilities)
                 {
-                    Debug.Log($"AI移动成功: {card.Position} -> {targetPosition}");
+                    // 检查能力是否包含移动动作
+                    bool hasMoveAction = false;
+                    foreach (var action in ability.actionSequence)
+                    {
+                        if (action.actionType == AbilityActionConfig.ActionType.Move)
+                        {
+                            hasMoveAction = true;
+                            break;
+                        }
+                    }
+                    
+                    if (hasMoveAction && _abilityManager.CanTriggerAbility(ability, card, targetPosition))
+                    {
+                        moveAbilities.Add(ability);
+                    }
+                }
+                
+                // 如果有可用的移动能力，使用能力系统执行移动
+                if (moveAbilities.Count > 0)
+                {
+                    // 随机选择一个移动能力
+                    AbilityConfiguration moveAbility = moveAbilities[Random.Range(0, moveAbilities.Count)];
+                    
+                    // 使用协程管理器启动能力执行协程
+                    CoroutineManager.Instance.StartCoroutineEx(_abilityManager.ExecuteAbility(moveAbility, card, targetPosition));
+                    
+                    Debug.Log($"AI使用移动能力: {moveAbility.abilityName}, 从 {card.Position} 到 {targetPosition}");
+                    
+                    // 标记卡牌已行动
+                    card.HasActed = true;
+                    
+                    // 通知敌方行动完成
+                    GameEventSystem.Instance.NotifyEnemyActionCompleted(card.OwnerId);
+                    
                     return true;
                 }
                 else
                 {
-                    Debug.LogWarning($"AI移动失败: {card.Position} -> {targetPosition}");
+                    Debug.LogWarning($"AI没有可用的移动能力，或者能力冷却中");
                 }
             }
             
