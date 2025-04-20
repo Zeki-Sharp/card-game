@@ -84,6 +84,7 @@ namespace ChessGame.Cards
                 bool isPathBlocked = CheckPathBlocked(card.Position, targetPosition, cardManager);
                 bool isDiagonalBlocked = CheckDiagonalBlocked(card.Position, targetPosition, cardManager);
                 bool isBlocked = isPathBlocked || isDiagonalBlocked;
+                bool isInjured = targetCard != null && targetCard.Data.Health < targetCard.Data.MaxHealth;
 
                 // 替换数值变量
                 condition = Regex.Replace(condition, @"\bStraightDistance\b", straightDistance.ToString());
@@ -101,6 +102,7 @@ namespace ChessGame.Cards
                 condition = ReplaceBool(condition, "PathBlocked", isPathBlocked);
                 condition = ReplaceBool(condition, "DiagonalBlocked", isDiagonalBlocked);
                 condition = ReplaceBool(condition, "Blocked", isBlocked);
+                condition = ReplaceBool(condition, "Injured", isInjured);
 
                 // 替换 TurnCounter[AbilityId]
                 condition = Regex.Replace(condition, @"TurnCounter\[([^\]]+)\]", match =>

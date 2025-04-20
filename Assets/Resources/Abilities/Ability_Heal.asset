@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   abilityName: "\u6CBB\u7597"
   description: "\u6062\u590D\u76EE\u6807\u5361\u724C\u7684\u751F\u547D\u503C"
-  triggerCondition: Distance<=1&&Ally
+  triggerCondition: Distance<=1&&Ally&&Injured
   actionSequence:
   - actionType: 2
     targetSelector: Target
@@ -22,4 +22,7 @@ MonoBehaviour:
     - key: amount
       value: 3
   cooldown: 0
-  icon: {fileID: 0}
+  triggerPhase: 1
+  rangeType: 0
+  customRangeValue: 1
+  rangeCondition: 
