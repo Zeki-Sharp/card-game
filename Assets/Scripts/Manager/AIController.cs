@@ -79,6 +79,13 @@ namespace ChessGame
         {
             Debug.Log("AIController.ExecuteAITurn");
             
+            // 避免重复执行
+            if (_isExecutingTurn)
+            {
+                Debug.LogWarning("AI已经在执行回合，忽略重复执行");
+                yield break;
+            }
+            
             // 标记AI正在执行回合
             _isExecutingTurn = true;
             
@@ -113,11 +120,22 @@ namespace ChessGame
                 yield break;
             }
             
+            Debug.Log($"AI选择了卡牌: {actionCard.Data.Name} 进行行动");
+            
             // 获取卡牌的能力列表
             List<AbilityConfiguration> abilities = _abilityManager.GetCardAbilities(actionCard);
             
+            // 尝试使用能力或执行基本动作（攻击/移动）
+            yield return ExecuteEnemyAction(actionCard, abilities);
+            
+            // 确保只执行一次行动后就结束回合
+            _isExecutingTurn = false;
+        }
+        
+        // 新增方法：执行敌方行动
+        private IEnumerator ExecuteEnemyAction(Card actionCard, List<AbilityConfiguration> abilities)
+        {
             // 如果卡牌有能力，尝试使用能力
-            bool actionTaken = false;
             if (abilities.Count > 0)
             {
                 // 随机选择一个能力
@@ -145,41 +163,47 @@ namespace ChessGame
                         // 执行能力
                         yield return _abilityManager.ExecuteAbility(ability, actionCard, targetPosition);
                         
-                        // 标记行动已执行
-                        actionTaken = true;
+                        // 标记卡牌已行动
                         actionCard.HasActed = true;
                         
-                        // 通知敌方行动完成
+                        // 使用与玩家相同的逻辑 - 由TurnManager来处理回合结束，统一处理所有相关事件
+                        // 与玩家回合结束逻辑保持一致
                         GameEventSystem.Instance.NotifyEnemyActionCompleted(actionCard.OwnerId);
-
+                        
+                        Debug.Log("AI已完成能力行动");
                         yield break;
                     }
                 }
             }
             
-            // 如果没有使用能力，尝试执行攻击或移动
-            if (!actionTaken)
+            // 如果没有使用能力，尝试执行攻击
+            bool attacked = TryAttackWithCard(actionCard);
+            
+            // 如果攻击成功，直接返回
+            if (attacked)
             {
-                // 尝试执行攻击
-                bool attacked = TryAttackWithCard(actionCard);
-                
-                // 如果没有攻击，尝试移动
-                if (!attacked)
-                {
-                    TryMoveCard(actionCard);
-                }
+                Debug.Log("AI已完成攻击行动");
+                yield break;
             }
             
-            // 等待一段时间，让玩家看清AI的行动
-            yield return new WaitForSeconds(actionDelay);
+            // 如果没有攻击，尝试移动
+            bool moved = TryMoveCard(actionCard);
             
-            // 标记AI回合执行完毕
-            _isExecutingTurn = false;
+            // 如果移动成功，直接返回
+            if (moved)
+            {
+                Debug.Log("AI已完成移动行动");
+                yield break;
+            }
             
-            
-            Debug.Log("AI回合执行完毕");
+            // 如果既不能攻击也不能移动，结束AI回合
+            if (!moved && !attacked)
+            {
+                Debug.Log("AI既不能攻击也不能移动，回合结束");
+                _turnManager.EndEnemyTurn();
+            }
         }
-        
+
         // 获取所有敌方卡牌
         private List<Card> GetEnemyCards()
         {
@@ -212,7 +236,7 @@ namespace ChessGame
             }
         }
 
-        // 尝试使用卡牌攻击
+        // 修改TryAttackWithCard方法，确保与玩家行动逻辑一致
         private bool TryAttackWithCard(Card card)
         {
             Debug.Log($"AI尝试攻击，位置: {card.Position}, 攻击范围: {card.AttackRange}");
@@ -261,15 +285,15 @@ namespace ChessGame
                     // 设置目标位置，这样会显示高亮
                     _cardManager.SetTargetPosition(targetPosition);
                     
-                    // 使用协程管理器启动能力执行协程
-                    CoroutineManager.Instance.StartCoroutineEx(_abilityManager.ExecuteAbility(attackAbility, card, targetPosition));
+                    // 使用协程启动能力执行
+                    _abilityManager.ExecuteAbility(attackAbility, card, targetPosition);
                     
                     Debug.Log($"AI使用攻击能力: {attackAbility.abilityName}, 从 {card.Position} 到 {targetPosition}");
                     
                     // 标记卡牌已行动
                     card.HasActed = true;
                     
-                    // 通知敌方行动完成
+                    // 使用与玩家相同的逻辑 - 由通知行动完成触发回合结束
                     GameEventSystem.Instance.NotifyEnemyActionCompleted(card.OwnerId);
                     
                     return true;
@@ -284,7 +308,7 @@ namespace ChessGame
             return false;
         }
         
-        // 尝试移动卡牌
+        // 修改TryMoveCard方法，确保与玩家行动逻辑一致
         private bool TryMoveCard(Card card)
         {
             Debug.Log($"AI尝试移动，位置: {card.Position}, 移动范围: {card.MoveRange}");
@@ -330,15 +354,15 @@ namespace ChessGame
                     // 随机选择一个移动能力
                     AbilityConfiguration moveAbility = moveAbilities[Random.Range(0, moveAbilities.Count)];
                     
-                    // 使用协程管理器启动能力执行协程
-                    CoroutineManager.Instance.StartCoroutineEx(_abilityManager.ExecuteAbility(moveAbility, card, targetPosition));
+                    // 执行移动能力
+                    _abilityManager.ExecuteAbility(moveAbility, card, targetPosition);
                     
                     Debug.Log($"AI使用移动能力: {moveAbility.abilityName}, 从 {card.Position} 到 {targetPosition}");
                     
                     // 标记卡牌已行动
                     card.HasActed = true;
                     
-                    // 通知敌方行动完成
+                    // 使用与玩家相同的逻辑通知行动完成
                     GameEventSystem.Instance.NotifyEnemyActionCompleted(card.OwnerId);
                     
                     return true;

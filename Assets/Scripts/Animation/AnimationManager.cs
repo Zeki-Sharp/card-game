@@ -341,66 +341,166 @@ namespace ChessGame
             }
         }
         
-        // 播放受伤动画
+        // 播放伤害动画
         private void PlayDamageAnimation(Vector2Int position)
         {
-            Debug.Log($"播放受伤动画: {position}");
+            Debug.Log($"播放伤害动画: {position}");
             
             CardView cardView = cardManager.GetCardView(position);
             if (cardView != null)
             {
-                // 将动画添加到队列，指定为Reaction类型
+                // 伤害动画属于反应类型
                 EnqueueAnimation(() => DamageAnimationCoroutine(cardView, position), AnimationGroupType.Reaction);
+            }
+            else
+            {
+                // 如果没有找到CardView，仍然触发动画完成事件，保持游戏逻辑的连贯性
+                Debug.LogWarning($"未找到位置 {position} 的CardView，跳过伤害动画");
+                if (GameEventSystem.Instance != null)
+                {
+                    GameEventSystem.Instance.NotifyDamageAnimFinished(position, 0);
+                }
             }
         }
         
-        // 受伤动画协程
+        // 伤害动画协程
         private IEnumerator DamageAnimationCoroutine(CardView cardView, Vector2Int position)
         {
-            // 闪烁效果
-            cardView.PlayDamageEffect(); // 调用简化版的视觉效果，已修改为只标红一次
+            if (cardView == null)
+            {
+                Debug.LogWarning($"位置 {position} 的CardView已被销毁，跳过伤害动画");
+                
+                // 即使没有视图对象，也要触发伤害动画完成事件，确保游戏逻辑继续
+                GameEventSystem.Instance?.NotifyDamageAnimFinished(position, 0);
+                
+                yield break;
+            }
             
-            // 保存原始缩放和位置
-            Vector3 originalScale = cardView.transform.localScale;
-            Vector3 originalPosition = cardView.transform.position;
+            // 播放视觉效果，独立处理，避免异常
+            if (cardView != null)
+            {
+                try
+                {
+                    cardView.PlayDamageEffect();
+                }
+                catch (MissingReferenceException)
+                {
+                    Debug.LogWarning($"播放伤害效果时卡牌视图已销毁: {position}");
+                    
+                    // 触发伤害动画完成事件
+                    GameEventSystem.Instance?.NotifyDamageAnimFinished(position, 0);
+                    yield break;
+                }
+            }
             
-            // 受伤时先缩小
-            float scaleFactor = 0.85f; // 缩小到原来的85%
-            Vector3 smallerScale = originalScale * scaleFactor;
+            // 保存原始位置和缩放
+            Vector3 originalPosition = Vector3.zero;
+            Vector3 originalScale = Vector3.one;
             
-            // 缩小阶段
-            float shrinkDuration = GetAdjustedDuration(0.15f);
+            // 安全获取初始值
+            try
+            {
+                if (cardView != null)
+                {
+                    originalPosition = cardView.transform.position;
+                    originalScale = cardView.transform.localScale;
+                }
+            }
+            catch (MissingReferenceException)
+            {
+                Debug.LogWarning($"获取初始值时卡牌视图已销毁: {position}");
+                
+                // 触发伤害动画完成事件
+                GameEventSystem.Instance?.NotifyDamageAnimFinished(position, 0);
+                yield break;
+            }
+            
+            // 执行抖动
+            float shakeDuration = GetAdjustedDuration(0.2f);
             float elapsed = 0f;
             
-            while (elapsed < shrinkDuration)
+            while (elapsed < shakeDuration)
             {
-                float t = elapsed / shrinkDuration;
-                cardView.transform.localScale = Vector3.Lerp(originalScale, smallerScale, t);
+                if (cardView == null || cardView.gameObject == null)
+                {
+                    break;
+                }
+                
+                // 使用try-catch包裹可能抛出异常的操作
+                try
+                {
+                    float shakeAmount = 0.05f * (1f - elapsed / shakeDuration);
+                    Vector3 randomOffset = new Vector3(
+                        UnityEngine.Random.Range(-shakeAmount, shakeAmount),
+                        UnityEngine.Random.Range(-shakeAmount, shakeAmount),
+                        0
+                    );
+                    
+                    cardView.transform.position = originalPosition + randomOffset;
+                }
+                catch (MissingReferenceException)
+                {
+                    Debug.LogWarning($"抖动动画时卡牌视图已销毁: {position}");
+                    break;
+                }
                 
                 elapsed += Time.deltaTime;
                 yield return null;
             }
             
-            // 确保达到最小缩放
-            cardView.transform.localScale = smallerScale;
+            // 恢复原始位置
+            if (cardView != null)
+            {
+                try
+                {
+                    cardView.transform.position = originalPosition;
+                }
+                catch (MissingReferenceException)
+                {
+                    Debug.LogWarning($"恢复位置时卡牌视图已销毁: {position}");
+                }
+            }
             
-            // 恢复阶段
-            float recoverDuration = GetAdjustedDuration(0.25f);
+            // 执行缩小恢复效果
+            Vector3 smallerScale = originalScale * 0.9f;
+            float recoverDuration = GetAdjustedDuration(0.2f);
             elapsed = 0f;
             
             while (elapsed < recoverDuration)
             {
-                float t = elapsed / recoverDuration;
-                cardView.transform.localScale = Vector3.Lerp(smallerScale, originalScale, t);
+                if (cardView == null || cardView.gameObject == null)
+                {
+                    break;
+                }
+                
+                try
+                {
+                    float t = elapsed / recoverDuration;
+                    cardView.transform.localScale = Vector3.Lerp(smallerScale, originalScale, t);
+                }
+                catch (MissingReferenceException)
+                {
+                    Debug.LogWarning($"缩放恢复时卡牌视图已销毁: {position}");
+                    break;
+                }
                 
                 elapsed += Time.deltaTime;
                 yield return null;
             }
             
             // 确保恢复原始大小
-            cardView.transform.localScale = originalScale;
-            cardView.transform.position = originalPosition;
-            
+            if (cardView != null)
+            {
+                try
+                {
+                    cardView.transform.localScale = originalScale;
+                    cardView.transform.position = originalPosition;
+                }
+                catch (MissingReferenceException)
+                {
+                    Debug.LogWarning($"最终恢复时卡牌视图已销毁: {position}");
+                }
+            }
             
             // 获取卡牌的当前生命值
             Card card = cardManager.GetCard(position);
@@ -409,8 +509,6 @@ namespace ChessGame
             // 触发受伤动画完成事件 - 使用GameEventSystem
             if (GameEventSystem.Instance != null)
             {
-                // 使用position.x * boardWidth + position.y作为位置的唯一标识符
-                int positionId = position.x * cardManager.BoardWidth + position.y;
                 GameEventSystem.Instance.NotifyDamageAnimFinished(position, damage);
             }
             
@@ -437,51 +535,122 @@ namespace ChessGame
         // 死亡动画协程
         private IEnumerator DeathAnimationCoroutine(CardView cardView, Vector2Int position)
         {
-            if (cardView == null) yield break;
+            // 检查CardView是否存在
+            if (cardView == null)
+            {
+                Debug.LogWarning($"位置 {position} 的CardView已被销毁，跳过死亡动画");
+                
+                // 即使没有视图对象，也要触发死亡动画完成事件，确保游戏逻辑继续
+                int positionId = position.x * cardManager.BoardWidth + position.y;
+                GameEventSystem.Instance?.NotifyDeathAnimFinished(positionId, 0);
+                GameEventSystem.Instance?.NotifyCardDestroyed(position);
+                
+                yield break;
+            }
             
             // 获取卡牌的当前生命值
             Card card = cardManager.GetCard(position);
             int damage = card != null ? card.Data.Health : 0;
             
-            // 缩小并淡出
-            float duration = GetAdjustedDuration(removeAnimationDuration);
-            float elapsed = 0f;
-            
-            Vector3 originalScale = cardView.transform.localScale;
-            SpriteRenderer[] renderers = cardView.GetComponentsInChildren<SpriteRenderer>();
+            // 保存初始状态
+            Vector3 originalScale = Vector3.one;
+            SpriteRenderer[] renderers = null;
             List<Color> originalColors = new List<Color>();
             
-            // 保存所有渲染器的原始颜色
-            foreach (SpriteRenderer renderer in renderers)
+            // 安全获取初始值
+            try
             {
-                originalColors.Add(renderer.color);
+                if (cardView != null)
+                {
+                    originalScale = cardView.transform.localScale;
+                    renderers = cardView.GetComponentsInChildren<SpriteRenderer>();
+                    
+                    // 保存所有渲染器的原始颜色
+                    if (renderers != null)
+                    {
+                        foreach (SpriteRenderer renderer in renderers)
+                        {
+                            if (renderer != null)
+                            {
+                                originalColors.Add(renderer.color);
+                            }
+                            else
+                            {
+                                originalColors.Add(Color.white); // 默认颜色
+                            }
+                        }
+                    }
+                }
+            }
+            catch (MissingReferenceException)
+            {
+                Debug.LogWarning($"获取初始值时卡牌视图已销毁: {position}");
+                
+                // 触发死亡动画完成事件
+                int positionId = position.x * cardManager.BoardWidth + position.y;
+                GameEventSystem.Instance?.NotifyDeathAnimFinished(positionId, damage);
+                GameEventSystem.Instance?.NotifyCardDestroyed(position);
+                yield break;
             }
             
             // 执行缩小和淡出动画
+            float duration = GetAdjustedDuration(removeAnimationDuration);
+            float elapsed = 0f;
+            
             while (elapsed < duration)
             {
-                float t = elapsed / duration;
-                
-                // 缩小
-                cardView.transform.localScale = Vector3.Lerp(originalScale, Vector3.zero, t);
-                
-                // 淡出所有渲染器
-                for (int i = 0; i < renderers.Length; i++)
+                if (cardView == null || cardView.gameObject == null)
                 {
-                    Color color = renderers[i].color;
-                    Color targetColor = new Color(color.r, color.g, color.b, 0f);
-                    renderers[i].color = Color.Lerp(originalColors[i], targetColor, t);
+                    break;
+                }
+                
+                try
+                {
+                    float t = elapsed / duration;
+                    
+                    // 缩小
+                    cardView.transform.localScale = Vector3.Lerp(originalScale, Vector3.zero, t);
+                    
+                    // 淡出所有渲染器
+                    if (renderers != null)
+                    {
+                        for (int i = 0; i < renderers.Length; i++)
+                        {
+                            if (renderers[i] != null)
+                            {
+                                Color color = renderers[i].color;
+                                Color targetColor = new Color(color.r, color.g, color.b, 0f);
+                                renderers[i].color = Color.Lerp(originalColors[i], targetColor, t);
+                            }
+                        }
+                    }
+                }
+                catch (MissingReferenceException)
+                {
+                    Debug.LogWarning($"淡出动画时卡牌视图已销毁: {position}");
+                    break;
                 }
                 
                 elapsed += Time.deltaTime;
                 yield return null;
             }
             
-            // 确保缩小到0
-            cardView.transform.localScale = Vector3.zero;
-            
-            // 隐藏游戏对象
-            cardView.gameObject.SetActive(false);
+            // 安全检查
+            if (cardView != null && cardView.gameObject != null)
+            {
+                try
+                {
+                    // 确保缩小到0
+                    cardView.transform.localScale = Vector3.zero;
+                    
+                    // 隐藏游戏对象
+                    cardView.gameObject.SetActive(false);
+                }
+                catch (MissingReferenceException)
+                {
+                    Debug.LogWarning($"最终隐藏时卡牌视图已销毁: {position}");
+                }
+            }
             
             // 触发死亡动画完成事件 - 使用GameEventSystem
             if (GameEventSystem.Instance != null)

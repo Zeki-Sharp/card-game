@@ -50,6 +50,30 @@ namespace ChessGame
             }
         }
         
+        // 对象销毁时清理引用
+        private void OnDestroy()
+        {
+            Debug.Log($"CardView被销毁: {gameObject.name}");
+            
+            // 停止所有协程
+            StopAllCoroutines();
+            
+            // 清理协程列表
+            _activeCoroutines.Clear();
+            
+            // 清除卡牌引用
+            _card = null;
+            
+            // 清除渲染器和文本引用
+            cardRenderer = null;
+            frameRenderer = null;
+            attackBackRenderer = null;
+            healthBackRenderer = null;
+            attackText = null;
+            healthText = null;
+            nameText = null;
+        }
+        
         public void Initialize(Card card)
         {
             _card = card;
@@ -65,6 +89,13 @@ namespace ChessGame
         
         public void UpdateVisuals()
         {
+            // 添加安全检查，防止访问已销毁的对象
+            if (this == null || !gameObject || !gameObject.activeInHierarchy)
+            {
+                Debug.LogWarning("尝试更新已销毁或未激活的CardView");
+                return;
+            }
+            
             if (_card == null) return;
             
             // 更新卡牌名称
@@ -151,8 +182,8 @@ namespace ChessGame
             }
             
             // 设置排序顺序
-            cardRenderer.sortingOrder = 100;
-            frameRenderer.sortingOrder = 101;
+            if (cardRenderer != null) cardRenderer.sortingOrder = 100;
+            if (frameRenderer != null) frameRenderer.sortingOrder = 101;
             if (attackBackRenderer != null) attackBackRenderer.sortingOrder = 102;
             if (healthBackRenderer != null) healthBackRenderer.sortingOrder = 102;
             if (attackText != null) attackText.sortingOrder = 103;
@@ -167,6 +198,13 @@ namespace ChessGame
         // 播放简单视觉反馈 - 这些方法仅包含简单的视觉效果，不涉及位置移动
         public void PlayDamageEffect()
         {
+            // 添加安全检查
+            if (this == null || !gameObject || !gameObject.activeInHierarchy)
+            {
+                Debug.LogWarning("尝试在已销毁或未激活的CardView上播放特效");
+                return;
+            }
+            
             StartCoroutine(DamageEffectCoroutine());
         }
         

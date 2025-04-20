@@ -142,9 +142,16 @@ namespace ChessGame
             GameEventSystem.Instance.NotifyCardDamaged(_targetPosition);
             
             // 检查目标卡牌是否死亡
+            bool targetDied = targetCard.Data.Health <= 0;
             CheckAndRemoveIfDead(targetCard, _targetPosition);
             
             Debug.Log($"卡牌 {attackerCard.Data.Name} 攻击背面卡牌 {targetCard.Data.Name} 成功，造成 {_damageDealt} 点伤害");
+            
+            // 如果目标已死亡，等待一段时间让销毁动画完成
+            if (targetDied)
+            {
+                yield return new WaitForSeconds(0.5f);
+            }
             
             // 如果是玩家卡牌，通知玩家行动完成
             if (attackerCard.OwnerId == 0) // 是玩家卡牌
@@ -243,8 +250,17 @@ namespace ChessGame
             Debug.Log($"造成伤害: {_damageDealt}");
             
             // 检查卡牌是否死亡
+            bool attackerDied = attackerCard.Data.Health <= 0;
+            bool targetDied = targetCard.Data.Health <= 0;
+            
             CheckAndRemoveIfDead(attackerCard, _attackerPosition);
             CheckAndRemoveIfDead(targetCard, _targetPosition);
+            
+            // 如果任一卡牌已死亡，等待一段时间让销毁动画完成
+            if (attackerDied || targetDied)
+            {
+                yield return new WaitForSeconds(0.5f);
+            }
             
             // 如果是玩家卡牌，通知玩家行动完成
             if (attackerCard.OwnerId == 0) // 是玩家卡牌
@@ -306,10 +322,16 @@ namespace ChessGame
         {
             if (card != null && card.Data.Health <= 0)
             {
-                // 移除卡牌
-                GameEventSystem.Instance.NotifyCardRemoved(position);
                 Debug.Log($"卡牌 {card.Data.Name} 生命值为 {card.Data.Health}，将被移除");
+                
+                // 重要：在移除卡牌前通知游戏系统
+                GameEventSystem.Instance.NotifyCardRemoved(position);
+                
+                // 移除卡牌 - 这会导致CardView最终被销毁
                 CardManager.RemoveCard(position);
+                
+                // 在CardView被销毁后，不要再尝试访问它
+                // 后续任何需要访问CardView的操作应该通过安全检查
             }
         }
     }
