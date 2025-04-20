@@ -88,15 +88,6 @@ namespace ChessGame
             // 获取所有敌方卡牌
             List<Card> enemyCards = GetEnemyCards();
             
-            // 如果没有敌方卡牌，直接结束回合
-            if (enemyCards.Count == 0)
-            {
-                Debug.Log("没有敌方卡牌，AI回合结束");
-                _isExecutingTurn = false;
-                _turnManager.EndEnemyTurn();
-                yield break;
-            }
-            
             // 打乱敌方卡牌顺序，随机选择一张执行行动
             ShuffleList(enemyCards);
             
@@ -160,6 +151,8 @@ namespace ChessGame
                         
                         // 通知敌方行动完成
                         GameEventSystem.Instance.NotifyEnemyActionCompleted(actionCard.OwnerId);
+
+                        yield break;
                     }
                 }
             }
@@ -183,8 +176,6 @@ namespace ChessGame
             // 标记AI回合执行完毕
             _isExecutingTurn = false;
             
-            // 结束敌方回合
-            _turnManager.EndEnemyTurn();
             
             Debug.Log("AI回合执行完毕");
         }

@@ -1,7 +1,8 @@
-using UnityEngine;
+/*using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using ChessGame.Cards;
+using System; // 添加System命名空间
 
 namespace ChessGame
 {
@@ -13,6 +14,9 @@ namespace ChessGame
         private Vector2Int _defenderPosition;
         private Vector2Int _attackerPosition;
         private bool _isAnimationCompleted = false; // 标记动画是否完成
+        
+        // 添加反击完成事件
+        public event Action OnCounterAttackCompleted;
         
         public CounterAttackAction(CardManager cardManager, Vector2Int defenderPosition, Vector2Int attackerPosition) 
             : base(cardManager)
@@ -114,6 +118,8 @@ namespace ChessGame
             if (!CanExecute())
             {
                 Debug.LogWarning("反击条件检查失败，终止反击协程");
+                // 即使失败也需要通知完成
+                OnCounterAttackCompleted?.Invoke();
                 yield break;
             }
                 
@@ -155,8 +161,37 @@ namespace ChessGame
             Debug.Log($"触发受伤动画：位置 {_attackerPosition}");
             GameEventSystem.Instance.NotifyCardDamaged(_attackerPosition);
             
-            // 等待短时间（大约0.3秒）
-            yield return new WaitForSeconds(0.3f);
+            // 等待受伤动画完成
+            // 注册受伤动画完成回调
+            bool damageAnimCompleted = false;
+            Action<Vector2Int, int> damageAnimCallback = null;
+            
+            damageAnimCallback = (pos, dmg) => {
+                if (pos == _attackerPosition) {
+                    Debug.Log($"受伤动画完成: 位置 {pos}, 伤害 {dmg}");
+                    damageAnimCompleted = true;
+                    // 取消订阅
+                    GameEventSystem.Instance.OnDamageAnimFinished -= damageAnimCallback;
+                }
+            };
+            
+            // 订阅受伤动画完成事件
+            GameEventSystem.Instance.OnDamageAnimFinished += damageAnimCallback;
+            
+            // 等待受伤动画完成
+            float damageWaitTime = 0f;
+            float maxDamageWaitTime = 1.5f;
+            while (!damageAnimCompleted && damageWaitTime < maxDamageWaitTime)
+            {
+                yield return null;
+                damageWaitTime += Time.deltaTime;
+            }
+            
+            // 如果超时但没收到回调，手动取消订阅
+            if (!damageAnimCompleted) {
+                GameEventSystem.Instance.OnDamageAnimFinished -= damageAnimCallback;
+                Debug.LogWarning("受伤动画完成事件超时");
+            }
             
             // 检查attacker是否死亡，若死亡则触发移除
             if (attackerCard.Data.Health <= 0)
@@ -164,11 +199,15 @@ namespace ChessGame
                 Debug.Log($"{attackerCard.Data.Name} 被反击致死，生命值: {attackerCard.Data.Health}");
                 GameEventSystem.Instance.NotifyCardRemoved(_attackerPosition);
                 CardManager.RemoveCard(_attackerPosition);
+                
+                // 等待死亡动画完成
+                yield return new WaitForSeconds(0.5f);
             }
             
             Debug.Log("反击动作完成");
             
-            // 注意：这里不标记defender的HasActed，不触发NotifyPlayerActionCompleted或NotifyEnemyActionCompleted
+            // 通知反击完成
+            OnCounterAttackCompleted?.Invoke();
         }
     }
-} 
+} */

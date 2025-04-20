@@ -261,7 +261,7 @@ namespace ChessGame
             return attackablePositions;
         }
 
-        // 实现反击方法
+        /*// 实现反击方法
         public void AntiAttack(Card attacker)
         {
             if (attacker == null) return;
@@ -276,7 +276,7 @@ namespace ChessGame
             attacker.Data.Health -= damage;
             
             Debug.Log($"卡牌 {this.Data.Name}(攻击力:{this.Data.Attack}) 反击 {attacker.Data.Name}，造成 {damage} 点伤害，目标生命值: {attackerHealthBefore} -> {attacker.Data.Health}");
-        }
+        }*/
 
         // 添加获取卡牌能力的方法
         public List<AbilityConfiguration> GetAbilities()
