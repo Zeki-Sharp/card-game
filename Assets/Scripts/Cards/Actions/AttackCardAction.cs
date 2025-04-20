@@ -188,22 +188,28 @@ namespace ChessGame
             // 等待一小段时间让受伤动画完成
             yield return new WaitForSeconds(0.3f);
             
-            // 判断是否应该受到反伤
+            // 标记攻击者已行动
+            attackerCard.HasActed = true;
+            
+            // 判断是否应该受到反击
             bool canCounter = targetCard.ShouldReceiveCounterAttack(attackerCard, CardManager.GetAllCards());
             if (canCounter)
             {
-                Debug.Log($"触发真实反击：{targetCard.Data.Name} 对 {attackerCard.Data.Name}");
+                Debug.Log($"触发反击：{targetCard.Data.Name} 对 {attackerCard.Data.Name}");
 
-                // 等待目标卡牌用攻击能力反击攻击者
-                yield return ExecuteCounterAttack(targetCard, attackerCard);
+                // 创建反击动作
+                var counterAttack = new CounterAttackAction(CardManager, targetCard.Position, attackerCard.Position);
+                
+                // 正确启动反击协程
+                CardManager.StartCoroutine(counterAttack.ExecuteCoroutine());
+                
+                // 等待反击协程完成
+                yield return new WaitForSeconds(1.5f);
             }
             else
             {
                 Debug.Log($"没有反击条件");
             }
-            
-            // 标记攻击者已行动
-            attackerCard.HasActed = true;
             
             // 记录攻击后的生命值
             int attackerHealthAfter = attackerCard.Data.Health;
@@ -282,32 +288,6 @@ namespace ChessGame
                 Debug.Log($"卡牌 {card.Data.Name} 生命值为 {card.Data.Health}，将被移除");
                 CardManager.RemoveCard(position);
             }
-        }
-
-        // 添加一个新方法，用于执行反击
-        private IEnumerator ExecuteCounterAttack(Card defenderCard, Card attackerCard)
-        {
-            List<AbilityConfiguration> abilities = defenderCard.GetAbilities();
-            
-            foreach (var ability in abilities)
-            {
-                // 只处理攻击型能力
-                if (ability.actionSequence.Count > 0 &&
-                    ability.actionSequence[0].actionType == AbilityActionConfig.ActionType.Attack)
-                {
-                    // 检查是否能以攻击者为目标
-                    if (AbilityManager.Instance.CanTriggerAbility(ability, defenderCard, attackerCard.Position))
-                    {
-                        Debug.Log($"触发反击：{defenderCard.Data.Name} 对 {attackerCard.Data.Name} 使用能力 {ability.abilityName}");
-                        
-                        // 开始执行反击能力（注意这里是协程！）
-                        yield return AbilityManager.Instance.ExecuteAbility(ability, defenderCard, attackerCard.Position);
-                        yield break; // 成功反击一次后退出
-                    }
-                }
-            }
-            
-            Debug.Log($"虽然可以反击，但{defenderCard.Data.Name}没有合适的攻击能力对{attackerCard.Data.Name}进行反击");
         }
     }
 } 

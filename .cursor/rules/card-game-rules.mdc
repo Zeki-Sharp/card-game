@@ -1,0 +1,33 @@
+# 卡牌游戏项目结构和代码规范
+
+## 项目组织
+
+这个项目是一个Unity卡牌游戏，遵循组件化和模块化设计。主要目录结构：
+
+- `Assets/Scripts/Core`: 核心游戏系统和基础框架
+- `Assets/Scripts/Cards`: 卡牌相关的类和逻辑
+- `Assets/Scripts/Board`: 游戏棋盘和位置管理
+- `Assets/Scripts/UI`: 用户界面元素
+- `Assets/Scripts/Manager`: 游戏管理器类
+- `Assets/Scripts/Services`: 服务类（如音频、存档等）
+- `Assets/Scripts/Data`: 数据定义和ScriptableObject
+- `Assets/Scripts/Utils`: 工具类和扩展方法
+- `Assets/Scripts/Abilities`: 卡牌能力系统
+- `Assets/Scripts/Animation`: 动画相关脚本
+- `Assets/Scripts/Audio`: 音频相关系统
+
+## 代码规范
+
+- 使用C#命名约定：公共成员使用PascalCase，私有成员使用camelCase
+- MonoBehaviour类通常应遵循Unity生命周期方法（Awake、Start、Update等）
+- 数据定义应使用ScriptableObject存储
+- 尽量使用组件模式进行开发，避免过度集中的Manager类
+- 使用事件系统实现不同模块之间的通信
+- 注意性能优化，特别是在Update方法中
+
+## 重要代码关系
+
+- 卡牌系统和能力系统紧密相连
+- UI系统需要与游戏逻辑系统保持松耦合
+- 管理器类应尽量实现单例模式或使用依赖注入
+- 数据处理应与显示逻辑分离 
