@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Collections;
+using ChessGame.Cards;
 
 namespace ChessGame
 {
@@ -189,37 +190,16 @@ namespace ChessGame
             
             // 判断是否应该受到反伤
             bool canCounter = targetCard.ShouldReceiveCounterAttack(attackerCard, CardManager.GetAllCards());
-            
             if (canCounter)
             {
-                Debug.Log($"卡牌 {targetCard.Data.Name} 对 {attackerCard.Data.Name} 进行反击");
-                
-                // 重置动画完成标志
-                _isAnimationCompleted = false;
-                
-                // 触发反击攻击事件 - 播放反击动画
-                RegisterAnimationCompletionCallback();
-                // 注意：这里反向触发攻击事件，表示目标卡牌攻击攻击者卡牌
-                GameEventSystem.Instance.NotifyCardAttacked(_targetPosition, _attackerPosition);
-                
-                // 等待反击动画完成
-                waitTime = 0f;
-                while (!_isAnimationCompleted && waitTime < maxWaitTime)
-                {
-                    yield return null;
-                    waitTime += Time.deltaTime;
-                }
-                
-                // 计算并应用反伤 - 只在动画完成后执行
-                int counterDamage = targetCard.Data.Attack;
-                attackerCard.Data.Health -= counterDamage;
-                
-                // 触发攻击者受伤事件 - 播放受伤动画
-                GameEventSystem.Instance.NotifyCardDamaged(_attackerPosition);
+                Debug.Log($"触发真实反击：{targetCard.Data.Name} 对 {attackerCard.Data.Name}");
+
+                // 等待目标卡牌用攻击能力反击攻击者
+                yield return ExecuteCounterAttack(targetCard, attackerCard);
             }
             else
             {
-                Debug.Log($"卡牌 {attackerCard.Data.Name} 不在 {targetCard.Data.Name} 的攻击范围内，不受反伤");
+                Debug.Log($"没有反击条件");
             }
             
             // 标记攻击者已行动
@@ -302,6 +282,32 @@ namespace ChessGame
                 Debug.Log($"卡牌 {card.Data.Name} 生命值为 {card.Data.Health}，将被移除");
                 CardManager.RemoveCard(position);
             }
+        }
+
+        // 添加一个新方法，用于执行反击
+        private IEnumerator ExecuteCounterAttack(Card defenderCard, Card attackerCard)
+        {
+            List<AbilityConfiguration> abilities = defenderCard.GetAbilities();
+            
+            foreach (var ability in abilities)
+            {
+                // 只处理攻击型能力
+                if (ability.actionSequence.Count > 0 &&
+                    ability.actionSequence[0].actionType == AbilityActionConfig.ActionType.Attack)
+                {
+                    // 检查是否能以攻击者为目标
+                    if (AbilityManager.Instance.CanTriggerAbility(ability, defenderCard, attackerCard.Position))
+                    {
+                        Debug.Log($"触发反击：{defenderCard.Data.Name} 对 {attackerCard.Data.Name} 使用能力 {ability.abilityName}");
+                        
+                        // 开始执行反击能力（注意这里是协程！）
+                        yield return AbilityManager.Instance.ExecuteAbility(ability, defenderCard, attackerCard.Position);
+                        yield break; // 成功反击一次后退出
+                    }
+                }
+            }
+            
+            Debug.Log($"虽然可以反击，但{defenderCard.Data.Name}没有合适的攻击能力对{attackerCard.Data.Name}进行反击");
         }
     }
 } 
