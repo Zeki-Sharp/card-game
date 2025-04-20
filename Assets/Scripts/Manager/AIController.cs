@@ -73,11 +73,11 @@ namespace ChessGame
         }
         
         /// <summary>
-        /// 执行AI回合
+        /// 执行AI回合 - 改进版，按照行动类型优先级分组卡牌
         /// </summary>
         public IEnumerator ExecuteAITurn()
         {
-            Debug.Log("AIController.ExecuteAITurn");
+            Debug.Log("AIController.ExecuteAITurn - AI回合开始执行");
             
             // 避免重复执行
             if (_isExecutingTurn)
@@ -92,27 +92,12 @@ namespace ChessGame
             // 等待一小段时间，让玩家看到回合开始
             yield return new WaitForSeconds(actionDelay);
             
-            // 获取所有敌方卡牌
-            List<Card> enemyCards = GetEnemyCards();
-            
-            // 打乱敌方卡牌顺序，随机选择一张执行行动
-            ShuffleList(enemyCards);
-            
-            // 找到第一张可以行动的卡牌
-            Card actionCard = null;
-            foreach (Card card in enemyCards)
-            {
-                // 如果卡牌已经行动过，跳过
-                if (card.HasActed)
-                    continue;
-                    
-                // 找到第一张可以行动的卡牌
-                actionCard = card;
-                break;
-            }
+            // 获取所有敌方可行动卡牌
+            List<Card> actionableCards = GetActionableEnemyCards();
+            Debug.Log($"可行动的敌方卡牌数量: {actionableCards.Count}");
             
             // 如果没有可行动的卡牌，直接结束回合
-            if (actionCard == null)
+            if (actionableCards.Count == 0)
             {
                 Debug.Log("没有可行动的敌方卡牌，AI回合结束");
                 _isExecutingTurn = false;
@@ -120,90 +105,326 @@ namespace ChessGame
                 yield break;
             }
             
-            Debug.Log($"AI选择了卡牌: {actionCard.Data.Name} 进行行动");
+            // 按优先级分组卡牌及其行动
+            var cardsWithAbilities = new List<CardActionInfo>();
+            var cardsCanAttack = new List<CardActionInfo>();
+            var cardsCanMove = new List<CardActionInfo>();
             
-            // 获取卡牌的能力列表
-            List<AbilityConfiguration> abilities = _abilityManager.GetCardAbilities(actionCard);
+            // 评估每张卡牌的行动能力
+            foreach (Card card in actionableCards)
+            {
+                // 检查卡牌的能力
+                List<AbilityConfiguration> abilities = _abilityManager.GetCardAbilities(card);
+                
+                // 尝试查找可使用的能力
+                var abilityInfo = FindUsableAbility(card, abilities);
+                if (abilityInfo != null)
+                {
+                    cardsWithAbilities.Add(abilityInfo);
+                    Debug.Log($"卡牌 {card.Data.Name} 可以使用能力: {abilityInfo.Ability.abilityName}");
+                    continue; // 已找到高优先级行动，不再考虑后续行动
+                }
+                
+                // 尝试查找可攻击的目标
+                var attackInfo = FindAttackAction(card);
+                if (attackInfo != null)
+                {
+                    cardsCanAttack.Add(attackInfo);
+                    Debug.Log($"卡牌 {card.Data.Name} 可以执行攻击");
+                    continue; // 已找到次优先级行动，不再考虑移动
+                }
+                
+                // 尝试查找可移动的位置
+                var moveInfo = FindMoveAction(card);
+                if (moveInfo != null)
+                {
+                    cardsCanMove.Add(moveInfo);
+                    Debug.Log($"卡牌 {card.Data.Name} 可以执行移动");
+                }
+            }
             
-            // 尝试使用能力或执行基本动作（攻击/移动）
-            yield return ExecuteEnemyAction(actionCard, abilities);
+            Debug.Log($"分组结果 - 可用能力: {cardsWithAbilities.Count}, 可攻击: {cardsCanAttack.Count}, 可移动: {cardsCanMove.Count}");
             
-            // 确保只执行一次行动后就结束回合
+            // 按优先级选择行动
+            bool actionExecuted = false;
+            
+            // 1. 优先使用能力
+            if (cardsWithAbilities.Count > 0)
+            {
+                // 随机选择一个能力使用
+                int index = UnityEngine.Random.Range(0, cardsWithAbilities.Count);
+                var selectedAction = cardsWithAbilities[index];
+                
+                Debug.Log($"AI决定使用卡牌 {selectedAction.Card.Data.Name} 的能力: {selectedAction.Ability.abilityName}");
+                yield return ExecuteAbilityAction(selectedAction);
+                actionExecuted = true;
+            }
+            // 2. 其次执行攻击
+            else if (cardsCanAttack.Count > 0)
+            {
+                // 随机选择一个攻击执行
+                int index = UnityEngine.Random.Range(0, cardsCanAttack.Count);
+                var selectedAction = cardsCanAttack[index];
+                
+                Debug.Log($"AI决定使用卡牌 {selectedAction.Card.Data.Name} 执行攻击");
+                yield return ExecuteAbilityAction(selectedAction);
+                actionExecuted = true;
+            }
+            // 3. 最后考虑移动
+            else if (cardsCanMove.Count > 0)
+            {
+                // 随机选择一个移动执行
+                int index = UnityEngine.Random.Range(0, cardsCanMove.Count);
+                var selectedAction = cardsCanMove[index];
+                
+                Debug.Log($"AI决定使用卡牌 {selectedAction.Card.Data.Name} 执行移动");
+                yield return ExecuteAbilityAction(selectedAction);
+                actionExecuted = true;
+            }
+            
+            // 如果没有执行任何行动，结束回合
+            if (!actionExecuted)
+            {
+                Debug.LogWarning("AI无法执行任何行动，手动结束回合");
+                _turnManager.EndEnemyTurn();
+            }
+            
+            // 完成AI回合
             _isExecutingTurn = false;
         }
         
-        // 新增方法：执行敌方行动
-        private IEnumerator ExecuteEnemyAction(Card actionCard, List<AbilityConfiguration> abilities)
+        /// <summary>
+        /// 卡牌行动信息 - 存储卡牌可执行的行动
+        /// </summary>
+        private class CardActionInfo
         {
-            // 如果卡牌有能力，尝试使用能力
-            if (abilities.Count > 0)
+            public Card Card;
+            public AbilityConfiguration Ability;
+            public Vector2Int TargetPosition;
+            
+            public CardActionInfo(Card card, AbilityConfiguration ability, Vector2Int targetPosition)
             {
-                // 随机选择一个能力
-                AbilityConfiguration ability = abilities[Random.Range(0, abilities.Count)];
-                
+                Card = card;
+                Ability = ability;
+                TargetPosition = targetPosition;
+            }
+        }
+        
+        /// <summary>
+        /// 查找卡牌可用的能力
+        /// </summary>
+        private CardActionInfo FindUsableAbility(Card card, List<AbilityConfiguration> abilities)
+        {
+            if (abilities.Count == 0) return null;
+            
+            // 创建一个能力可用性列表
+            List<KeyValuePair<AbilityConfiguration, List<Vector2Int>>> usableAbilities = new List<KeyValuePair<AbilityConfiguration, List<Vector2Int>>>();
+            
+            // 检查每个能力的可用性
+            foreach (AbilityConfiguration ability in abilities)
+            {
                 // 获取能力可用的目标位置
-                List<Vector2Int> targetPositions = _abilityManager.GetAbilityRange(ability, actionCard);
+                List<Vector2Int> targetPositions = _abilityManager.GetAbilityRange(ability, card);
                 
-                // 如果有可用的目标位置，随机选择一个执行能力
                 if (targetPositions.Count > 0)
                 {
-                    Vector2Int targetPosition = targetPositions[Random.Range(0, targetPositions.Count)];
+                    bool isAttackOrMoveAbility = false;
                     
-                    // 检查能力是否可以触发
-                    if (_abilityManager.CanTriggerAbility(ability, actionCard, targetPosition))
+                    // 检查是否是攻击或移动能力
+                    foreach (var action in ability.actionSequence)
                     {
-                        Debug.Log($"AI使用卡牌 {actionCard.Data.Name} 的能力 {ability.abilityName} 于位置 {targetPosition}");
-                        
-                        // 设置目标位置，这样会显示高亮
-                        _cardManager.SetTargetPosition(targetPosition);
-                        
-                        // 等待一段时间，让玩家看清AI的选择
-                        yield return new WaitForSeconds(selectionDelay);
-                        
-                        // 执行能力
-                        yield return _abilityManager.ExecuteAbility(ability, actionCard, targetPosition);
-                        
-                        // 标记卡牌已行动
-                        actionCard.HasActed = true;
-                        
-                        // 使用与玩家相同的逻辑 - 由TurnManager来处理回合结束，统一处理所有相关事件
-                        // 与玩家回合结束逻辑保持一致
-                        GameEventSystem.Instance.NotifyEnemyActionCompleted(actionCard.OwnerId);
-                        
-                        Debug.Log("AI已完成能力行动");
-                        yield break;
+                        if (action.actionType == AbilityActionConfig.ActionType.Attack || 
+                            action.actionType == AbilityActionConfig.ActionType.Move)
+                        {
+                            isAttackOrMoveAbility = true;
+                            break;
+                        }
+                    }
+                    
+                    // 跳过攻击和移动能力，它们将在后续检查中处理
+                    if (!isAttackOrMoveAbility)
+                    {
+                        usableAbilities.Add(new KeyValuePair<AbilityConfiguration, List<Vector2Int>>(ability, targetPositions));
                     }
                 }
             }
             
-            // 如果没有使用能力，尝试执行攻击
-            bool attacked = TryAttackWithCard(actionCard);
-            
-            // 如果攻击成功，直接返回
-            if (attacked)
+            // 如果有可用能力，随机选择一个
+            if (usableAbilities.Count > 0)
             {
-                Debug.Log("AI已完成攻击行动");
-                yield break;
+                int abilityIndex = UnityEngine.Random.Range(0, usableAbilities.Count);
+                var selectedAbility = usableAbilities[abilityIndex];
+                AbilityConfiguration ability = selectedAbility.Key;
+                List<Vector2Int> targetPositions = selectedAbility.Value;
+                
+                // 随机选择一个目标
+                Vector2Int targetPosition = targetPositions[UnityEngine.Random.Range(0, targetPositions.Count)];
+                
+                // 最终确认能力是否可以触发
+                if (_abilityManager.CanTriggerAbility(ability, card, targetPosition))
+                {
+                    return new CardActionInfo(card, ability, targetPosition);
+                }
             }
             
-            // 如果没有攻击，尝试移动
-            bool moved = TryMoveCard(actionCard);
-            
-            // 如果移动成功，直接返回
-            if (moved)
-            {
-                Debug.Log("AI已完成移动行动");
-                yield break;
-            }
-            
-            // 如果既不能攻击也不能移动，结束AI回合
-            if (!moved && !attacked)
-            {
-                Debug.Log("AI既不能攻击也不能移动，回合结束");
-                _turnManager.EndEnemyTurn();
-            }
+            return null;
         }
-
+        
+        /// <summary>
+        /// 查找卡牌可执行的攻击行动
+        /// </summary>
+        private CardActionInfo FindAttackAction(Card card)
+        {
+            // 获取可攻击的位置
+            List<Vector2Int> attackablePositions = card.GetAttackablePositions(_cardManager.BoardWidth, _cardManager.BoardHeight, _cardManager.GetAllCards());
+            
+            if (attackablePositions.Count == 0)
+            {
+                return null;
+            }
+            
+            // 获取卡牌的攻击能力
+            List<AbilityConfiguration> abilities = _abilityManager.GetCardAbilities(card);
+            
+            // 筛选出攻击类型的能力
+            List<KeyValuePair<AbilityConfiguration, Vector2Int>> usableAttacks = new List<KeyValuePair<AbilityConfiguration, Vector2Int>>();
+            
+            // 检查每个位置和每个能力
+            foreach (Vector2Int targetPosition in attackablePositions)
+            {
+                foreach (var ability in abilities)
+                {
+                    // 检查能力是否包含攻击动作
+                    bool hasAttackAction = false;
+                    foreach (var action in ability.actionSequence)
+                    {
+                        if (action.actionType == AbilityActionConfig.ActionType.Attack)
+                        {
+                            hasAttackAction = true;
+                            break;
+                        }
+                    }
+                    
+                    if (hasAttackAction && _abilityManager.CanTriggerAbility(ability, card, targetPosition))
+                    {
+                        usableAttacks.Add(new KeyValuePair<AbilityConfiguration, Vector2Int>(ability, targetPosition));
+                    }
+                }
+            }
+            
+            // 如果有可用的攻击能力，随机选择一个
+            if (usableAttacks.Count > 0)
+            {
+                int attackIndex = UnityEngine.Random.Range(0, usableAttacks.Count);
+                var selectedAttack = usableAttacks[attackIndex];
+                
+                return new CardActionInfo(card, selectedAttack.Key, selectedAttack.Value);
+            }
+            
+            return null;
+        }
+        
+        /// <summary>
+        /// 查找卡牌可执行的移动行动
+        /// </summary>
+        private CardActionInfo FindMoveAction(Card card)
+        {
+            // 获取可移动的位置
+            List<Vector2Int> movePositions = card.GetMovablePositions(_cardManager.BoardWidth, _cardManager.BoardHeight, _cardManager.GetAllCards());
+            
+            if (movePositions.Count == 0)
+            {
+                return null;
+            }
+            
+            // 获取卡牌的移动能力
+            List<AbilityConfiguration> abilities = _abilityManager.GetCardAbilities(card);
+            
+            // 筛选出移动类型的能力
+            List<KeyValuePair<AbilityConfiguration, Vector2Int>> usableMoves = new List<KeyValuePair<AbilityConfiguration, Vector2Int>>();
+            
+            // 检查每个位置和每个能力
+            foreach (Vector2Int targetPosition in movePositions)
+            {
+                foreach (var ability in abilities)
+                {
+                    // 检查能力是否包含移动动作
+                    bool hasMoveAction = false;
+                    foreach (var action in ability.actionSequence)
+                    {
+                        if (action.actionType == AbilityActionConfig.ActionType.Move)
+                        {
+                            hasMoveAction = true;
+                            break;
+                        }
+                    }
+                    
+                    if (hasMoveAction && _abilityManager.CanTriggerAbility(ability, card, targetPosition))
+                    {
+                        usableMoves.Add(new KeyValuePair<AbilityConfiguration, Vector2Int>(ability, targetPosition));
+                    }
+                }
+            }
+            
+            // 如果有可用的移动能力，随机选择一个
+            if (usableMoves.Count > 0)
+            {
+                int moveIndex = UnityEngine.Random.Range(0, usableMoves.Count);
+                var selectedMove = usableMoves[moveIndex];
+                
+                return new CardActionInfo(card, selectedMove.Key, selectedMove.Value);
+            }
+            
+            return null;
+        }
+        
+        /// <summary>
+        /// 执行能力行动
+        /// </summary>
+        private IEnumerator ExecuteAbilityAction(CardActionInfo actionInfo)
+        {
+            Card card = actionInfo.Card;
+            AbilityConfiguration ability = actionInfo.Ability;
+            Vector2Int targetPosition = actionInfo.TargetPosition;
+            
+            // 设置目标位置，这样会显示高亮
+            _cardManager.SetTargetPosition(targetPosition);
+            
+            // 等待一段时间，让玩家看清AI的选择
+            yield return new WaitForSeconds(selectionDelay);
+            
+            // 执行能力
+            yield return _abilityManager.ExecuteAbility(ability, card, targetPosition);
+            
+            // 标记卡牌已行动
+            card.HasActed = true;
+            
+            // 与玩家回合结束逻辑保持一致
+            Debug.Log($"AI完成行动: {ability.abilityName}，通知敌方行动完成");
+            GameEventSystem.Instance.NotifyEnemyActionCompleted(card.OwnerId);
+        }
+        
+        /// <summary>
+        /// 获取可行动的敌方卡牌
+        /// </summary>
+        private List<Card> GetActionableEnemyCards()
+        {
+            // 获取所有敌方卡牌
+            List<Card> enemyCards = GetEnemyCards();
+            
+            // 筛选出可行动的卡牌
+            List<Card> actionableCards = new List<Card>();
+            foreach (Card card in enemyCards)
+            {
+                if (!card.HasActed)
+                {
+                    actionableCards.Add(card);
+                }
+            }
+            
+            return actionableCards;
+        }
+        
         // 获取所有敌方卡牌
         private List<Card> GetEnemyCards()
         {
@@ -229,152 +450,11 @@ namespace ChessGame
             while (n > 1)
             {
                 n--;
-                int k = Random.Range(0, n + 1);
+                int k = UnityEngine.Random.Range(0, n + 1);
                 T value = list[k];
                 list[k] = list[n];
                 list[n] = value;
             }
-        }
-
-        // 修改TryAttackWithCard方法，确保与玩家行动逻辑一致
-        private bool TryAttackWithCard(Card card)
-        {
-            Debug.Log($"AI尝试攻击，位置: {card.Position}, 攻击范围: {card.AttackRange}");
-            
-            // 获取可攻击的位置
-            List<Vector2Int> attackablePositions = card.GetAttackablePositions(_cardManager.BoardWidth, _cardManager.BoardHeight, _cardManager.GetAllCards());
-            
-            Debug.Log($"找到 {attackablePositions.Count} 个可攻击位置");
-            
-            // 如果有可攻击的位置，随机选择一个进行攻击
-            if (attackablePositions.Count > 0)
-            {
-                Vector2Int targetPosition = attackablePositions[Random.Range(0, attackablePositions.Count)];
-                Debug.Log($"AI攻击卡牌，从 {card.Position} 到 {targetPosition}");
-                
-                // 获取卡牌的攻击能力
-                List<AbilityConfiguration> abilities = _abilityManager.GetCardAbilities(card);
-                
-                // 筛选出攻击类型的能力
-                List<AbilityConfiguration> attackAbilities = new List<AbilityConfiguration>();
-                foreach (var ability in abilities)
-                {
-                    // 检查能力是否包含攻击动作
-                    bool hasAttackAction = false;
-                    foreach (var action in ability.actionSequence)
-                    {
-                        if (action.actionType == AbilityActionConfig.ActionType.Attack)
-                        {
-                            hasAttackAction = true;
-                            break;
-                        }
-                    }
-                    
-                    if (hasAttackAction && _abilityManager.CanTriggerAbility(ability, card, targetPosition))
-                    {
-                        attackAbilities.Add(ability);
-                    }
-                }
-                
-                // 如果有可用的攻击能力，使用能力系统执行攻击
-                if (attackAbilities.Count > 0)
-                {
-                    // 随机选择一个攻击能力
-                    AbilityConfiguration attackAbility = attackAbilities[Random.Range(0, attackAbilities.Count)];
-                    
-                    // 设置目标位置，这样会显示高亮
-                    _cardManager.SetTargetPosition(targetPosition);
-                    
-                    // 使用协程启动能力执行
-                    _abilityManager.ExecuteAbility(attackAbility, card, targetPosition);
-                    
-                    Debug.Log($"AI使用攻击能力: {attackAbility.abilityName}, 从 {card.Position} 到 {targetPosition}");
-                    
-                    // 标记卡牌已行动
-                    card.HasActed = true;
-                    
-                    // 使用与玩家相同的逻辑 - 由通知行动完成触发回合结束
-                    GameEventSystem.Instance.NotifyEnemyActionCompleted(card.OwnerId);
-                    
-                    return true;
-                }
-                else
-                {
-                    Debug.LogWarning($"AI没有可用的攻击能力，或者能力冷却中");
-                }
-            }
-            
-            Debug.Log("AI没有可攻击的位置");
-            return false;
-        }
-        
-        // 修改TryMoveCard方法，确保与玩家行动逻辑一致
-        private bool TryMoveCard(Card card)
-        {
-            Debug.Log($"AI尝试移动，位置: {card.Position}, 移动范围: {card.MoveRange}");
-            
-            // 获取可移动的位置
-            List<Vector2Int> movePositions = card.GetMovablePositions(_cardManager.BoardWidth, _cardManager.BoardHeight, _cardManager.GetAllCards());
-            
-            Debug.Log($"找到 {movePositions.Count} 个可移动位置");
-            
-            // 如果有可移动的位置，随机选择一个进行移动
-            if (movePositions.Count > 0)
-            {
-                Vector2Int targetPosition = movePositions[Random.Range(0, movePositions.Count)];
-                Debug.Log($"AI移动卡牌，从 {card.Position} 到 {targetPosition}");
-                
-                // 获取卡牌的移动能力
-                List<AbilityConfiguration> abilities = _abilityManager.GetCardAbilities(card);
-                
-                // 筛选出移动类型的能力
-                List<AbilityConfiguration> moveAbilities = new List<AbilityConfiguration>();
-                foreach (var ability in abilities)
-                {
-                    // 检查能力是否包含移动动作
-                    bool hasMoveAction = false;
-                    foreach (var action in ability.actionSequence)
-                    {
-                        if (action.actionType == AbilityActionConfig.ActionType.Move)
-                        {
-                            hasMoveAction = true;
-                            break;
-                        }
-                    }
-                    
-                    if (hasMoveAction && _abilityManager.CanTriggerAbility(ability, card, targetPosition))
-                    {
-                        moveAbilities.Add(ability);
-                    }
-                }
-                
-                // 如果有可用的移动能力，使用能力系统执行移动
-                if (moveAbilities.Count > 0)
-                {
-                    // 随机选择一个移动能力
-                    AbilityConfiguration moveAbility = moveAbilities[Random.Range(0, moveAbilities.Count)];
-                    
-                    // 执行移动能力
-                    _abilityManager.ExecuteAbility(moveAbility, card, targetPosition);
-                    
-                    Debug.Log($"AI使用移动能力: {moveAbility.abilityName}, 从 {card.Position} 到 {targetPosition}");
-                    
-                    // 标记卡牌已行动
-                    card.HasActed = true;
-                    
-                    // 使用与玩家相同的逻辑通知行动完成
-                    GameEventSystem.Instance.NotifyEnemyActionCompleted(card.OwnerId);
-                    
-                    return true;
-                }
-                else
-                {
-                    Debug.LogWarning($"AI没有可用的移动能力，或者能力冷却中");
-                }
-            }
-            
-            Debug.Log("AI没有可移动的位置");
-            return false;
         }
     }
 } 
